@@ -1,0 +1,7 @@
+﻿.login-page { min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; padding: 120rpx 48rpx 80rpx; background: linear-gradient(180deg, #e9fbff, #f7fbff); box-sizing: border-box; }
+.brand-card { height: 260rpx; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 36rpx; background: rgba(255,255,255,.86); box-shadow: 0 24rpx 70rpx rgba(20, 80, 110, .12); }
+.title { font-size: 56rpx; font-weight: 700; color: #10263a; }
+.subtitle { margin-top: 18rpx; font-size: 26rpx; color: #5d7485; }
+.actions { display: flex; flex-direction: column; align-items: center; gap: 30rpx; }
+.wechat-button { width: 520rpx; height: 92rpx; line-height: 92rpx; border-radius: 999rpx; color: white; background: #12b76a; font-size: 34rpx; }
+.staff-link { color: #456274; font-size: 26rpx; padding: 20rpx 40rpx; }

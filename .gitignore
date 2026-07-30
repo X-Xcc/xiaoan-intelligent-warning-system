@@ -23,3 +23,11 @@ dist/
 *.doc
 *.docx
 *.tmp
+
+# TypeScript / build cache
+*.tsbuildinfo
+.swc/
+apps/**/.swc/
+
+# Logs
+*.log

@@ -1,0 +1,6 @@
+﻿.hello { display: block; margin: 36rpx 0 28rpx; font-size: 48rpx; font-weight: 800; color: #10263a; }
+.status-card { display: flex; flex-direction: column; gap: 12rpx; padding: 30rpx; color: #527084; }
+.risk { color: #f97316; font-size: 34rpx; font-weight: 700; }
+.help-button { width: 360rpx; height: 360rpx; line-height: 360rpx; margin: 70rpx auto; border-radius: 50%; color: #fff; font-size: 42rpx; font-weight: 700; background: radial-gradient(circle, #ff7a3d, #ef4444); box-shadow: 0 30rpx 90rpx rgba(239, 68, 68, .34); }
+.quick-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 22rpx; }
+.quick { height: 120rpx; display: flex; align-items: center; justify-content: center; color: #24445a; font-size: 28rpx; }

@@ -1,0 +1,12 @@
+﻿.tasks-page { background: #eef4f8; }
+.header-card { display: flex; flex-direction: column; gap: 14rpx; padding: 30rpx; color: #5d7080; }
+.title { font-size: 42rpx; font-weight: 800; color: #10263a; }
+.task-card { margin-top: 24rpx; padding: 30rpx; display: flex; flex-direction: column; gap: 16rpx; }
+.row { display: flex; align-items: center; justify-content: space-between; }
+.tag { padding: 8rpx 16rpx; border-radius: 999rpx; color: #fff; font-size: 24rpx; }
+.danger { background: #ef4444; }
+.warning { background: #f97316; }
+.status { color: #607488; }
+.task-title { font-size: 34rpx; font-weight: 700; color: #10263a; }
+.meta { color: #607488; }
+.action { align-self: flex-end; color: #0ea5e9; font-weight: 700; }
