@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "jiangtan-zhifang",
   "version": "0.1.0",
   "private": true,
@@ -9,8 +9,6 @@
   ],
   "scripts": {
     "dashboard:dev": "npm --workspace apps/dashboard run dev",
-    "dashboard:build": "npm --workspace apps/dashboard run build",
-    "miniprogram:dev": "npm --workspace apps/miniprogram run dev:weapp",
-    "miniprogram:build": "npm --workspace apps/miniprogram run build:weapp"
+    "dashboard:build": "npm --workspace apps/dashboard run build"
   }
 }
