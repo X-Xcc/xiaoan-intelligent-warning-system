@@ -1,15 +1,16 @@
 {
-  "miniprogramRoot": "./dist",
-  "projectname": "miniprogram",
-  "description": "miniprogram",
-  "appid": "touristappid",
+  "miniprogramRoot": "dist",
+  "projectname": "jiangtan-zhifang",
+  "description": "江滩智防游客服务小程序",
+  "appid": "wxdd3f448369e6ca9f",
   "setting": {
     "urlCheck": true,
-    "es6": false,
+    "es6": true,
     "enhance": false,
     "compileHotReLoad": false,
     "postcss": false,
-    "minified": false
+    "minified": true,
+    "minifyWXML": true
   },
   "compileType": "miniprogram"
 }
