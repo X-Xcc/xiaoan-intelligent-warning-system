@@ -12,6 +12,16 @@ button {
   margin: 0;
 }
 
+view,
+text,
+button,
+image,
+map,
+input,
+textarea {
+  box-sizing: border-box;
+}
+
 .detail-page {
   min-height: 100vh;
   padding: 24px 24px 44px;
@@ -308,6 +318,7 @@ button {
 
 .primary-action {
   width: 100%;
+  max-width: 100%;
   margin-top: 20px;
 }
 
@@ -605,5 +616,233 @@ button {
 
 .bay-dashboard text:first-child {
   font-size: 24px;
+}
+
+/* Figma service detail redesign */
+.detail-page {
+  padding: 0 16px 112px;
+  background: #fbfaf7;
+}
+
+.detail-topbar {
+  height: 56px;
+  margin-bottom: 0;
+}
+
+.detail-topbar text {
+  color: #181c1d;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.detail-back {
+  width: 104px;
+  height: 40px;
+  border-radius: 8px;
+  color: #00535b;
+  background: #fff;
+  border: 1px solid rgba(190, 200, 202, 0.7);
+  font-size: 20px;
+  line-height: 40px;
+}
+
+.detail-hero {
+  min-height: 138px;
+  padding: 18px;
+  border-radius: 12px;
+  color: #181c1d;
+  background: #fff;
+  border: 1px solid rgba(190, 200, 202, 0.62);
+  box-shadow: 0 2px 8px rgba(0, 109, 119, 0.05);
+}
+
+.detail-hero.serviceOrder,
+.detail-hero.help,
+.detail-hero.staffOrder,
+.detail-hero.lost,
+.detail-hero.report {
+  background: #fff;
+}
+
+.detail-badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  color: #00535b;
+  background: #e7f7f5;
+  font-size: 18px;
+}
+
+.detail-title {
+  margin-top: 12px;
+  color: #181c1d;
+  font-size: 34px;
+  line-height: 1.25;
+}
+
+.detail-subtitle {
+  margin-top: 8px;
+  color: #3e494a;
+  font-size: 20px;
+  line-height: 1.45;
+}
+
+.status-card,
+.record-card,
+.resource-card,
+.info-section,
+.simple-row,
+.policy-row,
+.order-summary,
+.soft-map,
+.flow-card,
+.bay-dashboard,
+.staff-note {
+  margin-top: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid rgba(190, 200, 202, 0.62);
+  box-shadow: 0 2px 8px rgba(0, 109, 119, 0.05);
+}
+
+.status-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.status-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: #006d77;
+}
+
+.status-card.warn::before {
+  background: #e29578;
+}
+
+.status-card.danger::before {
+  background: #ba1a1a;
+}
+
+.status-card.safe::before {
+  background: #236863;
+}
+
+.status-card text:first-child {
+  color: #3e494a;
+  font-size: 18px;
+}
+
+.status-card text:nth-child(2) {
+  margin-top: 6px;
+  color: #181c1d;
+  font-size: 34px;
+}
+
+.status-card text:last-child {
+  color: #3e494a;
+  font-size: 20px;
+}
+
+.soft-map {
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background:
+    linear-gradient(0deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.44)),
+    linear-gradient(135deg, #dbe9e7, #f3ead8);
+}
+
+.flow-card > text:first-child {
+  display: block;
+  margin-bottom: 12px;
+  color: #181c1d;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.flow-row {
+  position: relative;
+  gap: 12px;
+  padding: 12px 0;
+}
+
+.flow-row view {
+  flex: 1;
+  min-width: 0;
+}
+
+.flow-dot {
+  width: 24px;
+  height: 24px;
+  margin-top: 0;
+  border-radius: 50%;
+  background: #e6e9e9;
+  border: 1px solid #bec8ca;
+}
+
+.flow-dot.active {
+  background: #006d77;
+  border-color: #006d77;
+}
+
+.flow-row view text:first-child {
+  color: #181c1d;
+  font-size: 22px;
+}
+
+.flow-row view text:last-child {
+  color: #3e494a;
+  font-size: 18px;
+}
+
+.record-head view text:first-child,
+.resource-card view text:first-child,
+.info-section text:first-child,
+.simple-row text:first-child {
+  color: #181c1d;
+  font-size: 24px;
+}
+
+.record-head > text {
+  min-width: 84px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  color: #00535b;
+  background: #e7f7f5;
+  font-size: 18px;
+  text-align: center;
+}
+
+.action-grid button,
+.resource-card button {
+  height: 44px;
+  border-radius: 8px;
+  color: #00535b;
+  background: #fff;
+  border: 1px solid #00535b;
+  font-size: 18px;
+  line-height: 44px;
+}
+
+.primary-action {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 10;
+  width: auto;
+  height: 56px;
+  border-radius: 8px;
+  color: #fff;
+  background: #006d77;
+  font-size: 22px;
+  line-height: 56px;
+  box-shadow: 0 8px 20px rgba(0, 109, 119, 0.18);
 }
 

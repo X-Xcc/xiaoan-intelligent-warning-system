@@ -26,6 +26,12 @@ const visitorTitleKeys: Record<TabKey, 'nav.home' | 'nav.report' | 'nav.help' | 
   mine: 'nav.mine',
 }
 
+const tabKeys: TabKey[] = ['home', 'report', 'help', 'progress', 'mine']
+
+function normalizeTab(tab?: string): TabKey {
+  return tabKeys.includes(tab as TabKey) ? (tab as TabKey) : 'home'
+}
+
 type MarkerTone = 'safe' | 'warn' | 'danger' | 'service'
 
 type JiangtanMapPoint = {
@@ -200,6 +206,10 @@ function mapLoadFailed() {
   Taro.showToast({ title: '地图加载异常，请检查定位权限或网络', icon: 'none' })
 }
 
+function callEmergency(phoneNumber = '110') {
+  Taro.makePhoneCall({ phoneNumber })
+}
+
 function findJiangtanPointByBay(bay: string) {
   return jiangtanMapPoints.find((point) => point.name === bay || point.bay === bay) ?? jiangtanMapPoints[1]
 }
@@ -215,11 +225,14 @@ export default function MainPage() {
   const { t } = useLocale()
   const routeMode: MainMode = router.params.mode === 'staffLogin' ? 'staffLogin' : 'visitor'
   const [mode, setMode] = useState<MainMode>(routeMode)
-  const [tab, setTab] = useState<TabKey>('home')
+  const [tab, setTab] = useState<TabKey>(normalizeTab(router.params.tab))
   const {
     events,
     latestHelp,
     progressFilter,
+    loading,
+    error: serviceError,
+    reloadEvents,
     setProgressFilter,
     createHelp,
     createReport,
@@ -230,13 +243,21 @@ export default function MainPage() {
   } = useSafetyEvents()
 
   useEffect(() => {
+    setTab(normalizeTab(router.params.tab))
+  }, [router.params.tab])
+
+  useEffect(() => {
     const title = mode === 'staff' ? '巡防工作台' : mode === 'staffLogin' ? t('login.staff') : t(visitorTitleKeys[tab])
     Taro.setNavigationBarTitle({ title })
   }, [mode, tab])
 
-  const sendHelp = () => {
-    createHelp()
-    setTab('help')
+  const sendHelp = async () => {
+    try {
+      await createHelp()
+      setTab('help')
+    } catch (error) {
+      Taro.showToast({ title: '求助同步失败，请检查后端服务', icon: 'none' })
+    }
   }
 
   const openProgress = (filter: ProgressFilter) => {
@@ -258,10 +279,12 @@ export default function MainPage() {
         {tab === 'home' && (
           <HomeView
             events={events}
-            createHelp={sendHelp}
+            loading={loading}
+            serviceError={serviceError}
+            reloadEvents={reloadEvents}
             setTab={setTab}
-            createLostClaim={(itemName?: string) => {
-              createLostClaim(itemName)
+            createLostClaim={async (itemName?: string) => {
+              await createLostClaim(itemName)
               openProgress('lost')
             }}
           />
@@ -273,8 +296,8 @@ export default function MainPage() {
             createHelp={sendHelp}
             openProgress={() => openProgress('help')}
             supplementEvent={supplementEvent}
-            cancelHelp={() => {
-              if (cancelLatestHelp()) openProgress('help')
+            cancelHelp={async () => {
+              if (await cancelLatestHelp()) openProgress('help')
             }}
           />
         )}
@@ -296,175 +319,149 @@ export default function MainPage() {
 
 function HomeView({
   events,
-  createHelp,
+  loading,
+  serviceError,
+  reloadEvents,
   setTab,
   createLostClaim,
 }: {
   events: SafetyEvent[]
-  createHelp: () => void
+  loading: boolean
+  serviceError: string
+  reloadEvents: () => Promise<void>
   setTab: (tab: TabKey) => void
-  createLostClaim: (itemName?: string) => void
+  createLostClaim: (itemName?: string) => Promise<void>
 }) {
   const activeEvents = events.filter((event) => event.status !== '已完成')
   const latest = activeEvents[0]
   const homeMapMarkers = useMemo(() => createMapMarkers(jiangtanMapPoints), [])
   const serviceItems = [
-    { key: 'rescue', title: '附近服务', desc: '岗亭 AED 卫生间' },
-    { key: 'guide', title: '游玩提醒', desc: '天气 人流 亲水提示' },
-    { key: 'lost', title: '失物招领', desc: '找物品 登记线索' },
-    { key: 'report', title: '问题反馈', desc: '设施 卫生 秩序' },
+    { key: 'rescue', title: '服务岗亭', desc: 'AED 饮水 卫生间', icon: '岗' },
+    { key: 'guide', title: '游玩提醒', desc: '天气 人流 亲水提示', icon: '游' },
+    { key: 'parking', title: '停车路线', desc: '停车场与入口导航', icon: '停' },
+    { key: 'station', title: '应急驿站', desc: '医药箱 服务台', icon: '站' },
+    { key: 'lost', title: '失物招领', desc: '找物品 登记线索', icon: '物' },
+    { key: 'report', title: '隐患上报', desc: '野泳 设施 噪音', icon: '报' },
   ]
 
   return (
-    <View className='page home-page'>
-      <View className='river-scene'>
-        <View className='scene-topline'>
-          <View>
-            <Text className='scene-kicker'>今日江滩服务</Text>
-            <Text className='scene-title'>江边走走，安心一点</Text>
-          </View>
-          <View className='weather-pill'>
-            <Text>29°C</Text>
-            <Text>多云 微风</Text>
-          </View>
-        </View>
-
-        <View className='river-map'>
-          <Map
-            className='native-map'
-            longitude={jiangtanCenter.longitude}
-            latitude={jiangtanCenter.latitude}
-            scale={12}
-            minScale={10}
-            maxScale={18}
-            markers={homeMapMarkers}
-            includePoints={jiangtanIncludePoints}
-            showLocation
-            showScale
-            enablePoi
-            enableBuilding
-            onTap={() => openDetail('bay')}
-            onMarkerTap={(event) => {
-              const point = jiangtanMapPoints.find((item) => item.id === Number(event.detail.markerId))
-              if (point) showMapPoint(point)
-            }}
-            onError={mapLoadFailed}
-          />
-        </View>
-
-        <View className='map-caption' onClick={() => openDetail('bay')}>
-          <Text>真实地图 · 南昌赣江两滩七湾</Text>
-          <Text>点按标记查看湾区状态，拖动或缩放查看周边道路与服务点</Text>
-        </View>
-
-        <View className='map-spot-grid'>
-          {jiangtanMapPoints.map((point) => (
-            <View className={`map-spot-item ${point.tone}`} key={point.id} onClick={() => showMapPoint(point)}>
-              <Text>{point.name}</Text>
-              <Text>{point.address}</Text>
-            </View>
-          ))}
-        </View>
-
-        <View className='scene-notice'>
-          <Text>两滩七湾开放中</Text>
-          <Text>摩天湾客流偏多，亲水区域请看护儿童</Text>
-        </View>
-
-        <View className='scene-status'>
-          <View onClick={() => openDetail('bay')}>
-            <Text>开放</Text>
-            <Text>9 个点位</Text>
-          </View>
-          <View onClick={() => openDetail('guide')}>
-            <Text>人流</Text>
-            <Text>轻度集中</Text>
-          </View>
-          <View onClick={() => openDetail('rescue')}>
-            <Text>服务点</Text>
-            <Text>360m</Text>
-          </View>
-        </View>
-      </View>
-
-      <View className='safety-overview'>
-        <View className='safety-overview-head'>
-          <View>
-            <Text>今日安心提示</Text>
-            <Text>巡防与服务点在线，重点区域持续巡查</Text>
-          </View>
-          <Text className='status-badge'>良好</Text>
-        </View>
-        <View className='safety-metrics'>
-          <View className='safety-metric safe' onClick={() => openDetail('guide')}>
-            <Text>水位</Text>
-            <Text>稳定</Text>
-            <Text>较昨日持平</Text>
-          </View>
-          <View className='safety-metric blue' onClick={() => openDetail('bay')}>
-            <Text>客流</Text>
-            <Text>稍多</Text>
-            <Text>摩天湾提醒</Text>
-          </View>
-          <View className='safety-metric warm' onClick={() => openDetail('rescue')}>
-            <Text>服务</Text>
-            <Text>在线</Text>
-            <Text>最近 360m</Text>
-          </View>
-        </View>
-      </View>
-
-      <View className='home-sos-strip'>
+    <View className='page home-page figma-home'>
+      <View className='home-hero-card'>
         <View>
-          <Text>遇到不舒服或找不到人？</Text>
-          <Text>可同步位置给附近工作人员，误触后可取消。</Text>
+          <Text>今日江滩</Text>
+          <Text>两滩七湾开放中，摩天湾客流稍多</Text>
         </View>
-        <Button className='danger-action' onClick={createHelp}>一键求助</Button>
+        <View className='home-hero-weather'>
+          <Text>29°C</Text>
+          <Text>多云</Text>
+        </View>
       </View>
 
-      <View className='section-head'>
-        <Text>常用服务</Text>
-        <Text onClick={() => setTab('progress')}>我的进度</Text>
+      {serviceError && (
+        <View className='error-card service-error-card' onClick={reloadEvents}>
+          <Text>服务同步失败</Text>
+          <Text>当前显示本地初始数据，点击重试。</Text>
+        </View>
+      )}
+      {loading && <View className='home-activity-banner sync-banner'><Text>!</Text><Text>正在同步后端事件数据</Text></View>}
+
+      <View className='home-status-grid'>
+        <View className='home-status-card weather'>
+          <Text>今日状态</Text>
+          <Text>适宜游玩</Text>
+        </View>
+        <View className='home-status-card people' onClick={() => openDetail('bay')}>
+          <Text>人流</Text>
+          <Text>稍多</Text>
+        </View>
+        <View className='home-status-card water' onClick={() => openDetail('guide')}>
+          <Text>水位</Text>
+          <Text>稳定</Text>
+        </View>
       </View>
-      <View className='service-dock'>
+
+      <View className='home-map-card'>
+        <Map
+          className='native-map'
+          longitude={jiangtanCenter.longitude}
+          latitude={jiangtanCenter.latitude}
+          scale={12}
+          minScale={10}
+          maxScale={18}
+          markers={homeMapMarkers}
+          includePoints={jiangtanIncludePoints}
+          showLocation
+          showScale
+          enablePoi
+          enableBuilding
+          onTap={() => openDetail('bay')}
+          onMarkerTap={(event) => {
+            const point = jiangtanMapPoints.find((item) => item.id === Number(event.detail.markerId))
+            if (point) showMapPoint(point)
+          }}
+          onError={mapLoadFailed}
+        />
+        <View className='home-map-tools'>
+          <Text>⌖</Text>
+          <Text>↗</Text>
+        </View>
+      </View>
+
+      <View className='home-key-tiles'>
+        <View onClick={() => openDetail('bay')}>
+          <Text>开放湾区</Text>
+          <Text>9处</Text>
+        </View>
+        <View onClick={() => openDetail('guide')}>
+          <Text>巡防状态</Text>
+          <Text>在线</Text>
+        </View>
+        <View onClick={() => openDetail('rescue')}>
+          <Text>最近服务</Text>
+          <Text>360m</Text>
+        </View>
+      </View>
+
+      <View className='home-section-title'>
+        <Text>便民服务</Text>
+        <Text onClick={() => openDetail('rescue')}>附近设施</Text>
+      </View>
+
+      <View className='figma-service-grid'>
         {serviceItems.map((item) => (
           <View
             key={item.key}
-            className='service-pill'
+            className='figma-service-item'
             onClick={() => {
               if (item.key === 'report') {
                 setTab('report')
                 return
               }
               if (item.key === 'lost') {
-                createLostClaim()
+                createLostClaim().catch(() => Taro.showToast({ title: '失物登记提交失败', icon: 'none' }))
                 return
               }
-              openDetail(item.key)
+              openDetail(item.key === 'parking' || item.key === 'station' ? 'rescue' : item.key)
             }}
           >
-            <View className={`service-icon ${item.key}`}>
-              <View className='icon-a' />
-              <View className='icon-b' />
-            </View>
-            <View>
-              <Text>{item.title}</Text>
-              <Text>{item.desc}</Text>
-            </View>
+            <View className={`figma-service-icon ${item.key}`}><Text>{item.icon}</Text></View>
+            <Text>{item.title}</Text>
           </View>
         ))}
       </View>
 
-      <View className='soft-progress'>
-        <CardTitle title='最新服务进度' action='实时更新' />
-        <View className='live-row' onClick={() => latest ? openDetail('serviceOrder', { id: latest.id, title: latest.title, status: latest.status, bay: latest.bay, level: latest.level }) : openDetail('guide')}>
-          <View>
-            <Text>{latest ? latest.title : '今天服务运行平稳'}</Text>
-            <Text>{latest ? `${latest.bay} · ${latest.status}，你可以继续关注` : '没有需要你处理的消息，安心游玩。'}</Text>
-          </View>
-          <Text>查看</Text>
-          </View>
+      <View className='home-report-entry' onClick={() => setTab('report')}>
+        <View>
+          <Text>群众随手拍 · 隐患上报</Text>
+          <Text>发现违规野泳、设施损坏、噪音扰民等问题，可提交点位和照片，后续在进度页查看处置结果。</Text>
         </View>
+        <Text>去上报</Text>
+      </View>
+
+      <View className='home-activity-banner' onClick={() => latest ? openDetail('serviceOrder', { id: latest.id, title: latest.title, status: latest.status, bay: latest.bay, level: latest.level }) : openDetail('guide')}>
+        <Text>!</Text>
+        <Text>{latest ? `${latest.title} · ${latest.status}` : '今天服务运行平稳，巡防、救生岗和便民设施在线'}</Text>
+      </View>
     </View>
   )
 }
@@ -473,14 +470,15 @@ function ReportView({
   createReport,
   openProgress,
 }: {
-  createReport: (form: ReportForm, photoCount: number) => SafetyEvent
+  createReport: (form: ReportForm, photoCount: number) => Promise<SafetyEvent>
   openProgress: () => void
 }) {
-  const [form, setForm] = useState<ReportForm>({ category: '设施损坏', bay: '摩天湾', description: '', contact: '', anonymous: false })
+  const [form, setForm] = useState<ReportForm>({ category: '违规野泳', bay: '摩天湾', description: '', contact: '', anonymous: false })
   const [photos, setPhotos] = useState<string[]>([])
   const [submitted, setSubmitted] = useState<SafetyEvent | null>(null)
   const [error, setError] = useState('')
   const [photoNotice, setPhotoNotice] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   const addPhoto = async () => {
     if (photos.length >= 3) {
@@ -501,18 +499,25 @@ function ReportView({
     }
   }
 
-  const submit = () => {
+  const submit = async () => {
     if (!form.description.trim() && photos.length === 0) {
       setError('请写一句现场情况，或至少上传一张照片。')
       return
     }
     setError('')
-    setSubmitted(createReport(form, photos.length))
+    setSubmitting(true)
+    try {
+      setSubmitted(await createReport(form, photos.length))
+    } catch (error) {
+      setError('提交失败，请确认后端服务已启动。')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
     <View className='page report-page'>
-      <PageHeader title='问题反馈' subtitle='不着急的设施、卫生、人流问题，都可以在这里告诉我们。' />
+      <PageHeader title='问题反馈' subtitle='设施、秩序、亲水安全等现场问题，都可以在这里告诉我们。' />
       {submitted ? (
         <View className='success-card'>
           <Text>已收到你的反馈</Text>
@@ -545,7 +550,7 @@ function ReportView({
           </View>
           <View className='form-card'>
             <Text className='field-label'>补充说明</Text>
-            <Textarea value={form.description} placeholder='例如：木栈道边有松动，靠近摩天湾服务点。' onInput={(event) => setForm({ ...form, description: event.detail.value })} />
+            <Textarea value={form.description} placeholder='例如：有人翻越围挡靠近水边，或步道、设施存在松动。' onInput={(event) => setForm({ ...form, description: event.detail.value })} />
           </View>
           <Button className='secondary block compact-upload' onClick={addPhoto}>{photoNotice || `添加照片（${photos.length}/3）`}</Button>
           <View className='form-card'>
@@ -557,7 +562,7 @@ function ReportView({
             <Text className={`switch ${form.anonymous ? 'on' : ''}`}>{form.anonymous ? '开' : '关'}</Text>
           </View>
           {error && <View className='error-card'><Text>{error}</Text></View>}
-          <Button className='primary block sticky-submit' onClick={submit}>提交反馈</Button>
+          <Button className='primary block sticky-submit' loading={submitting} onClick={submit}>{submitting ? '提交中' : '提交反馈'}</Button>
         </View>
       )}
     </View>
@@ -572,39 +577,54 @@ function HelpView({
   cancelHelp,
 }: {
   latestHelp?: SafetyEvent
-  createHelp: () => void
+  createHelp: () => Promise<void>
   openProgress: () => void
-  supplementEvent: (id: string, text: string) => void
-  cancelHelp: () => void
+  supplementEvent: (id: string, text: string) => Promise<SafetyEvent>
+  cancelHelp: () => Promise<void>
 }) {
   const [supplement, setSupplement] = useState('')
   const [saved, setSaved] = useState(false)
   const [supplementError, setSupplementError] = useState('')
 
-  const syncSupplement = () => {
+  const syncSupplement = async () => {
     if (!latestHelp) return
     if (!supplement.trim()) {
       setSupplementError('请先写一点现场信息。')
       return
     }
-    supplementEvent(latestHelp.id, supplement.trim())
-    setSupplement('')
-    setSupplementError('')
-    setSaved(true)
+    try {
+      await supplementEvent(latestHelp.id, supplement.trim())
+      setSupplement('')
+      setSupplementError('')
+      setSaved(true)
+    } catch (error) {
+      setSupplementError('同步失败，请确认后端服务已启动。')
+    }
   }
 
   return (
     <View className='page help-page'>
-      <PageHeader title='一键求助' subtitle='遇到走失、落水风险、身体不适等情况，先求助。' />
+      <PageHeader title='紧急求助' subtitle='报警和急救优先，小程序用于把定位和现场信息同步给江滩工作人员。' />
       {!latestHelp ? (
         <View>
-          <View className='sos-button' onLongPress={createHelp} onClick={createHelp}>
-            <Text>求助</Text>
-            <Text>发送当前位置</Text>
+          <View className='emergency-guide-card'>
+            <Text>先判断情况</Text>
+            <Text>人身危险、冲突纠纷拨打 110；溺水、受伤、身体不适拨打 120。报警后可继续同步当前位置给附近岗点。</Text>
+          </View>
+          <View className='emergency-call-grid'>
+            <Button className='emergency-call police' onClick={() => callEmergency('110')}>
+              <Text>110</Text>
+              <Text>治安 / 人身危险</Text>
+            </Button>
+            <Button className='emergency-call medical' onClick={() => callEmergency('120')}>
+              <Text>120</Text>
+              <Text>溺水 / 受伤不适</Text>
+            </Button>
           </View>
           <View className='content-card center-card'>
-            <Text className='strong-title'>我们会把你的位置发给附近工作人员</Text>
-            <Text className='body-copy'>误触也没关系，提交后可以在进度页取消。</Text>
+            <Text className='strong-title'>同步给江滩工作人员</Text>
+            <Text className='body-copy'>上传定位后，系统会生成高优先级事件，推送给附近巡防和服务岗。它用于现场协同，不能替代报警。</Text>
+            <Button className='secondary block staff-sync-button' onClick={createHelp}>同步位置给工作人员</Button>
           </View>
         </View>
       ) : (
@@ -747,7 +767,7 @@ function StaffWorkView({
   logout,
 }: {
   events: SafetyEvent[]
-  updateEventStatus: (id: string, status: EventStatus, owner?: string, result?: string) => void
+  updateEventStatus: (id: string, status: EventStatus, owner?: string, result?: string) => Promise<SafetyEvent>
   logout: () => void
 }) {
   const [expandedId, setExpandedId] = useState(events[0]?.id || '')
@@ -757,6 +777,22 @@ function StaffWorkView({
   const completedOrders = events.filter((event) => event.status === '已完成')
   const pendingCount = events.filter((event) => event.status === '已提交' || event.status === '已派单').length
   const processingCount = events.length - pendingCount - completedOrders.length
+  const taskCardTone = (item: SafetyEvent) => {
+    if (item.level === '高风险') return 'high-risk'
+    if (item.status === '处理中') return 'processing'
+    return 'pending'
+  }
+  const taskTypeLabel = (item: SafetyEvent) => {
+    if (item.level === '高风险') return '高风险'
+    if (item.source.includes('巡')) return '常规巡检'
+    if (item.kind === 'report') return '设备维护'
+    return item.source
+  }
+  const taskPrimaryLabel = (item: SafetyEvent) => {
+    if (item.level === '高风险' && (item.status === '已提交' || item.status === '已派单')) return '去处理'
+    if (item.status === '处理中') return '完成巡检'
+    return nextAction(item).label
+  }
 
   const nextAction = (item: SafetyEvent) => {
     if (item.status === '已提交' || item.status === '已派单') return { label: '接收任务', next: '已接收' as EventStatus }
@@ -765,16 +801,20 @@ function StaffWorkView({
     return { label: '完成处置', next: '已完成' as EventStatus }
   }
 
-  const advanceOrder = (item: SafetyEvent) => {
+  const advanceOrder = async (item: SafetyEvent) => {
     const action = nextAction(item)
     const isComplete = action.next === '已完成'
-    updateEventStatus(item.id, action.next, '王队', isComplete ? resultText || '现场风险已解除。' : undefined)
-    Taro.showToast({ title: isComplete ? '处置已闭环' : `已更新为${action.next}`, icon: 'none' })
-    if (isComplete) {
-      setResultText('')
-      setExpandedId(activeOrders.find((order) => order.id !== item.id)?.id || '')
-    } else {
-      setExpandedId(item.id)
+    try {
+      await updateEventStatus(item.id, action.next, '王队', isComplete ? resultText || '现场风险已解除。' : undefined)
+      Taro.showToast({ title: isComplete ? '处置已闭环' : `已更新为${action.next}`, icon: 'none' })
+      if (isComplete) {
+        setResultText('')
+        setExpandedId(activeOrders.find((order) => order.id !== item.id)?.id || '')
+      } else {
+        setExpandedId(item.id)
+      }
+    } catch (error) {
+      Taro.showToast({ title: '状态更新失败，请检查后端服务', icon: 'none' })
     }
   }
 
@@ -803,11 +843,15 @@ function StaffWorkView({
       {staffTab === 'ledger' && <StaffLedgerView events={events} />}
       {staffTab === 'mine' && <StaffMineView events={events} logout={logout} />}
       {staffTab === 'tasks' && (
-        <View>
-          <View className='home-metrics'>
-            <MetricCard label='待接收' value={`${pendingCount}`} tone='warn' />
-            <MetricCard label='处理中' value={`${processingCount}`} tone='blue' />
-            <MetricCard label='已完成' value={`${completedOrders.length}`} tone='safe' />
+        <View className='staff-task-dashboard'>
+          <View className='staff-task-metrics'>
+            <View className='staff-task-metric pending'><Text>{pendingCount}</Text><Text>待接收</Text></View>
+            <View className='staff-task-metric processing'><Text>{processingCount}</Text><Text>处理中</Text></View>
+            <View className='staff-task-metric done'><Text>{completedOrders.length}</Text><Text>已完成</Text></View>
+          </View>
+          <View className='staff-task-section-head'>
+            <Text>今日任务</Text>
+            <Text onClick={() => Taro.showToast({ title: '已显示全部任务', icon: 'none' })}>全部 ›</Text>
           </View>
           {activeOrders.length === 0 && (
             <View className='empty-state'>
@@ -815,34 +859,68 @@ function StaffWorkView({
               <Text>当前湾区运行平稳，继续保持巡查节奏。</Text>
             </View>
           )}
-          {activeOrders.map((item) => (
-            <View className={`order-card ${item.level === '高风险' ? 'danger' : ''}`} key={item.id}>
-              <View className='progress-head'>
-                <View>
-                  <Text>{item.title}</Text>
-                  <Text>{item.bay} · {item.source} · 距离 {item.distance}</Text>
-                </View>
-                <Text className={`row-chip ${item.level === '高风险' ? 'danger-chip' : 'warn-chip'}`}>{item.level}</Text>
-              </View>
-              <View className='order-meta-line'><Text>状态：{item.status}</Text><Text>{item.owner}</Text></View>
-              {expandedId === item.id && (
-                <View className='detail-panel'>
-                  <Text>{item.description}</Text>
-                  <Text>处置建议：先确认现场，再按最近路径前往；高风险事件优先闭环。</Text>
-                  <View className='timeline compact-line'>
-                    {statusFlow.map((status) => <Text key={status} className={statusRank[item.status] >= statusRank[status] ? 'active-step' : ''}>{status}</Text>)}
+          <View className='staff-task-list'>
+            {activeOrders.map((item) => (
+              <View className={`staff-task-card ${taskCardTone(item)}`} key={item.id} onClick={() => setExpandedId(expandedId === item.id ? '' : item.id)}>
+                <View className='staff-task-status-bar' />
+                <View className='staff-task-card-head'>
+                  <View className='staff-task-tags'>
+                    <Text className={`staff-task-tag ${item.level === '高风险' ? 'danger' : ''}`}>{taskTypeLabel(item)}</Text>
+                    <Text className='staff-task-tag muted'>{item.status}</Text>
                   </View>
-                  {item.status === '处理中' && (
-                    <Textarea value={resultText} placeholder='填写处置结果，如：已劝离、设施已临时固定。' onInput={(event) => setResultText(event.detail.value)} />
-                  )}
+                  <Text>{item.updatedAt}</Text>
                 </View>
-              )}
-              <View className='order-actions'>
-                <Button className='primary compact wide-action' onClick={() => advanceOrder(item)}>{nextAction(item).label}</Button>
-                <Button className='secondary compact' onClick={() => openDetail('staffOrder', { id: item.id, title: item.title, status: item.status, bay: item.bay, level: item.level })}>工单详情</Button>
+                <Text className='staff-task-title'>{item.title}</Text>
+                <View className='staff-task-location'>
+                  <Text>⌖</Text>
+                  <Text>{item.bay} ({item.distance})</Text>
+                </View>
+                {expandedId === item.id && (
+                  <View className='staff-task-detail'>
+                    <Text>{item.description}</Text>
+                    <Text>负责人：{item.owner} · 来源：{item.source}</Text>
+                    <View className='timeline compact-line'>
+                      {statusFlow.map((status) => <Text key={status} className={statusRank[item.status] >= statusRank[status] ? 'active-step' : ''}>{status}</Text>)}
+                    </View>
+                    {item.status === '处理中' && (
+                      <Textarea value={resultText} placeholder='填写处置结果，如：已劝离、设施已临时固定。' onInput={(event) => setResultText(event.detail.value)} />
+                    )}
+                  </View>
+                )}
+                <View className='staff-task-actions'>
+                  {item.status === '处理中' && (
+                    <Button
+                      className='staff-secondary-action'
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        setExpandedId(item.id)
+                      }}
+                    >
+                      更新进度
+                    </Button>
+                  )}
+                  <Button
+                    className='staff-primary-action'
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      advanceOrder(item)
+                    }}
+                  >
+                    {taskPrimaryLabel(item)}
+                  </Button>
+                  <Button
+                    className='staff-link-action'
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      openDetail('staffOrder', { id: item.id, title: item.title, status: item.status, bay: item.bay, level: item.level })
+                    }}
+                  >
+                    详情
+                  </Button>
+                </View>
               </View>
-            </View>
-          ))}
+            ))}
+          </View>
           <View className='content-card'>
             <CardTitle title='已完成记录' action={`${completedOrders.length}单`} />
             {completedOrders.map((item) => <View className='resource-row' key={item.id}><View><Text>{item.title}</Text><Text>{item.bay} · {item.owner}</Text></View><Text className='row-chip safe-chip'>闭环</Text></View>)}
@@ -996,29 +1074,36 @@ function StaffMineView({ events, logout }: { events: SafetyEvent[]; logout: () =
 
 function MineView({ events, logout }: { events: SafetyEvent[]; logout: () => void }) {
   const myOpen = useMemo(() => events.filter((event) => event.status !== '已完成').length, [events])
-  const rows: Array<{ group: string; items: Array<{ label: string; type: string }> }> = [
-    { group: '我的服务', items: [{ label: '我的求助', type: 'help' }, { label: '我的反馈', type: 'report' }, { label: '失物认领记录', type: 'lost' }] },
-    { group: '说明', items: [{ label: '隐私说明', type: 'privacy' }, { label: '关于江滩服务', type: 'about' }] },
-  ]
+  const serviceRows = [{ label: '我的求助', type: 'help' }, { label: '我的反馈', type: 'report' }, { label: '失物认领记录', type: 'lost' }]
+  const infoRows = [{ label: '隐私说明', type: 'privacy' }, { label: '关于江滩服务', type: 'about' }]
 
   return (
-    <View className='page mine-page'>
-      <PageHeader title='我的' subtitle='微信游客 · 服务记录与安全信息' />
-      <View className='profile-card'>
+    <View className='page mine-page figma-mine'>
+      <View className='mine-topbar'>
+        <Text>我的</Text>
+        <Text>江滩服务</Text>
+      </View>
+      <View className='profile-card figma-profile-card'>
         <View className='avatar'>江</View>
         <View><Text>微信游客</Text><Text>今日记录 {events.length} 条 · 处理中 {myOpen} 条</Text></View>
       </View>
-      <LanguagePicker className='mine-language-picker' />
-      {rows.map((section) => (
-        <View className='mine-section' key={section.group}>
-          <Text>{section.group}</Text>
-          {section.items.map((item) => (
-            <View className='mine-row' key={item.label} onClick={() => openDetail(item.type)}>
-              <Text>{item.label}</Text><Text>›</Text>
-            </View>
-          ))}
-        </View>
-      ))}
+      <View className='mine-section figma-mine-section'>
+        <Text>我的服务</Text>
+        {serviceRows.map((item) => (
+          <View className='mine-row' key={item.label} onClick={() => openDetail(item.type)}>
+            <Text>{item.label}</Text><Text>›</Text>
+          </View>
+        ))}
+      </View>
+      <LanguagePicker className='mine-language-picker compact-language' variant='row' />
+      <View className='mine-section figma-mine-section'>
+        <Text>说明</Text>
+        {infoRows.map((item) => (
+          <View className='mine-row' key={item.label} onClick={() => openDetail(item.type)}>
+            <Text>{item.label}</Text><Text>›</Text>
+          </View>
+        ))}
+      </View>
       <Button className='ghost block logout' onClick={logout}>退出登录</Button>
     </View>
   )

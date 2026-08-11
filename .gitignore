@@ -31,3 +31,6 @@ apps/**/.swc/
 
 # Logs
 *.log
+
+# Local runtime data
+server/data/*.db

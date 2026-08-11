@@ -93,6 +93,12 @@
   </image>
 </template>
 
+<template name="tmpl_0_30">
+  <map longitude="{{i.p17}}" latitude="{{i.p15}}" scale="{{xs.b(i.p24,16)}}" markers="{{i.p18||[]}}" covers="{{i.p2}}" polyline="{{i.p22||[]}}" circles="{{i.p0||[]}}" controls="{{i.p1||[]}}" include-points="{{i.p14||[]}}" show-location="{{i.p27}}" layer-style="{{xs.b(i.p16,1)}}" onMarkerTap="eh" onControlTap="eh" onCalloutTap="eh" onUpdated="eh" onTouchStart="eh" onTouchMove="eh" onTouchEnd="eh" onTouchCancel="eh" onLongTap="eh" skew="{{xs.b(i.p29,0)}}" rotate="{{xs.b(i.p23,0)}}" polygon="{{i.p21||[]}}" include-padding="{{i.p13}}" ground-overlays="{{i.p12||[]}}" tile-overlay="{{i.p30}}" custom-map-style="{{i.p3}}" panels="{{i.p20||[]}}" setting="{{xs.d(i.p25)}}" optimize="{{xs.b(i.p19,false)}}" show-compass="{{xs.b(i.p26,false)}}" show-scale="{{xs.b(i.p28,false)}}" enable-overlooking="{{xs.b(i.p5,false)}}" enable-zoom="{{xs.b(i.p11,true)}}" enable-scroll="{{xs.b(i.p9,true)}}" enable-rotate="{{xs.b(i.p7,false)}}" enable-traffic="{{xs.b(i.p10,false)}}" enable-poi="{{xs.b(i.p6,true)}}" enable-building="{{xs.b(i.p4,true)}}" enable-satellite="{{xs.b(i.p8,false)}}" onRegionChange="eh" onPanelTap="eh" onInitComplete="eh" style="{{i.st}}" class="{{i.cl}}" onTap="eh"  id="{{i.uid||i.sid}}" data-sid="{{i.sid}}">
+    <template is="{{xs.a(0, item.nn)}}" data="{{i:item}}" a:for="{{i.cn}}" a:key="sid" />
+  </map>
+</template>
+
 <template name="tmpl_0_9">
   <block>{{i.v}}</block>
 </template>

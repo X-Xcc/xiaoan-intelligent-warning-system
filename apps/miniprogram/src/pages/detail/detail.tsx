@@ -42,7 +42,7 @@ function DetailContent({ type, params }: { type: DetailType; params: Record<stri
       <View>
         <StatusCard label='当前状态' value={status} desc={`${bay} · 编号 ${id} · 工作人员会持续更新`} tone={level === '高风险' ? 'danger' : 'blue'} />
         <View className='order-summary'>
-          <Text>{title || '游客一键求助'}</Text>
+          <Text>{title || '游客现场协同求助'}</Text>
           <Text>我们已收到你的信息，并同步给附近工作人员。</Text>
           <Text>当前位置：{bay}亲水平台附近。</Text>
           <Text>预计联系：2 分钟内。</Text>
@@ -160,7 +160,7 @@ function DetailContent({ type, params }: { type: DetailType; params: Record<stri
         <StatusCard label='系统定位' value='游客服务助手' desc='帮助游客游得安心、找得到服务、遇事能求助' tone='blue' />
         <View className='info-section'>
           <Text>服务范围</Text>
-          <Text>提供今日提醒、区域开放、附近服务、一键求助、问题反馈和失物招领。</Text>
+          <Text>提供今日提醒、区域开放、附近服务、紧急求助、问题反馈和失物招领。</Text>
         </View>
       </View>
     )
@@ -177,7 +177,7 @@ function DetailContent({ type, params }: { type: DetailType; params: Record<stri
         '儿童请全程陪同，不要单独靠近水边。',
         '橙色围挡外为暂不开放区域，请勿翻越。',
         '发现设施损坏或人员异常，可以先反馈位置。',
-        '紧急情况请直接使用一键求助。',
+        '紧急情况请优先拨打 110 或 120，再同步现场位置。',
       ].map((item) => <View className='policy-row' key={item}><Text>{item}</Text></View>)}
     </View>
   )

@@ -12,6 +12,16 @@ button {
   margin: 0;
 }
 
+view,
+text,
+button,
+map,
+image,
+input,
+textarea {
+  box-sizing: border-box;
+}
+
 .app-shell {
   min-height: 100vh;
   padding-bottom: 118px;
@@ -780,6 +790,7 @@ button {
 
 .block {
   width: 100%;
+  max-width: 100%;
 }
 
 .section-head {
@@ -1319,6 +1330,7 @@ button {
 .form-card textarea,
 .detail-panel textarea {
   width: 100%;
+  max-width: 100%;
   min-height: 156px;
 }
 
@@ -1466,6 +1478,88 @@ button {
   font-size: 23px;
 }
 
+.emergency-sos-button {
+  background: #ba1a1a;
+  box-shadow: 0 18px 38px rgba(186, 26, 26, 0.28);
+}
+
+.staff-sync-button {
+  margin-top: 16px;
+}
+
+.emergency-guide-card {
+  margin-top: 12px;
+  padding: 18px;
+  border-radius: 12px;
+  background: #fff7ed;
+  border: 1px solid rgba(226, 149, 120, 0.45);
+}
+
+.emergency-guide-card text {
+  display: block;
+}
+
+.emergency-guide-card text:first-child {
+  color: #8f2f1c;
+  font-size: 25px;
+  line-height: 1.3;
+  font-weight: 900;
+}
+
+.emergency-guide-card text:last-child {
+  margin-top: 8px;
+  color: #5f4a3f;
+  font-size: 20px;
+  line-height: 1.45;
+}
+
+.emergency-call-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.emergency-call {
+  height: 108px;
+  padding: 12px 8px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  border: none;
+  line-height: 1.2;
+}
+
+.emergency-call text {
+  display: block;
+}
+
+.emergency-call text:first-child {
+  font-size: 34px;
+  font-weight: 900;
+}
+
+.emergency-call text:last-child {
+  margin-top: 8px;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.emergency-call.police {
+  background: #ba1a1a;
+  box-shadow: 0 10px 22px rgba(186, 26, 26, 0.2);
+}
+
+.emergency-call.medical {
+  background: #006d77;
+  box-shadow: 0 10px 22px rgba(0, 109, 119, 0.16);
+}
+
 .help-steps {
   display: grid;
   gap: 12px;
@@ -1553,8 +1647,8 @@ button {
 
 .response-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
   margin: 20px 0;
 }
 
@@ -1593,6 +1687,7 @@ button {
   align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
+  min-width: 0;
 }
 
 .progress-head view {
@@ -1605,6 +1700,7 @@ button {
   color: #173b3a;
   font-size: 28px;
   font-weight: 900;
+  line-height: 1.32;
 }
 
 .progress-head view text:last-child {
@@ -1612,6 +1708,11 @@ button {
   margin-top: 7px;
   color: #71857f;
   font-size: 22px;
+  line-height: 1.35;
+}
+
+.progress-head > text {
+  flex-shrink: 0;
 }
 
 .progress-track {
@@ -1661,7 +1762,9 @@ button {
 
 .timeline text {
   color: #a0b0a9;
-  font-size: 20px;
+  font-size: 18px;
+  line-height: 1.25;
+  text-align: center;
 }
 
 .timeline .active-step {
@@ -2456,6 +2559,1113 @@ button {
 
 .tab-item {
   min-height: 78px;
+}
+
+/* Figma miniprogram redesign */
+.figma-home {
+  padding: 28px 16px 112px;
+  background: #fbfaf7;
+}
+
+.home-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.home-status-wide,
+.home-status-card,
+.home-map-card,
+.home-key-tiles view,
+.home-activity-banner,
+.staff-task-metric,
+.staff-task-card,
+.figma-profile-card,
+.figma-mine-section {
+  background: #fff;
+  border: 1px solid rgba(190, 200, 202, 0.62);
+  box-shadow: 0 2px 8px rgba(0, 109, 119, 0.05);
+}
+
+.home-status-wide {
+  grid-column: 1 / span 2;
+  min-height: 148px;
+  padding: 16px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.home-status-wide view {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
+
+.home-status-wide text,
+.home-status-card text,
+.home-key-tiles text {
+  display: block;
+}
+
+.home-status-wide text:first-child,
+.home-status-card text:first-child,
+.home-key-tiles text:first-child {
+  color: #3e494a;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.home-status-wide text:last-child,
+.home-status-card text:last-child {
+  margin-top: 6px;
+  color: #181c1d;
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.home-status-divider {
+  width: 1px;
+  height: 64px;
+  flex: 0 0 1px;
+  background: #ebeeef;
+}
+
+.home-status-card {
+  min-height: 154px;
+  padding: 24px 18px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.home-status-card.people {
+  background: #fffaf6;
+}
+
+.home-status-card.water {
+  background: #f6fdff;
+}
+
+.home-map-card {
+  position: relative;
+  height: 300px;
+  margin-top: 24px;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.home-map-card .native-map {
+  width: 100%;
+  height: 100%;
+}
+
+.home-map-tools {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.home-map-tools text {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #00535b;
+  background: #fff;
+  border: 1px solid rgba(190, 200, 202, 0.7);
+  font-size: 22px;
+  font-weight: 900;
+  box-shadow: 0 2px 8px rgba(0, 109, 119, 0.08);
+}
+
+.home-key-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.home-key-tiles view {
+  min-height: 82px;
+  padding: 14px 10px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.home-key-tiles text:last-child {
+  margin-top: 8px;
+  color: #00535b;
+  font-size: 26px;
+  line-height: 1.15;
+  font-weight: 900;
+}
+
+.home-section-title {
+  height: 36px;
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.home-section-title text:first-child {
+  color: #181c1d;
+  font-size: 26px;
+  line-height: 1.25;
+  font-weight: 900;
+}
+
+.home-section-title text:last-child {
+  color: #00535b;
+  font-size: 18px;
+  line-height: 1.25;
+  font-weight: 800;
+}
+
+.figma-service-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px 10px;
+  margin-top: 16px;
+}
+
+.figma-service-item {
+  min-width: 0;
+  min-height: 104px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.figma-service-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #006d77;
+  background: #f1f4f4;
+  border: 1px solid rgba(190, 200, 202, 0.5);
+  box-shadow: 0 2px 8px rgba(0, 109, 119, 0.05);
+}
+
+.figma-service-icon text {
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.figma-service-item > text {
+  color: #181c1d;
+  width: 100%;
+  font-size: 19px;
+  line-height: 1.25;
+  font-weight: 800;
+  text-align: center;
+  white-space: normal;
+}
+
+.home-activity-banner {
+  min-height: 54px;
+  margin-top: 24px;
+  padding: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.home-activity-banner text:first-child {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: #e29578;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.home-activity-banner text:last-child {
+  flex: 1;
+  color: #3e494a;
+  font-size: 20px;
+  line-height: 1.35;
+}
+
+.home-report-entry {
+  min-height: 112px;
+  margin-top: 18px;
+  padding: 16px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #fff;
+  border: 1px solid rgba(190, 200, 202, 0.62);
+  box-shadow: 0 2px 8px rgba(0, 109, 119, 0.05);
+}
+
+.home-report-entry view {
+  flex: 1;
+  min-width: 0;
+}
+
+.home-report-entry text {
+  display: block;
+}
+
+.home-report-entry view text:first-child {
+  color: #181c1d;
+  font-size: 24px;
+  line-height: 1.3;
+  font-weight: 900;
+}
+
+.home-report-entry view text:last-child {
+  margin-top: 6px;
+  color: #3e494a;
+  font-size: 18px;
+  line-height: 1.38;
+}
+
+.home-report-entry > text {
+  flex-shrink: 0;
+  min-width: 72px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: #fff;
+  background: #006d77;
+  font-size: 18px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.service-error-card {
+  margin-top: 12px;
+  padding: 14px 16px;
+}
+
+.service-error-card text:first-child {
+  display: block;
+  color: #8f2f1c;
+  font-size: 21px;
+  line-height: 1.3;
+  font-weight: 900;
+}
+
+.service-error-card text:last-child {
+  display: block;
+  margin-top: 4px;
+  color: #735046;
+  font-size: 18px;
+  line-height: 1.35;
+}
+
+.staff-task-dashboard {
+  padding-top: 16px;
+}
+
+.staff-task-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.staff-task-metric {
+  min-height: 82px;
+  padding: 12px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.staff-task-metric text:first-child {
+  color: #00535b;
+  font-size: 30px;
+  line-height: 1.15;
+  font-weight: 900;
+}
+
+.staff-task-metric text:last-child {
+  margin-top: 8px;
+  color: #3e494a;
+  font-size: 18px;
+  line-height: 1.25;
+  font-weight: 800;
+}
+
+.staff-task-metric.pending text:first-child {
+  color: #ba1a1a;
+}
+
+.staff-task-metric.processing {
+  background: #f3fdff;
+}
+
+.staff-task-metric.done text:first-child {
+  color: #236863;
+}
+
+.staff-task-section-head {
+  height: 40px;
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.staff-task-section-head text:first-child {
+  color: #181c1d;
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.staff-task-section-head text:last-child {
+  color: #00535b;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.staff-task-list {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.staff-task-card {
+  position: relative;
+  overflow: hidden;
+  padding: 16px 16px 16px 20px;
+  border-radius: 12px;
+}
+
+.staff-task-status-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: rgba(0, 83, 91, 0.2);
+}
+
+.staff-task-card.high-risk .staff-task-status-bar,
+.staff-task-card.high-risk .staff-primary-action {
+  background: #e29578;
+}
+
+.staff-task-card.processing .staff-task-status-bar {
+  background: #9ff0fb;
+}
+
+.staff-task-card-head,
+.staff-task-actions,
+.staff-task-location {
+  display: flex;
+  align-items: center;
+}
+
+.staff-task-card-head {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.staff-task-card-head > view {
+  flex: 1;
+  min-width: 0;
+}
+
+.staff-task-card-head > text {
+  color: #3e494a;
+  font-size: 20px;
+  line-height: 1.35;
+}
+
+.staff-task-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.staff-task-tag {
+  min-height: 24px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  color: #3e494a;
+  background: #e6e9e9;
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 800;
+}
+
+.staff-task-tag.danger {
+  color: #fff;
+  background: #e29578;
+}
+
+.staff-task-tag.muted {
+  background: #f1f4f4;
+}
+
+.staff-task-card.processing .staff-task-tag.muted {
+  color: #181c1d;
+  background: #9ff0fb;
+}
+
+.staff-task-title {
+  display: block;
+  margin-top: 16px;
+  color: #181c1d;
+  font-size: 28px;
+  line-height: 1.35;
+  font-weight: 900;
+}
+
+.staff-task-location {
+  gap: 6px;
+  padding-bottom: 16px;
+  margin-top: 8px;
+  border-bottom: 1px solid #ebeeef;
+}
+
+.staff-task-location text {
+  color: #3e494a;
+  font-size: 20px;
+  line-height: 1.35;
+}
+
+.staff-task-detail {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f7fbfb;
+}
+
+.staff-task-detail > text {
+  display: block;
+  color: #3e494a;
+  font-size: 20px;
+  line-height: 1.45;
+}
+
+.staff-task-actions {
+  justify-content: stretch;
+  gap: 8px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.staff-primary-action,
+.staff-secondary-action,
+.staff-link-action {
+  height: 44px;
+  margin: 0;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 44px;
+}
+
+.staff-primary-action {
+  flex: 1;
+  min-width: 132px;
+  padding: 0 18px;
+  color: #fff;
+  background: #006d77;
+}
+
+.staff-secondary-action {
+  flex: 1;
+  min-width: 132px;
+  padding: 0 18px;
+  color: #00535b;
+  background: #fff;
+  border: 1px solid #00535b;
+}
+
+.staff-link-action {
+  flex: 0 0 78px;
+  min-width: 78px;
+  padding: 0 14px;
+  color: #00535b;
+  background: #f7fbfb;
+}
+
+.figma-mine {
+  padding: 28px 16px 112px;
+  background: #fbfaf7;
+}
+
+.mine-topbar {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mine-topbar text:first-child {
+  color: #181c1d;
+  font-size: 30px;
+  font-weight: 900;
+}
+
+.mine-topbar text:last-child {
+  color: #3e494a;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.figma-profile-card {
+  margin-top: 16px;
+  padding: 20px 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 109, 119, 0.05);
+}
+
+.figma-profile-card .avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
+  background: #e7f7f5;
+  color: #00535b;
+  font-size: 28px;
+}
+
+.figma-profile-card text:first-child {
+  color: #181c1d;
+  font-size: 28px;
+  line-height: 1.25;
+}
+
+.figma-profile-card text:last-child {
+  margin-top: 6px;
+  color: #3e494a;
+  font-size: 20px;
+  line-height: 1.35;
+}
+
+.figma-mine-section {
+  margin-top: 16px;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 109, 119, 0.05);
+}
+
+.figma-mine-section > text {
+  display: block;
+  padding: 16px;
+  color: #181c1d;
+  font-size: 22px;
+  font-weight: 900;
+  border-bottom: 1px solid #ebeeef;
+}
+
+.figma-mine-section .mine-row {
+  min-height: 65px;
+  padding: 0 16px;
+  border-bottom: 1px solid #ebeeef;
+  font-size: 22px;
+}
+
+.figma-mine-section .mine-row:last-child {
+  border-bottom: 0;
+}
+
+.compact-language {
+  margin-top: 16px;
+}
+
+.home-hero-card {
+  position: relative;
+  min-height: 158px;
+  padding: 22px;
+  overflow: hidden;
+  border-radius: 16px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  color: #fff;
+  background:
+    linear-gradient(135deg, rgba(0, 83, 91, 0.92), rgba(0, 109, 119, 0.86)),
+    linear-gradient(160deg, #9ff0fb, #e29578);
+  box-shadow: 0 12px 28px rgba(0, 109, 119, 0.16);
+}
+
+.home-hero-card::after {
+  content: '';
+  position: absolute;
+  left: -18%;
+  right: -18%;
+  bottom: -94px;
+  height: 170px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  transform: rotate(-8deg);
+}
+
+.home-hero-card > view {
+  position: relative;
+  z-index: 1;
+}
+
+.home-hero-card > view:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.home-hero-card text {
+  display: block;
+}
+
+.home-hero-card > view:first-child text:first-child {
+  font-size: 38px;
+  line-height: 1.15;
+  font-weight: 900;
+}
+
+.home-hero-card > view:first-child text:last-child {
+  margin-top: 10px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 22px;
+  line-height: 1.42;
+}
+
+.home-hero-weather {
+  min-width: 104px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.16);
+  text-align: center;
+}
+
+.home-hero-weather text:first-child {
+  font-size: 32px;
+  font-weight: 900;
+}
+
+.home-hero-weather text:last-child {
+  margin-top: 4px;
+  font-size: 18px;
+}
+
+.figma-home .home-status-grid {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.figma-home .home-status-card {
+  min-height: 104px;
+  padding: 14px 10px;
+  border-radius: 12px;
+  justify-content: center;
+  text-align: center;
+}
+
+.home-status-card.weather {
+  background: #f8fbf9;
+}
+
+.figma-home .home-status-card text:first-child {
+  font-size: 18px;
+}
+
+.figma-home .home-status-card text:last-child {
+  font-size: 24px;
+}
+
+.figma-home .home-map-card {
+  margin-top: 16px;
+  height: 286px;
+  box-shadow: 0 8px 20px rgba(0, 109, 119, 0.08);
+}
+
+.figma-home .home-key-tiles {
+  margin-top: 14px;
+}
+
+.figma-home .figma-service-item {
+  min-height: 104px;
+  padding-top: 0;
+}
+
+.figma-home .figma-service-icon {
+  background: #fff;
+}
+
+.language-picker {
+  padding: 14px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid rgba(190, 200, 202, 0.62);
+  box-shadow: 0 2px 8px rgba(0, 109, 119, 0.05);
+}
+
+.language-picker-head,
+.language-picker-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.language-picker-label {
+  color: #3e494a;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.language-picker-current {
+  color: #00535b;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.language-picker-arrow {
+  color: #8aa09d;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.language-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.language-option {
+  position: relative;
+  min-height: 54px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #f7fbfb;
+  border: 1px solid rgba(190, 200, 202, 0.62);
+}
+
+.language-option text {
+  display: block;
+}
+
+.language-option text:first-child {
+  color: #181c1d;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.language-option text:nth-child(2) {
+  margin-top: 2px;
+  color: #6e7c7d;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.language-option.selected {
+  background: #e7f7f5;
+  border-color: rgba(0, 109, 119, 0.3);
+}
+
+.language-check {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  color: #006d77;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.language-picker.collapsed {
+  padding: 12px 14px;
+}
+
+.language-picker.row,
+.language-picker.row.collapsed {
+  padding: 0;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.language-picker.row .language-picker-head {
+  min-height: 58px;
+  padding: 0 16px;
+}
+
+.language-picker.row .language-picker-label {
+  color: #181c1d;
+  font-size: 22px;
+  line-height: 1.35;
+  font-weight: 900;
+}
+
+.language-picker.row .language-picker-summary {
+  flex-shrink: 0;
+}
+
+.language-picker.row .language-picker-current {
+  color: #00535b;
+  font-size: 20px;
+}
+
+.language-picker.row .language-picker-arrow {
+  color: #8aa09d;
+  font-size: 18px;
+}
+
+.language-picker.row .language-options {
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin-top: 0;
+  padding: 12px 16px 14px;
+  border-top: 1px solid #ebeeef;
+}
+
+.report-page,
+.help-page,
+.progress-page {
+  padding: 22px 16px 124px;
+  background: #fbfaf7;
+}
+
+.report-page .page-header,
+.help-page .page-header,
+.progress-page .page-header {
+  margin-bottom: 12px;
+}
+
+.report-page .page-header text:first-child,
+.help-page .page-header text:first-child,
+.progress-page .page-header text:first-child {
+  font-size: 34px;
+  line-height: 1.18;
+}
+
+.report-page .page-header text:last-child,
+.help-page .page-header text:last-child,
+.progress-page .page-header text:last-child {
+  font-size: 20px;
+  line-height: 1.38;
+}
+
+.report-page .form-card,
+.help-page .form-card,
+.help-page .content-card,
+.help-page .response-card,
+.progress-page .progress-card,
+.progress-page .empty-state {
+  margin-top: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(190, 200, 202, 0.62);
+  box-shadow: 0 2px 8px rgba(0, 109, 119, 0.05);
+}
+
+.report-page .choice-grid {
+  gap: 8px;
+}
+
+.report-page .choice-chip {
+  min-height: 52px;
+  padding: 0 8px;
+  border-radius: 10px;
+  font-size: 20px;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.report-page .bay-choice {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.report-page .field-label,
+.help-page .field-label {
+  margin-bottom: 8px;
+  font-size: 21px;
+}
+
+.report-page .form-card input,
+.report-page .form-card textarea,
+.help-page .form-card textarea {
+  font-size: 22px;
+}
+
+.report-page .form-card textarea,
+.help-page .form-card textarea {
+  min-height: 118px;
+}
+
+.report-page .switch-row {
+  min-height: 58px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font-size: 21px;
+}
+
+.report-page .sticky-submit,
+.help-page .staff-sync-button {
+  margin-top: 14px;
+}
+
+.emergency-guide-card {
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.emergency-guide-card text:first-child {
+  font-size: 23px;
+}
+
+.emergency-guide-card text:last-child {
+  font-size: 19px;
+}
+
+.emergency-call-grid {
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.emergency-call {
+  height: 92px;
+  border-radius: 12px;
+}
+
+.emergency-call text:first-child {
+  font-size: 30px;
+  line-height: 1.1;
+}
+
+.emergency-call text:last-child {
+  margin-top: 6px;
+  font-size: 16px;
+}
+
+.help-page .center-card {
+  text-align: left;
+}
+
+.help-page .strong-title {
+  font-size: 25px;
+  line-height: 1.3;
+}
+
+.help-page .body-copy {
+  margin-top: 8px;
+  font-size: 20px;
+  line-height: 1.45;
+}
+
+.help-page .response-title {
+  margin-top: 12px;
+  font-size: 30px;
+  line-height: 1.25;
+}
+
+.help-page .response-meta {
+  font-size: 20px;
+  line-height: 1.35;
+}
+
+.help-page .response-route {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 10px;
+}
+
+.help-page .response-grid {
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.progress-page .segmented {
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.progress-page .segmented view {
+  min-height: 48px;
+  border-radius: 12px;
+  font-size: 19px;
+}
+
+.progress-page .progress-head {
+  gap: 10px;
+}
+
+.progress-page .progress-head view text:first-child {
+  font-size: 23px;
+  line-height: 1.28;
+}
+
+.progress-page .progress-head view text:last-child {
+  font-size: 18px;
+}
+
+.progress-page .row-chip {
+  min-width: 72px;
+  padding: 7px 10px;
+  font-size: 17px;
+  line-height: 1.2;
+}
+
+.progress-page .timeline {
+  gap: 4px;
+  margin-top: 12px;
+}
+
+.progress-page .timeline text {
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.progress-page .detail-toggle {
+  width: 124px;
+  height: 44px;
+  margin-top: 12px;
+  border-radius: 10px;
+  font-size: 18px;
+  line-height: 44px;
+}
+
+.progress-page .progress-actions {
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.home-report-entry view text:last-child {
+  word-break: break-word;
+}
+
+.tabbar {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.tab-item text {
+  max-width: 100%;
+  text-align: center;
+}
+
+.help-tab text {
+  min-width: 84px;
+  height: 56px;
+  line-height: 56px;
 }
 
 

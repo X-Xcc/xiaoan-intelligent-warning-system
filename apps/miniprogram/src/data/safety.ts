@@ -2,7 +2,7 @@ import type { EventStatus, SafetyEvent } from '@/types/events'
 
 export const bayOptions = ['龙沙湾', '摩天湾', '凤凰湾', '九龙湾', '万紫滩', '千红滩', '观洲湾', '七星湾', '青洲湾']
 
-export const reportCategories = ['设施损坏', '环境卫生', '人流拥挤', '儿童走失', '亲水提醒', '其他']
+export const reportCategories = ['违规野泳', '儿童独自涉水', '设施损坏', '夜间照明异常', '噪音扰民', '其他']
 
 export const statusFlow: EventStatus[] = ['已提交', '已派单', '已接收', '已到达', '处理中', '已完成']
 
@@ -32,7 +32,7 @@ export const initialEvents: SafetyEvent[] = [
     title: '儿童靠近水边',
     bay: '摩天湾',
     level: '高风险',
-    source: '一键求助',
+    source: '现场协同求助',
     status: '已到达',
     owner: '王队',
     distance: '420m',

@@ -32,6 +32,7 @@ import {
   Wrench,
   Zap,
 } from 'lucide-react';
+import { useEffect } from 'react';
 
 type Severity = '紧急' | '高' | '中' | '低';
 type Status = '待派单' | '处理中' | '待复核' | '已闭环';
@@ -47,6 +48,31 @@ type Incident = {
   time: string;
 };
 type ModuleKey = 'events' | 'staff' | 'devices' | 'assets' | 'plans' | 'system';
+type BackendStatus = '已提交' | '已派单' | '已接收' | '已到达' | '处理中' | '已完成';
+type BackendEvent = {
+  id: string;
+  kind: 'help' | 'report' | 'lost';
+  title: string;
+  bay: string;
+  level: '高风险' | '中风险' | '低风险';
+  source: string;
+  status: BackendStatus;
+  owner: string;
+  distance: string;
+  time: string;
+  updatedAt: string;
+};
+type EventsOverview = {
+  stats: {
+    today_events: number;
+    pending_orders: number;
+    online_staff: number;
+    avg_response_minutes: number;
+    completion_rate: number;
+    urgent_events: number;
+  };
+  events: BackendEvent[];
+};
 
 type ManagementRow = {
   name: string;
@@ -56,12 +82,63 @@ type ManagementRow = {
   tag: string;
 };
 
-const initialIncidents: Incident[] = [
-  { id: 'JT-20260801-091', severity: '紧急', title: '游客长按一键求助', area: '三号湾区', source: '小程序 SOS', status: '待派单', owner: '未分配', sla: '03:00', time: '15:28' },
-  { id: 'JT-20260801-088', severity: '高', title: '禁泳区越界识别', area: '二号湾区', source: 'AI 摄像头', status: '处理中', owner: '王队', sla: '06:42', time: '15:16' },
-  { id: 'JT-20260801-076', severity: '中', title: '救生圈箱门异常开启', area: '五号湾区', source: '物联传感器', status: '待复核', owner: '李敏', sla: '11:20', time: '14:52' },
-  { id: 'JT-20260801-063', severity: '低', title: '夜间照明回路波动', area: '六号湾区', source: '巡检上报', status: '已闭环', owner: '陈安', sla: '完成', time: '14:18' },
-];
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8010/api';
+
+async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers: { 'content-type': 'application/json', ...options.headers },
+  });
+  if (!response.ok) throw new Error(`接口请求失败：${response.status}`);
+  return response.json() as Promise<T>;
+}
+
+function dashboardSeverity(event: BackendEvent): Severity {
+  if (event.kind === 'help' && event.level === '高风险') return '紧急';
+  if (event.level === '高风险') return '高';
+  if (event.level === '中风险') return '中';
+  return '低';
+}
+
+function dashboardStatus(status: BackendStatus): Status {
+  if (status === '已完成') return '已闭环';
+  if (status === '已提交' || status === '已派单') return '待派单';
+  return '处理中';
+}
+
+function toIncident(event: BackendEvent): Incident {
+  return {
+    id: event.id,
+    severity: dashboardSeverity(event),
+    title: event.title,
+    area: event.bay,
+    source: event.source,
+    status: dashboardStatus(event.status),
+    owner: event.owner,
+    sla: event.status === '已完成' ? '完成' : event.kind === 'help' ? '03:00' : '12:00',
+    time: event.time,
+  };
+}
+
+async function fetchOverview(): Promise<EventsOverview> {
+  return apiRequest<EventsOverview>('/events/overview');
+}
+
+async function createBackendHelp(): Promise<BackendEvent> {
+  const data = await apiRequest<{ event: BackendEvent }>('/events/help', {
+    method: 'POST',
+    body: JSON.stringify({ bay: '摩天湾', description: '后台人工登记现场求助，请巡防人员核实。' }),
+  });
+  return data.event;
+}
+
+async function updateBackendEvent(id: string, status: BackendStatus, owner?: string, result?: string): Promise<BackendEvent> {
+  const data = await apiRequest<{ event: BackendEvent }>(`/events/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status, owner, result }),
+  });
+  return data.event;
+}
 
 const modules: Array<{ key: ModuleKey; label: string; count: number; icon: typeof LayoutDashboard }> = [
   { key: 'events', label: '事件工单', count: 128, icon: ClipboardCheck },
@@ -75,7 +152,7 @@ const modules: Array<{ key: ModuleKey; label: string; count: number; icon: typeo
 const managementData: Record<ModuleKey, ManagementRow[]> = {
   events: [
     { name: '禁泳区智能告警策略', owner: '安全运营组', status: '启用中', metric: '误报率 4.2%', tag: 'AI 规则' },
-    { name: '游客求助派单流程', owner: '指挥中心', status: '启用中', metric: '平均 2.4 分钟', tag: '自动派单' },
+    { name: '游客协同求助派单流程', owner: '指挥中心', status: '启用中', metric: '平均 2.4 分钟', tag: '自动派单' },
     { name: '险情复核抽检任务', owner: '质控专员', status: '待优化', metric: '抽检 32 单', tag: '闭环质检' },
   ],
   staff: [
@@ -106,7 +183,7 @@ const managementData: Record<ModuleKey, ManagementRow[]> = {
 };
 
 const commandQueue = [
-  { title: '三号湾区 SOS 待确认', detail: '建议派发最近救生员李敏，预计 2 分钟到达', tone: 'danger' },
+  { title: '三号湾区求助待确认', detail: '建议派发最近救生员李敏，预计 2 分钟到达', tone: 'danger' },
   { title: '广播联动已触发', detail: '二号湾区自动播放禁泳提示 3 次', tone: 'info' },
   { title: '巡防路线重排', detail: '根据客流热区，将 A 组前置到三号湾区', tone: 'success' },
 ];
@@ -126,20 +203,29 @@ export function DashboardApp() {
 }
 
 function CommandCenter() {
+  const [overview, setOverview] = useState<EventsOverview | null>(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    fetchOverview()
+      .then((data) => {
+        setOverview(data);
+        setError('');
+      })
+      .catch((err: Error) => setError(err.message));
+  }, []);
+
+  const backendStats = overview?.stats;
   const stats = [
-    { label: '今日险情', value: '18', unit: '起', trend: '+12%', icon: AlertTriangle },
-    { label: '待处置任务', value: '3', unit: '单', trend: '高风险优先', icon: Radio },
-    { label: '在线巡防', value: '12', unit: '人', trend: '3组在线', icon: Users },
-    { label: '平均响应', value: '2.6', unit: '分钟', trend: '较昨日 -0.4', icon: Clock3 },
-    { label: '处置完成率', value: '92', unit: '%', trend: '稳定', icon: ShieldCheck },
+    { label: '今日险情', value: String(backendStats?.today_events ?? 0), unit: '起', trend: '后端实时', icon: AlertTriangle },
+    { label: '待处置任务', value: String(backendStats?.pending_orders ?? 0), unit: '单', trend: '高风险优先', icon: Radio },
+    { label: '在线巡防', value: String(backendStats?.online_staff ?? 0), unit: '人', trend: '3组在线', icon: Users },
+    { label: '平均响应', value: String(backendStats?.avg_response_minutes ?? 0), unit: '分钟', trend: '服务端统计', icon: Clock3 },
+    { label: '处置完成率', value: String(backendStats?.completion_rate ?? 0), unit: '%', trend: '实时闭环', icon: ShieldCheck },
     { label: '当前客流', value: '较高', unit: '', trend: '重点关注', icon: Activity },
   ];
 
-  const alerts = [
-    { level: '高风险', title: '儿童单独涉水', bay: '3号湾区', source: '游客求助', status: '待派单' },
-    { level: '中风险', title: '救生设施损坏', bay: '5号湾区', source: '安全上报', status: '待确认' },
-    { level: '高风险', title: '禁泳区闯入', bay: '2号湾区', source: 'AI预警', status: '已派单' },
-  ];
+  const alerts = overview?.events.filter((event) => event.status !== '已完成').slice(0, 5) ?? [];
 
   return (
     <main className="dashboard-shell">
@@ -164,6 +250,7 @@ function CommandCenter() {
       <section className="dashboard-grid">
         <aside className="panel stats-panel">
           <h2>实时态势</h2>
+          {error && <p className="eyebrow">后端未连接：{error}</p>}
           <div className="stat-list">
             {stats.map((item) => {
               const Icon = item.icon;
@@ -201,11 +288,12 @@ function CommandCenter() {
                 <small>状态：{alert.status}</small>
               </article>
             ))}
+            {alerts.length === 0 && <article className="work-card"><strong>暂无实时险情</strong><p>{error ? '请先启动后端 API 服务' : '当前事件库没有待处置事件'}</p></article>}
           </div>
           <h2 className="subheading">待处置任务</h2>
           <article className="work-card">
-            <strong>任务 #WO20260731001</strong>
-            <p>王队 · 已接收 · 响应 1分20秒</p>
+            <strong>{alerts[0]?.id ?? '暂无任务'}</strong>
+            <p>{alerts[0] ? `${alerts[0].owner} · ${alerts[0].status} · ${alerts[0].updatedAt}` : '等待后端事件同步'}</p>
           </article>
         </aside>
       </section>
@@ -251,8 +339,25 @@ function ConceptMap() {
 }
 function AdminConsole() {
   const [activeModule, setActiveModule] = useState<ModuleKey>('events');
-  const [incidents, setIncidents] = useState<Incident[]>(initialIncidents);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [backendEvents, setBackendEvents] = useState<BackendEvent[]>([]);
   const [priority, setPriority] = useState<'全部' | Severity>('全部');
+  const [syncError, setSyncError] = useState('');
+
+  const loadIncidents = async () => {
+    try {
+      const data = await fetchOverview();
+      setBackendEvents(data.events);
+      setIncidents(data.events.map(toIncident));
+      setSyncError('');
+    } catch (error) {
+      setSyncError(error instanceof Error ? error.message : '后端服务未连接');
+    }
+  };
+
+  useEffect(() => {
+    loadIncidents();
+  }, []);
 
   const visibleIncidents = priority === '全部' ? incidents : incidents.filter((item) => item.severity === priority);
 
@@ -268,33 +373,47 @@ function AdminConsole() {
     ];
   }, [incidents]);
 
-  const createSos = () => {
-    const next: Incident = {
-      id: `JT-${Date.now()}`,
-      severity: '紧急',
-      title: '新增游客一键求助',
-      area: '三号湾区',
-      source: '小程序 SOS',
-      status: '待派单',
-      owner: '未分配',
-      sla: '03:00',
-      time: '刚刚',
-    };
-    setIncidents((current) => [next, ...current]);
-    setActiveModule('events');
-    setPriority('全部');
+  const createHelpEvent = async () => {
+    try {
+      const next = await createBackendHelp();
+      setBackendEvents((current) => [next, ...current]);
+      setIncidents((current) => [toIncident(next), ...current]);
+      setActiveModule('events');
+      setPriority('全部');
+      setSyncError('');
+    } catch (error) {
+      setSyncError(error instanceof Error ? error.message : '登记失败');
+    }
   };
 
-  const dispatchFirst = () => {
-    setIncidents((current) => current.map((item, index) => index === 0 ? { ...item, status: '处理中', owner: '李敏', sla: '02:18' } : item));
+  const dispatchFirst = async () => {
+    const target = backendEvents.find((item) => item.status !== '已完成');
+    if (!target) return;
+    try {
+      const updated = await updateBackendEvent(target.id, '处理中', '李敏');
+      setBackendEvents((current) => current.map((item) => item.id === updated.id ? updated : item));
+      setIncidents((current) => current.map((item) => item.id === updated.id ? toIncident(updated) : item));
+      setSyncError('');
+    } catch (error) {
+      setSyncError(error instanceof Error ? error.message : '派单失败');
+    }
   };
 
-  const closeFirst = () => {
-    setIncidents((current) => current.map((item, index) => index === 0 ? { ...item, status: '已闭环', owner: item.owner === '未分配' ? '李敏' : item.owner, sla: '完成' } : item));
+  const closeFirst = async () => {
+    const target = backendEvents.find((item) => item.status !== '已完成');
+    if (!target) return;
+    try {
+      const updated = await updateBackendEvent(target.id, '已完成', target.owner === '待分配' ? '李敏' : target.owner, '后台确认现场处置完成。');
+      setBackendEvents((current) => current.map((item) => item.id === updated.id ? updated : item));
+      setIncidents((current) => current.map((item) => item.id === updated.id ? toIncident(updated) : item));
+      setSyncError('');
+    } catch (error) {
+      setSyncError(error instanceof Error ? error.message : '闭环失败');
+    }
   };
 
-  const resetDemo = () => {
-    setIncidents(initialIncidents);
+  const refreshData = () => {
+    loadIncidents();
     setActiveModule('events');
     setPriority('全部');
   };
@@ -358,12 +477,13 @@ function AdminConsole() {
               <h2>一套后台统一管理事件、人员、设备、物资和预案</h2>
             </div>
             <div className="summary-actions">
-              <button className="primary-button" type="button" onClick={createSos}><Zap size={16} />模拟 SOS</button>
+              <button className="primary-button" type="button" onClick={createHelpEvent}><Zap size={16} />登记现场求助</button>
               <button type="button" onClick={dispatchFirst}><Radio size={16} />一键派单</button>
               <button type="button" onClick={closeFirst}><CheckCircle2 size={16} />闭环首单</button>
-              <button type="button" onClick={resetDemo}><RotateCcw size={16} />重置</button>
+              <button type="button" onClick={refreshData}><RotateCcw size={16} />刷新数据</button>
             </div>
           </div>
+          {syncError && <p className="eyebrow">后端未连接：{syncError}</p>}
           <div className="kpi-grid">
             {overview.map((item) => {
               const Icon = item.icon;
