@@ -8,6 +8,7 @@
     "apps/miniprogram"
   ],
   "scripts": {
+    "server:dev": ".\\server\\.venv\\Scripts\\python.exe -m uvicorn app.main:app --reload --app-dir server --host 127.0.0.1 --port 8010",
     "dashboard:dev": "npm --workspace apps/dashboard run dev",
     "dashboard:build": "npm --workspace apps/dashboard run build",
     "miniprogram:dev:weapp": "npm --workspace apps/miniprogram run dev:weapp",
