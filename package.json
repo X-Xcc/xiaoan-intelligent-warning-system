@@ -2,18 +2,22 @@
   "name": "jiangtan-zhifang",
   "version": "0.1.0",
   "private": true,
-  "description": "江滩智防项目工作区",
+  "description": "夜市智防项目工作区",
   "workspaces": [
     "apps/dashboard",
     "apps/miniprogram"
   ],
   "scripts": {
-    "server:dev": ".\\server\\.venv\\Scripts\\python.exe -m uvicorn app.main:app --reload --app-dir server --host 127.0.0.1 --port 8010",
+    "server:dev": ".\\server\\.venv\\Scripts\\python.exe .\\scripts\\dev_server.py",
+    "server:verify:event-flow": "cd server && .\\.venv\\Scripts\\python.exe ..\\scripts\\verify_event_flow.py",
     "dashboard:dev": "npm --workspace apps/dashboard run dev",
     "dashboard:build": "npm --workspace apps/dashboard run build",
     "miniprogram:dev:weapp": "npm --workspace apps/miniprogram run dev:weapp",
     "miniprogram:build:weapp": "npm --workspace apps/miniprogram run build:weapp",
     "miniprogram:dev:alipay": "npm --workspace apps/miniprogram run dev:alipay",
     "miniprogram:build:alipay": "npm --workspace apps/miniprogram run build:alipay"
+  },
+  "devDependencies": {
+    "@babel/types": "^7.28.5"
   }
 }

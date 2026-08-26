@@ -8,7 +8,7 @@ router = APIRouter(prefix="/events", tags=["events"])
 
 
 class HelpIn(BaseModel):
-    bay: str = "摩天湾"
+    bay: str = "主街烧烤区"
     description: str | None = None
     latitude: float | None = None
     longitude: float | None = None
@@ -25,8 +25,8 @@ class ReportIn(BaseModel):
 
 
 class LostClaimIn(BaseModel):
-    itemName: str = "儿童蓝色水杯"
-    bay: str = "凤凰湾"
+    itemName: str = "粉色手机"
+    bay: str = "三号门夜食街"
     contact: str | None = None
 
 
@@ -34,6 +34,7 @@ class EventStatusIn(BaseModel):
     status: str
     owner: str | None = None
     result: str | None = None
+    operator: str | None = None
 
 
 class SupplementIn(BaseModel):
@@ -50,6 +51,12 @@ def overview():
     return event_store.overview()
 
 
+@router.get("/night-markets")
+def night_markets():
+    items = event_store.list_night_markets()
+    return {"count": len(items), "items": items}
+
+
 @router.post("/help")
 def create_help(payload: HelpIn):
     event = event_store.create_help_event(
@@ -59,7 +66,7 @@ def create_help(payload: HelpIn):
         longitude=payload.longitude,
         contact=payload.contact,
     )
-    return {"event": event, "message": "求助已同步给工作人员，系统已生成高优先级工单"}
+    return {"event": event, "message": "求助已同步给巡防组，系统已生成高优先级工单"}
 
 
 @router.post("/reports")
@@ -72,19 +79,19 @@ def create_report(payload: ReportIn):
         contact=payload.contact,
         photo_count=payload.photoCount,
     )
-    return {"event": event, "message": "反馈已提交，工作人员会在后台接收处理"}
+    return {"event": event, "message": "上报已提交，指挥端会接收并派单处理"}
 
 
 @router.post("/lost-claims")
 def create_lost_claim(payload: LostClaimIn):
     event = event_store.create_lost_event(payload.itemName, payload.bay, payload.contact)
-    return {"event": event, "message": "失物认领记录已提交服务台"}
+    return {"event": event, "message": "线索记录已提交研判组"}
 
 
 @router.patch("/{event_id}/status")
 def update_status(event_id: str, payload: EventStatusIn):
     try:
-        event = event_store.update_event(event_id, payload.status, payload.owner, payload.result)
+        event = event_store.update_event(event_id, payload.status, payload.owner, payload.result, payload.operator)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     if not event:

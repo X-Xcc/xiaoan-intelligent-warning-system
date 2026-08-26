@@ -48,7 +48,7 @@ export function useSafetyEvents() {
   )
 
   const createHelp = async () => {
-    const next = await createHelpEvent({ bay: '摩天湾' })
+    const next = await createHelpEvent({ bay: '主街烧烤区' })
     replaceEvent(next)
     setLastHelpId(next.id)
     return next
@@ -61,7 +61,7 @@ export function useSafetyEvents() {
     return next
   }
 
-  const createLostClaim = async (itemName = '儿童蓝色水杯') => {
+  const createLostClaim = async (itemName = '粉色手机') => {
     const next = await createLostClaimEvent(itemName)
     replaceEvent(next)
     setProgressFilter('lost')
@@ -78,7 +78,7 @@ export function useSafetyEvents() {
     const target = events.find((event) => event.id === lastHelpId)
     if (!target) return false
 
-    await updateEventStatus(target.id, '已完成', target.owner, '游客确认误触，服务已关闭。')
+    await updateEventStatus(target.id, '已完成', target.owner, '群众确认误触，事件已关闭。')
     setLastHelpId('')
     setProgressFilter('help')
     return true

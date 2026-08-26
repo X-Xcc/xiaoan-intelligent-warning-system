@@ -1,0 +1,231 @@
+- main [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - img "夜市智防" [ref=e6]
+      - generic [ref=e7]:
+        - heading "夜市智防指挥中心" [level=1] [ref=e8]
+        - paragraph [ref=e9]: AI预警 · 空地联动 · 闭环复盘
+    - generic [ref=e10]:
+      - generic [ref=e11]: 后端事件链路
+      - generic [ref=e13]: 在线巡防 18 人
+      - generic [ref=e14]: 未闭环 2 单
+      - link "管理端" [ref=e15] [cursor=pointer]:
+        - /url: /admin
+        - img [ref=e16]
+        - text: 管理端
+        - img [ref=e19]
+  - generic [ref=e21]:
+    - article [ref=e22]:
+      - img [ref=e23]
+      - generic [ref=e25]:
+        - paragraph [ref=e26]: 今日事件
+        - strong [ref=e27]: 3起
+    - article [ref=e28]:
+      - img [ref=e29]
+      - generic [ref=e35]:
+        - paragraph [ref=e36]: 待处置
+        - strong [ref=e37]: 2单
+    - article [ref=e38]:
+      - img [ref=e39]
+      - generic [ref=e42]:
+        - paragraph [ref=e43]: 平均响应
+        - strong [ref=e44]: 2.1分钟
+    - article [ref=e45]:
+      - img [ref=e46]
+      - generic [ref=e49]:
+        - paragraph [ref=e50]: 闭环率
+        - strong [ref=e51]: 33%
+  - generic [ref=e52]:
+    - article [ref=e53]:
+      - img [ref=e55]
+      - generic [ref=e67]:
+        - paragraph [ref=e68]: Skills / Agent / MCP
+        - heading "三号门夜食街 · 烧烤摊前多人推搡" [level=2] [ref=e69]
+        - text: 扫描未闭环风险并推荐处置力量
+    - generic [ref=e70]:
+      - generic [ref=e71]:
+        - img [ref=e72]
+        - generic [ref=e75]: 风险研判 Skill
+        - strong [ref=e76]: 92%
+      - generic [ref=e77]:
+        - img [ref=e78]
+        - generic [ref=e81]: Dispatch Agent
+        - strong [ref=e82]: 188ms
+      - generic [ref=e83]:
+        - img [ref=e84]
+        - generic [ref=e90]: MCP 已连接
+        - strong [ref=e91]: 3/3
+    - generic [ref=e92]:
+      - article [ref=e93]:
+        - strong [ref=e94]: 建议就近派发
+        - paragraph [ref=e95]: 当前 1 个高风险点，优先分配王队或李敏。
+      - article [ref=e96]:
+        - strong [ref=e97]: 数据已对齐
+        - paragraph [ref=e98]: 小程序、指挥端、后台共享 3 条夜市事件记录。
+  - generic [ref=e99]:
+    - complementary [ref=e100]:
+      - generic [ref=e101]:
+        - generic [ref=e102]:
+          - paragraph [ref=e103]: Queue
+          - heading "事件队列" [level=2] [ref=e104]
+        - button "刷新" [ref=e105] [cursor=pointer]:
+          - img [ref=e106]
+          - text: 刷新
+      - generic [ref=e109]:
+        - button "全部" [ref=e110] [cursor=pointer]
+        - button "已提交" [ref=e111] [cursor=pointer]
+        - button "已派单" [ref=e112] [cursor=pointer]
+        - button "已接收" [ref=e113] [cursor=pointer]
+        - button "已到达" [ref=e114] [cursor=pointer]
+        - button "处理中" [ref=e115] [cursor=pointer]
+        - button "已完成" [ref=e116] [cursor=pointer]
+      - generic [ref=e117]:
+        - button "烧烤摊前多人推搡 三号门夜食街 · AI视频预警 · 21:08 已接收" [ref=e118] [cursor=pointer]:
+          - generic [ref=e120]:
+            - strong [ref=e121]: 烧烤摊前多人推搡
+            - generic [ref=e122]: 三号门夜食街 · AI视频预警 · 21:08
+          - emphasis [ref=e123]: 已接收
+        - button "商户一键求助：疑似街霸滋扰 主街烧烤区 · 夜市平安码 · 21:22 已到达" [ref=e124] [cursor=pointer]:
+          - generic [ref=e126]:
+            - strong [ref=e127]: 商户一键求助：疑似街霸滋扰
+            - generic [ref=e128]: 主街烧烤区 · 夜市平安码 · 21:22
+          - emphasis [ref=e129]: 已到达
+        - button "粉色手机疑似扒窃 三号门夜食街 · 群众报警 · 20:48 已完成" [ref=e130] [cursor=pointer]:
+          - generic [ref=e132]:
+            - strong [ref=e133]: 粉色手机疑似扒窃
+            - generic [ref=e134]: 三号门夜食街 · 群众报警 · 20:48
+          - emphasis [ref=e135]: 已完成
+    - generic [ref=e136]:
+      - generic [ref=e137]:
+        - generic [ref=e138]:
+          - paragraph [ref=e139]: Map
+          - heading "夜市商圈实时态势" [level=2] [ref=e140]
+        - generic [ref=e141]:
+          - img [ref=e142]
+          - text: 2 个活跃点
+      - generic "夜市商圈实时智防地图" [ref=e144]:
+        - generic [ref=e145]:
+          - generic:
+            - generic:
+              - button [ref=e146] [cursor=pointer]
+              - button [ref=e148] [cursor=pointer]
+              - button [ref=e150] [cursor=pointer]
+              - button [ref=e152] [cursor=pointer]
+              - button [ref=e154] [cursor=pointer]
+              - button [ref=e156] [cursor=pointer]
+              - button [ref=e158] [cursor=pointer]
+              - button [ref=e160] [cursor=pointer]
+              - button [ref=e162] [cursor=pointer]
+              - button [ref=e164] [cursor=pointer]
+            - generic:
+              - tooltip "主街烧烤区 1":
+                - generic: 主街烧烤区
+                - strong: "1"
+              - tooltip "三号门夜食街 1":
+                - generic: 三号门夜食街
+                - strong: "1"
+              - tooltip "后巷摊位区":
+                - generic: 后巷摊位区
+              - tooltip "停车场入口":
+                - generic: 停车场入口
+              - tooltip "啤酒广场":
+                - generic: 啤酒广场
+              - tooltip "亲子餐饮区":
+                - generic: 亲子餐饮区
+              - tooltip "商户服务站":
+                - generic: 商户服务站
+          - generic:
+            - generic [ref=e166]:
+              - button "Zoom in" [ref=e167] [cursor=pointer]: +
+              - button "Zoom out" [ref=e168] [cursor=pointer]: −
+            - generic [ref=e169]:
+              - link "Leaflet" [ref=e170] [cursor=pointer]:
+                - /url: https://leafletjs.com
+                - img [ref=e171]
+                - text: Leaflet
+              - text: "| ©"
+              - link "OpenStreetMap" [ref=e175] [cursor=pointer]:
+                - /url: https://www.openstreetmap.org/copyright
+        - generic [ref=e176]:
+          - img [ref=e177]
+          - text: 南昌绳金塔美食街 · 智防网格
+        - generic [ref=e180]:
+          - generic [ref=e181]: 高风险
+          - generic [ref=e183]: 待处置
+          - generic [ref=e185]: 平稳网格
+          - generic [ref=e187]: 巡防/装备点
+      - generic [ref=e189]:
+        - button "王队 近" [ref=e190] [cursor=pointer]:
+          - img [ref=e191]
+          - text: 王队
+          - generic [ref=e196]: 近
+        - button "李敏 3分" [ref=e197] [cursor=pointer]:
+          - img [ref=e198]
+          - text: 李敏
+          - generic [ref=e203]: 3分
+        - button "陈安 4分" [ref=e204] [cursor=pointer]:
+          - img [ref=e205]
+          - text: 陈安
+          - generic [ref=e210]: 4分
+        - button "义警联络员 5分" [ref=e211] [cursor=pointer]:
+          - img [ref=e212]
+          - text: 义警联络员
+          - generic [ref=e217]: 5分
+    - complementary [ref=e218]:
+      - generic [ref=e219]:
+        - generic [ref=e220]: 中风险
+        - heading "烧烤摊前多人推搡" [level=2] [ref=e221]
+        - paragraph [ref=e222]: YS-260815-001 · 三号门夜食街 · AI视频预警
+      - paragraph [ref=e226]: 已接收 · 负责人 李敏 · 21:10
+      - generic [ref=e227]:
+        - generic [ref=e228]:
+          - generic [ref=e229]: 位置
+          - strong [ref=e230]: 三号门夜食街
+        - generic [ref=e231]:
+          - generic [ref=e232]: 距离
+          - strong [ref=e233]: 180m
+        - generic [ref=e234]:
+          - generic [ref=e235]: 来源
+          - strong [ref=e236]: AI视频预警
+        - generic [ref=e237]:
+          - generic [ref=e238]: 当前
+          - strong [ref=e239]: 已接收
+      - paragraph [ref=e240]: AI识别到摊位前多人聚集推搡，疑似酒后消费纠纷升级，请附近巡防组先期劝阻。
+      - generic [ref=e241]:
+        - generic [ref=e242]: 派给
+        - combobox "派给" [ref=e243]:
+          - option "王队" [selected]
+          - option "李敏"
+          - option "陈安"
+          - option "义警联络员"
+          - option "最近巡防组"
+          - option "商户义警"
+      - generic [ref=e244]:
+        - button "派单" [ref=e245] [cursor=pointer]:
+          - img [ref=e246]
+          - text: 派单
+        - button "推进到已到达" [ref=e249] [cursor=pointer]:
+          - img [ref=e250]
+          - text: 推进到已到达
+      - textbox "处置结果或复核意见" [ref=e256]
+      - button "复核闭环" [ref=e257] [cursor=pointer]:
+        - img [ref=e258]
+        - text: 复核闭环
+      - generic [ref=e261]:
+        - heading "处置时间线" [level=3] [ref=e262]
+        - article [ref=e263]:
+          - generic [ref=e264]: 14:00
+          - generic [ref=e265]:
+            - strong [ref=e266]: 创建事件 · 已接收
+            - paragraph [ref=e267]: 事件系统 / 李敏 · AI识别到摊位前多人聚集推搡，疑似酒后消费纠纷升级，请附近巡防组先期劝阻。
+  - generic [ref=e268]:
+    - button "登记现场求助" [ref=e269] [cursor=pointer]:
+      - img [ref=e270]
+      - text: 登记现场求助
+    - button "就近派发" [ref=e277] [cursor=pointer]:
+      - img [ref=e278]
+      - text: 就近派发
+    - button "广播联动" [ref=e280] [cursor=pointer]:
+      - img [ref=e281]
+      - text: 广播联动
+    - generic [ref=e284]: 巡防人员小程序刷新后可看到指挥中心派单、处置进度和复盘状态

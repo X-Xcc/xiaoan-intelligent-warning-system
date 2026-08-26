@@ -2,7 +2,7 @@
   "name": "@jiangtan-zhifang/miniprogram",
   "version": "0.1.0",
   "private": true,
-  "description": "江滩智防跨端小程序",
+  "description": "夜市智防跨端小程序",
   "templateInfo": {
     "name": "default",
     "typescript": true,

@@ -1,7 +1,7 @@
 {
   "miniprogramRoot": "apps/miniprogram/dist",
-  "projectname": "jiangtan-zhifang",
-  "description": "jiangtan-zhifang workspace",
+  "projectname": "night-market-zhifang",
+  "description": "night-market-zhifang workspace",
   "setting": {
     "es6": true,
     "postcss": true,

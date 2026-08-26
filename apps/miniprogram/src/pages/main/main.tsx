@@ -57,100 +57,80 @@ const mapMarkerIcons: Record<MarkerTone, string> = {
 const jiangtanMapPoints: JiangtanMapPoint[] = [
   {
     id: 1,
-    bay: '1号泳场',
-    name: '龙沙湾',
-    address: '南昌市东湖区龙华路1号',
-    latitude: 28.7088,
-    longitude: 115.8948,
-    tone: 'safe',
-    summary: '东湖区北段，古豫章文化景观带',
+    bay: '网格A',
+    name: '主街烧烤区',
+    address: '夜市主街中段烧烤摊集中区',
+    latitude: 28.682,
+    longitude: 115.8585,
+    tone: 'danger',
+    summary: '酒后纠纷和桌边围观高发点',
   },
   {
     id: 2,
-    bay: '2号泳场',
-    name: '摩天湾',
-    address: '南昌之星摩天轮旁，红谷滩区赣江沿线',
-    latitude: 28.6531,
-    longitude: 115.8489,
-    tone: 'danger',
-    summary: '背靠南昌之星，夜游人流较集中',
+    bay: '网格B',
+    name: '三号门夜食街',
+    address: '夜市三号门入口及摊位通道',
+    latitude: 28.6842,
+    longitude: 115.8604,
+    tone: 'warn',
+    summary: '扒窃、拥堵和人流交汇点',
   },
   {
     id: 3,
-    bay: '3号泳场',
-    name: '凤凰湾',
-    address: '凤凰洲体育公园内，红谷滩区赣江沿线',
-    latitude: 28.6664,
-    longitude: 115.8366,
+    bay: '网格C',
+    name: '后巷摊位区',
+    address: '主街背侧小巷与临时摊点',
+    latitude: 28.6808,
+    longitude: 115.862,
     tone: 'safe',
-    summary: '亲子友好，临近凤凰洲体育公园',
+    summary: '机器狗巡逻补齐监控盲区',
   },
   {
     id: 4,
-    bay: '4号泳场',
-    name: '九龙湾',
-    address: '九龙湖音乐广场旁，红谷滩区九龙湖片区',
-    latitude: 28.6152,
-    longitude: 115.7952,
+    bay: '网格D',
+    name: '停车场入口',
+    address: '夜市西侧临时停车场',
+    latitude: 28.6794,
+    longitude: 115.8569,
     tone: 'safe',
-    summary: '与九龙湖公园隔街相望',
+    summary: '车辆冲突和散场拥堵关注区',
   },
   {
     id: 5,
-    bay: '5号泳场',
-    name: '万紫滩',
-    address: '朝阳江滩公园内，西湖区赣江沿线',
-    latitude: 28.6387,
-    longitude: 115.8548,
+    bay: '网格E',
+    name: '啤酒广场',
+    address: '夜市中心啤酒广场',
+    latitude: 28.6832,
+    longitude: 115.8562,
     tone: 'warn',
-    summary: '朝阳江滩公园核心区域之一',
+    summary: '醉酒滋事和群体聚集高发点',
   },
   {
     id: 6,
-    bay: '6号泳场',
-    name: '千红滩',
-    address: '朝阳江滩公园内，西湖区赣江沿线',
-    latitude: 28.6405,
-    longitude: 115.8509,
+    bay: '网格F',
+    name: '亲子餐饮区',
+    address: '夜市东侧家庭餐饮片区',
+    latitude: 28.6853,
+    longitude: 115.8581,
     tone: 'safe',
-    summary: '与万紫滩相邻，坡度平缓',
+    summary: '客流平稳，义警巡查在线',
   },
   {
     id: 7,
-    bay: '7号泳场',
-    name: '观洲湾',
-    address: '朝阳江滩公园内，西湖区赣江沿线',
-    latitude: 28.6432,
-    longitude: 115.8468,
-    tone: 'safe',
-    summary: '标准深水区，适合游泳爱好者',
-  },
-  {
-    id: 8,
-    bay: '8号泳场',
-    name: '七星湾',
-    address: '东新街道赣江昌南外滩公园，南昌县',
-    latitude: 28.5886,
-    longitude: 115.8294,
-    tone: 'safe',
-    summary: '配套完善，可一站式露营、骑行、戏水',
-  },
-  {
-    id: 9,
-    bay: '9号泳场',
-    name: '青洲湾',
-    address: '蒋巷镇洲头西侧，南昌县',
-    latitude: 28.5719,
-    longitude: 115.8178,
+    bay: '网格G',
+    name: '商户服务站',
+    address: '夜市综合服务与平安码咨询点',
+    latitude: 28.6815,
+    longitude: 115.8551,
     tone: 'service',
-    summary: '保留原生湿地风貌，适合野趣江景',
+    summary: '商户义警、急救物资和便民服务点',
   },
 ]
 
 const staffPatrolPoints: JiangtanMapPoint[] = [
-  { id: 31, bay: '巡防点', name: 'A03 服务岗亭', address: '摩天湾附近巡防岗', latitude: 28.6649, longitude: 115.8378, tone: 'service', summary: '王队在线，距摩天湾 360m' },
-  { id: 32, bay: '巡防点', name: '亲水平台巡逻点', address: '凤凰湾西侧巡逻点', latitude: 28.6669, longitude: 115.8348, tone: 'service', summary: '李敏在线，距凤凰湾 520m' },
-  { id: 33, bay: '巡防点', name: '万紫滩联动岗', address: '朝阳江滩公园联动岗', latitude: 28.6381, longitude: 115.8496, tone: 'service', summary: '赵师傅在线，处置设施工单' },
+  { id: 31, bay: '巡防点', name: 'PTU快反点', address: '主街烧烤区东侧巡防岗', latitude: 28.6827, longitude: 115.8593, tone: 'service', summary: '王队在线，距主街烧烤区 90m' },
+  { id: 32, bay: '巡防点', name: '无人机机巢', address: '三号门夜食街楼顶机巢', latitude: 28.6847, longitude: 115.861, tone: 'service', summary: '李敏在线，空中巡查待命' },
+  { id: 33, bay: '巡防点', name: '机器狗巡逻点', address: '后巷摊位区入口', latitude: 28.6804, longitude: 115.8614, tone: 'service', summary: '陈安在线，补盲巡逻中' },
 ]
 
 const jiangtanIncludePoints: MapProps.point[] = jiangtanMapPoints.map(({ latitude, longitude }) => ({ latitude, longitude }))
@@ -238,8 +218,6 @@ export default function MainPage() {
     createReport,
     createLostClaim,
     updateEventStatus,
-    cancelLatestHelp,
-    supplementEvent,
   } = useSafetyEvents()
 
   useEffect(() => {
@@ -295,10 +273,6 @@ export default function MainPage() {
             latestHelp={latestHelp}
             createHelp={sendHelp}
             openProgress={() => openProgress('help')}
-            supplementEvent={supplementEvent}
-            cancelHelp={async () => {
-              if (await cancelLatestHelp()) openProgress('help')
-            }}
           />
         )}
         {tab === 'progress' && (
@@ -336,20 +310,20 @@ function HomeView({
   const latest = activeEvents[0]
   const homeMapMarkers = useMemo(() => createMapMarkers(jiangtanMapPoints), [])
   const serviceItems = [
-    { key: 'rescue', title: '服务岗亭', desc: 'AED 饮水 卫生间', icon: '岗' },
-    { key: 'guide', title: '游玩提醒', desc: '天气 人流 亲水提示', icon: '游' },
-    { key: 'parking', title: '停车路线', desc: '停车场与入口导航', icon: '停' },
-    { key: 'station', title: '应急驿站', desc: '医药箱 服务台', icon: '站' },
-    { key: 'lost', title: '失物招领', desc: '找物品 登记线索', icon: '物' },
-    { key: 'report', title: '隐患上报', desc: '野泳 设施 噪音', icon: '报' },
+    { key: 'rescue', title: '联动点位', desc: 'PTU AED 卫生间', icon: '点' },
+    { key: 'guide', title: '夜市提醒', desc: '客流 风险 巡防建议', icon: '智' },
+    { key: 'parking', title: '停车疏导', desc: '停车场与出口导航', icon: '停' },
+    { key: 'station', title: '商户服务站', desc: '平安码 义警联络', icon: '站' },
+    { key: 'lost', title: '失物线索', desc: '遗失 扒窃 轨迹', icon: '线' },
+    { key: 'report', title: '隐患上报', desc: '街霸 斗殴 噪音', icon: '报' },
   ]
 
   return (
     <View className='page home-page figma-home'>
       <View className='home-hero-card'>
         <View>
-          <Text>今日江滩</Text>
-          <Text>两滩七湾开放中，摩天湾客流稍多</Text>
+          <Text>夜市智防</Text>
+          <Text>主街烧烤区关注中，三号门客流稍多</Text>
         </View>
         <View className='home-hero-weather'>
           <Text>29°C</Text>
@@ -367,16 +341,16 @@ function HomeView({
 
       <View className='home-status-grid'>
         <View className='home-status-card weather'>
-          <Text>今日状态</Text>
-          <Text>适宜游玩</Text>
+          <Text>今日态势</Text>
+          <Text>重点巡防</Text>
         </View>
         <View className='home-status-card people' onClick={() => openDetail('bay')}>
-          <Text>人流</Text>
+          <Text>客流</Text>
           <Text>稍多</Text>
         </View>
         <View className='home-status-card water' onClick={() => openDetail('guide')}>
-          <Text>水位</Text>
-          <Text>稳定</Text>
+          <Text>AI预警</Text>
+          <Text>在线</Text>
         </View>
       </View>
 
@@ -385,8 +359,8 @@ function HomeView({
           className='native-map'
           longitude={jiangtanCenter.longitude}
           latitude={jiangtanCenter.latitude}
-          scale={12}
-          minScale={10}
+          scale={16}
+          minScale={14}
           maxScale={18}
           markers={homeMapMarkers}
           includePoints={jiangtanIncludePoints}
@@ -409,22 +383,22 @@ function HomeView({
 
       <View className='home-key-tiles'>
         <View onClick={() => openDetail('bay')}>
-          <Text>开放湾区</Text>
-          <Text>9处</Text>
+          <Text>智防网格</Text>
+          <Text>7处</Text>
         </View>
         <View onClick={() => openDetail('guide')}>
           <Text>巡防状态</Text>
           <Text>在线</Text>
         </View>
         <View onClick={() => openDetail('rescue')}>
-          <Text>最近服务</Text>
-          <Text>360m</Text>
+          <Text>最近联动</Text>
+          <Text>90m</Text>
         </View>
       </View>
 
       <View className='home-section-title'>
-        <Text>便民服务</Text>
-        <Text onClick={() => openDetail('rescue')}>附近设施</Text>
+        <Text>夜市服务</Text>
+        <Text onClick={() => openDetail('rescue')}>联动点位</Text>
       </View>
 
       <View className='figma-service-grid'>
@@ -438,7 +412,7 @@ function HomeView({
                 return
               }
               if (item.key === 'lost') {
-                createLostClaim().catch(() => Taro.showToast({ title: '失物登记提交失败', icon: 'none' }))
+                createLostClaim().catch(() => Taro.showToast({ title: '线索登记提交失败', icon: 'none' }))
                 return
               }
               openDetail(item.key === 'parking' || item.key === 'station' ? 'rescue' : item.key)
@@ -452,15 +426,15 @@ function HomeView({
 
       <View className='home-report-entry' onClick={() => setTab('report')}>
         <View>
-          <Text>群众随手拍 · 隐患上报</Text>
-          <Text>发现违规野泳、设施损坏、噪音扰民等问题，可提交点位和照片，后续在进度页查看处置结果。</Text>
+          <Text>群众随手拍 · 夜市隐患上报</Text>
+          <Text>发现街霸滋扰、打架苗头、扒窃线索、噪音扰民等问题，可提交点位和照片，后续在进度页查看处置结果。</Text>
         </View>
         <Text>去上报</Text>
       </View>
 
       <View className='home-activity-banner' onClick={() => latest ? openDetail('serviceOrder', { id: latest.id, title: latest.title, status: latest.status, bay: latest.bay, level: latest.level }) : openDetail('guide')}>
         <Text>!</Text>
-        <Text>{latest ? `${latest.title} · ${latest.status}` : '今天服务运行平稳，巡防、救生岗和便民设施在线'}</Text>
+        <Text>{latest ? `${latest.title} · ${latest.status}` : '今晚运行平稳，巡防组、商户义警和智能装备在线'}</Text>
       </View>
     </View>
   )
@@ -473,7 +447,7 @@ function ReportView({
   createReport: (form: ReportForm, photoCount: number) => Promise<SafetyEvent>
   openProgress: () => void
 }) {
-  const [form, setForm] = useState<ReportForm>({ category: '违规野泳', bay: '摩天湾', description: '', contact: '', anonymous: false })
+  const [form, setForm] = useState<ReportForm>({ category: '街霸滋扰', bay: '主街烧烤区', description: '', contact: '', anonymous: false })
   const [photos, setPhotos] = useState<string[]>([])
   const [submitted, setSubmitted] = useState<SafetyEvent | null>(null)
   const [error, setError] = useState('')
@@ -517,19 +491,19 @@ function ReportView({
 
   return (
     <View className='page report-page'>
-      <PageHeader title='问题反馈' subtitle='设施、秩序、亲水安全等现场问题，都可以在这里告诉我们。' />
+      <PageHeader title='隐患上报' subtitle='街霸滋扰、摊位纠纷、扒窃线索、噪音扰民等现场问题，都可以在这里告诉我们。' />
       {submitted ? (
         <View className='success-card'>
-          <Text>已收到你的反馈</Text>
+          <Text>已收到你的上报</Text>
           <Text>编号 {submitted.id}</Text>
-          <Text>{submitted.bay} · {submitted.title} · 工作人员会尽快查看</Text>
+          <Text>{submitted.bay} · {submitted.title} · 巡防组会尽快查看</Text>
           <Button className='primary block' onClick={openProgress}>查看进度</Button>
-          <Button className='ghost block' onClick={() => setSubmitted(null)}>继续反馈</Button>
+          <Button className='ghost block' onClick={() => setSubmitted(null)}>继续上报</Button>
         </View>
       ) : (
         <View>
           <View className='form-card'>
-            <Text className='field-label'>想反馈什么？</Text>
+            <Text className='field-label'>想上报什么？</Text>
             <View className='choice-grid'>
               {reportCategories.map((category) => (
                 <View key={category} className={`choice-chip ${form.category === category ? 'selected' : ''}`} onClick={() => setForm({ ...form, category })}>
@@ -550,120 +524,67 @@ function ReportView({
           </View>
           <View className='form-card'>
             <Text className='field-label'>补充说明</Text>
-            <Textarea value={form.description} placeholder='例如：有人翻越围挡靠近水边，或步道、设施存在松动。' onInput={(event) => setForm({ ...form, description: event.detail.value })} />
+            <Textarea value={form.description} placeholder='例如：有人酒后拍桌威胁商户，或发现疑似扒窃人员在三号门徘徊。' onInput={(event) => setForm({ ...form, description: event.detail.value })} />
           </View>
           <Button className='secondary block compact-upload' onClick={addPhoto}>{photoNotice || `添加照片（${photos.length}/3）`}</Button>
           <View className='form-card'>
             <Text className='field-label'>联系方式</Text>
-            <Input value={form.contact} placeholder='可选，方便工作人员回访' onInput={(event) => setForm({ ...form, contact: event.detail.value })} />
+            <Input value={form.contact} placeholder='可选，方便巡防组回访' onInput={(event) => setForm({ ...form, contact: event.detail.value })} />
           </View>
           <View className='switch-row' onClick={() => setForm({ ...form, anonymous: !form.anonymous })}>
-            <Text>{form.anonymous ? '已选择匿名反馈' : '实名反馈，点击切换匿名'}</Text>
+            <Text>{form.anonymous ? '已选择匿名上报' : '实名上报，点击切换匿名'}</Text>
             <Text className={`switch ${form.anonymous ? 'on' : ''}`}>{form.anonymous ? '开' : '关'}</Text>
           </View>
           {error && <View className='error-card'><Text>{error}</Text></View>}
-          <Button className='primary block sticky-submit' loading={submitting} onClick={submit}>{submitting ? '提交中' : '提交反馈'}</Button>
+          <Button className='primary block sticky-submit' loading={submitting} onClick={submit}>{submitting ? '提交中' : '提交上报'}</Button>
         </View>
       )}
     </View>
   )
 }
+
 
 function HelpView({
   latestHelp,
   createHelp,
   openProgress,
-  supplementEvent,
-  cancelHelp,
 }: {
   latestHelp?: SafetyEvent
   createHelp: () => Promise<void>
   openProgress: () => void
-  supplementEvent: (id: string, text: string) => Promise<SafetyEvent>
-  cancelHelp: () => Promise<void>
 }) {
-  const [supplement, setSupplement] = useState('')
-  const [saved, setSaved] = useState(false)
-  const [supplementError, setSupplementError] = useState('')
+  const [sending, setSending] = useState(false)
 
-  const syncSupplement = async () => {
-    if (!latestHelp) return
-    if (!supplement.trim()) {
-      setSupplementError('请先写一点现场信息。')
+  const launchHelp = async () => {
+    if (latestHelp) {
+      openProgress()
       return
     }
+    setSending(true)
     try {
-      await supplementEvent(latestHelp.id, supplement.trim())
-      setSupplement('')
-      setSupplementError('')
-      setSaved(true)
+      await createHelp()
+      Taro.showToast({ title: '已发起一键报警', icon: 'none' })
     } catch (error) {
-      setSupplementError('同步失败，请确认后端服务已启动。')
+      Taro.showToast({ title: '报警失败，请重试', icon: 'none' })
+    } finally {
+      setSending(false)
     }
   }
 
   return (
-    <View className='page help-page'>
-      <PageHeader title='紧急求助' subtitle='报警和急救优先，小程序用于把定位和现场信息同步给江滩工作人员。' />
-      {!latestHelp ? (
-        <View>
-          <View className='emergency-guide-card'>
-            <Text>先判断情况</Text>
-            <Text>人身危险、冲突纠纷拨打 110；溺水、受伤、身体不适拨打 120。报警后可继续同步当前位置给附近岗点。</Text>
-          </View>
-          <View className='emergency-call-grid'>
-            <Button className='emergency-call police' onClick={() => callEmergency('110')}>
-              <Text>110</Text>
-              <Text>治安 / 人身危险</Text>
-            </Button>
-            <Button className='emergency-call medical' onClick={() => callEmergency('120')}>
-              <Text>120</Text>
-              <Text>溺水 / 受伤不适</Text>
-            </Button>
-          </View>
-          <View className='content-card center-card'>
-            <Text className='strong-title'>同步给江滩工作人员</Text>
-            <Text className='body-copy'>上传定位后，系统会生成高优先级事件，推送给附近巡防和服务岗。它用于现场协同，不能替代报警。</Text>
-            <Button className='secondary block staff-sync-button' onClick={createHelp}>同步位置给工作人员</Button>
-          </View>
-        </View>
-      ) : (
-        <View>
-          <View className='response-card'>
-            <Text className='row-chip safe-chip'>{latestHelp.status}</Text>
-            <Text className='response-title'>工作人员正在赶来</Text>
-            <Text className='response-meta'>求助编号 {latestHelp.id} · 预计 2 分钟内联系你</Text>
-            <View className='response-route'>
-              <Text>当前位置已同步</Text>
-              <Text>{latestHelp.bay}亲水平台外侧 · 请留在原地或明显地标旁</Text>
-            </View>
-            <View className='response-grid'>
-              <MetricCard label='负责人' value={latestHelp.owner} tone='blue' />
-              <MetricCard label='位置' value={latestHelp.bay} tone='safe' />
-              <MetricCard label='距离' value={latestHelp.distance} tone='warn' />
-            </View>
-            <Button className='primary block' onClick={openProgress}>查看进度</Button>
-            <Button className='ghost block' onClick={cancelHelp}>误触取消</Button>
-          </View>
-          <View className='form-card'>
-            <Text className='field-label'>补充一句现场情况</Text>
-            <Textarea
-              value={supplement}
-              placeholder='例如：老人摔倒，需要轮椅；孩子走散，穿蓝色上衣。'
-              onInput={(event) => {
-                setSupplement(event.detail.value)
-                setSaved(false)
-              }}
-            />
-            {supplementError && <View className='error-card'><Text>{supplementError}</Text></View>}
-            <Button className='secondary block' onClick={syncSupplement}>{saved ? '已同步给工作人员' : '同步补充信息'}</Button>
-          </View>
-        </View>
-      )}
+    <View className='page help-page help-hero-page'>
+      <View className='help-stage'>
+        <View className='help-halo help-halo-one' />
+        <View className='help-halo help-halo-two' />
+        <Button className={`help-orb ${latestHelp ? 'active' : ''}`} loading={sending} disabled={sending} onClick={launchHelp}>
+          <Text className='help-orb-kicker'>{latestHelp ? '求助处理中' : '一键报警'}</Text>
+          <Text className='help-orb-title'>SOS</Text>
+          <Text className='help-orb-sub'>{latestHelp ? '点击查看处置进度' : '同步定位给巡防组'}</Text>
+        </Button>
+      </View>
     </View>
   )
 }
-
 function ProgressView({
   events,
   filter,
@@ -680,13 +601,13 @@ function ProgressView({
   const visibleEvents = filter === 'all' ? events : events.filter((event) => event.kind === filter)
   return (
     <View className='page progress-page'>
-      <PageHeader title='我的进度' subtitle='求助、反馈、失物登记都会在这里更新。' />
+      <PageHeader title='我的进度' subtitle='求助、上报、线索登记都会在这里更新。' />
       <View className='segmented'>
         {[
           ['all', '全部'],
           ['help', '求助'],
-          ['report', '反馈'],
-          ['lost', '失物'],
+          ['report', '上报'],
+          ['lost', '线索'],
         ].map(([key, label]) => (
           <View key={key} className={filter === key ? 'selected' : ''} onClick={() => setFilter(key as 'all' | EventKind)}>
             <Text>{label}</Text>
@@ -696,10 +617,10 @@ function ProgressView({
       {visibleEvents.length === 0 && (
         <View className='empty-state'>
           <Text>还没有记录</Text>
-          <Text>可以先发起求助，或反馈一个现场问题。</Text>
+          <Text>可以先发起求助，或上报一个现场问题。</Text>
           <View>
             <Button className='primary compact' onClick={goHelp}>去求助</Button>
-            <Button className='secondary compact' onClick={goReport}>去反馈</Button>
+            <Button className='secondary compact' onClick={goReport}>去上报</Button>
           </View>
         </View>
       )}
@@ -720,7 +641,7 @@ function ProgressView({
         </View>
       ))}
       <View className='progress-actions'>
-        <Button className='secondary compact' onClick={goReport}>新增反馈</Button>
+        <Button className='secondary compact' onClick={goReport}>新增上报</Button>
         <Button className='primary compact' onClick={goHelp}>再次求助</Button>
       </View>
     </View>
@@ -743,11 +664,11 @@ function StaffLoginView({ back, login }: { back: () => void; login: () => void }
 
   return (
     <View className='page with-top'>
-      <PageHeader title='工作人员登录' subtitle='登录后查看派发工单和处置任务。' />
+      <PageHeader title='巡防人员登录' subtitle='登录后查看派发工单和处置任务。' />
       <View className='form-card elevated'>
         <View className='field'>
           <Text>工号</Text>
-          <Input value={staffId} placeholder='请输入工号，如 JT001' onInput={(event) => setStaffId(event.detail.value)} />
+          <Input value={staffId} placeholder='请输入工号，如 YS001' onInput={(event) => setStaffId(event.detail.value)} />
         </View>
         <View className='field'>
           <Text>密码</Text>
@@ -755,7 +676,7 @@ function StaffLoginView({ back, login }: { back: () => void; login: () => void }
         </View>
         {error && <View className='error-card'><Text>{error}</Text></View>}
         <Button className='primary block' onClick={submit}>登录查看工单</Button>
-        <Button className='ghost block' onClick={back}>返回游客端</Button>
+        <Button className='ghost block' onClick={back}>返回群众端</Button>
       </View>
     </View>
   )
@@ -784,13 +705,14 @@ function StaffWorkView({
   }
   const taskTypeLabel = (item: SafetyEvent) => {
     if (item.level === '高风险') return '高风险'
-    if (item.source.includes('巡')) return '常规巡检'
-    if (item.kind === 'report') return '设备维护'
+    if (item.source.includes('AI')) return 'AI预警'
+    if (item.kind === 'report') return '秩序处置'
+    if (item.kind === 'lost') return '线索研判'
     return item.source
   }
   const taskPrimaryLabel = (item: SafetyEvent) => {
     if (item.level === '高风险' && (item.status === '已提交' || item.status === '已派单')) return '去处理'
-    if (item.status === '处理中') return '完成巡检'
+    if (item.status === '处理中') return '完成处置'
     return nextAction(item).label
   }
 
@@ -805,7 +727,7 @@ function StaffWorkView({
     const action = nextAction(item)
     const isComplete = action.next === '已完成'
     try {
-      await updateEventStatus(item.id, action.next, '王队', isComplete ? resultText || '现场风险已解除。' : undefined)
+      await updateEventStatus(item.id, action.next, '王队', isComplete ? resultText || '现场风险已解除，已同步指挥端复盘。' : undefined)
       Taro.showToast({ title: isComplete ? '处置已闭环' : `已更新为${action.next}`, icon: 'none' })
       if (isComplete) {
         setResultText('')
@@ -823,7 +745,7 @@ function StaffWorkView({
       <View className='staff-top'>
         <View>
           <Text>巡防工作台</Text>
-          <Text>王队 · 在线 · 摩天湾优先响应</Text>
+          <Text>王队 · 在线 · 主街烧烤区优先响应</Text>
         </View>
         <Button className='ghost mini-btn' onClick={logout}>退出</Button>
       </View>
@@ -856,7 +778,7 @@ function StaffWorkView({
           {activeOrders.length === 0 && (
             <View className='empty-state'>
               <Text>暂无待处理工单</Text>
-              <Text>当前湾区运行平稳，继续保持巡查节奏。</Text>
+              <Text>当前夜市网格运行平稳，继续保持巡查节奏。</Text>
             </View>
           )}
           <View className='staff-task-list'>
@@ -883,7 +805,7 @@ function StaffWorkView({
                       {statusFlow.map((status) => <Text key={status} className={statusRank[item.status] >= statusRank[status] ? 'active-step' : ''}>{status}</Text>)}
                     </View>
                     {item.status === '处理中' && (
-                      <Textarea value={resultText} placeholder='填写处置结果，如：已劝离、设施已临时固定。' onInput={(event) => setResultText(event.detail.value)} />
+                      <Textarea value={resultText} placeholder='填写处置结果，如：已劝离滋事人员，商户恢复经营秩序。' onInput={(event) => setResultText(event.detail.value)} />
                     )}
                   </View>
                 )}
@@ -963,7 +885,7 @@ function StaffMapView({ events }: { events: SafetyEvent[] }) {
   return (
     <View className='staff-subpage'>
       <View className='staff-summary-card'>
-        <Text>两滩七湾态势</Text>
+        <Text>夜市商圈态势</Text>
         <Text>当前有 {activeCount} 个任务需要巡防力量关注</Text>
       </View>
       <View className='staff-map'>
@@ -971,8 +893,8 @@ function StaffMapView({ events }: { events: SafetyEvent[] }) {
           className='native-map'
           longitude={jiangtanCenter.longitude}
           latitude={jiangtanCenter.latitude}
-          scale={12}
-          minScale={10}
+          scale={16}
+          minScale={14}
           maxScale={19}
           markers={staffMapMarkers}
           includePoints={staffIncludePoints}
@@ -993,11 +915,11 @@ function StaffMapView({ events }: { events: SafetyEvent[] }) {
         <View><View className='legend-dot safe' /><Text>正常</Text></View>
         <View><View className='legend-dot warn' /><Text>关注</Text></View>
         <View><View className='legend-dot danger' /><Text>重点</Text></View>
-        <View><View className='legend-dot service' /><Text>巡防/服务</Text></View>
+        <View><View className='legend-dot service' /><Text>巡防/装备</Text></View>
       </View>
       <View className='content-card'>
         <CardTitle title='附近巡防力量' action='3 组在线' />
-        {['A03 服务岗亭 · 王队 · 360m', '亲水平台 · 李敏 · 520m', '万紫滩 · 赵师傅 · 1.1km'].map((item) => (
+        {['PTU快反点 · 王队 · 90m', '无人机机巢 · 李敏 · 待命', '机器狗巡逻点 · 陈安 · 后巷补盲'].map((item) => (
           <View className='resource-row' key={item}>
             <Text>{item}</Text>
             <Text className='row-chip safe-chip'>在线</Text>
@@ -1034,7 +956,7 @@ function StaffLedgerView({ events }: { events: SafetyEvent[] }) {
       </View>
       <View className='content-card'>
         <CardTitle title='闭环提醒' action='今日' />
-        <Text className='body-copy'>完成处置后请及时填写结果，系统会同步给游客端和 Web 指挥舱。</Text>
+        <Text className='body-copy'>完成处置后请及时填写结果，系统会同步给群众端和 Web 指挥舱。</Text>
       </View>
     </View>
   )
@@ -1049,7 +971,7 @@ function StaffMineView({ events, logout }: { events: SafetyEvent[]; logout: () =
         <View className='staff-avatar'>王</View>
         <View>
           <Text>王队</Text>
-          <Text>江滩巡防 · 摩天湾</Text>
+          <Text>夜市巡防 · 主街烧烤区</Text>
         </View>
         <Text className='online-dot'>在线</Text>
       </View>
@@ -1067,28 +989,28 @@ function StaffMineView({ events, logout }: { events: SafetyEvent[]; logout: () =
           </View>
         ))}
       </View>
-      <Button className='ghost block logout' onClick={logout}>退出工作人员端</Button>
+      <Button className='ghost block logout' onClick={logout}>退出巡防人员端</Button>
     </View>
   )
 }
 
 function MineView({ events, logout }: { events: SafetyEvent[]; logout: () => void }) {
   const myOpen = useMemo(() => events.filter((event) => event.status !== '已完成').length, [events])
-  const serviceRows = [{ label: '我的求助', type: 'help' }, { label: '我的反馈', type: 'report' }, { label: '失物认领记录', type: 'lost' }]
-  const infoRows = [{ label: '隐私说明', type: 'privacy' }, { label: '关于江滩服务', type: 'about' }]
+  const serviceRows = [{ label: '我的求助', type: 'help' }, { label: '我的上报', type: 'report' }, { label: '线索登记记录', type: 'lost' }]
+  const infoRows = [{ label: '隐私说明', type: 'privacy' }, { label: '关于夜市智防', type: 'about' }]
 
   return (
     <View className='page mine-page figma-mine'>
       <View className='mine-topbar'>
         <Text>我的</Text>
-        <Text>江滩服务</Text>
+        <Text>夜市智防</Text>
       </View>
       <View className='profile-card figma-profile-card'>
-        <View className='avatar'>江</View>
-        <View><Text>微信游客</Text><Text>今日记录 {events.length} 条 · 处理中 {myOpen} 条</Text></View>
+        <View className='avatar'>夜</View>
+        <View><Text>微信群众</Text><Text>今日记录 {events.length} 条 · 处理中 {myOpen} 条</Text></View>
       </View>
       <View className='mine-section figma-mine-section'>
-        <Text>我的服务</Text>
+        <Text>我的事件</Text>
         {serviceRows.map((item) => (
           <View className='mine-row' key={item.label} onClick={() => openDetail(item.type)}>
             <Text>{item.label}</Text><Text>›</Text>

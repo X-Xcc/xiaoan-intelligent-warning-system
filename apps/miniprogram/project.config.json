@@ -1,16 +1,37 @@
 {
-  "miniprogramRoot": "dist",
-  "projectname": "jiangtan-zhifang",
-  "description": "江滩智防游客服务小程序",
+  "miniprogramRoot": "dist/",
+  "projectname": "night-market-zhifang",
+  "description": "夜市智防群众服务小程序",
   "appid": "wxdd3f448369e6ca9f",
   "setting": {
-    "urlCheck": true,
+    "urlCheck": false,
     "es6": true,
     "enhance": false,
     "compileHotReLoad": false,
     "postcss": false,
     "minified": true,
-    "minifyWXML": true
+    "minifyWXML": true,
+    "compileWorklet": false,
+    "uglifyFileName": false,
+    "uploadWithSourceMap": true,
+    "packNpmManually": false,
+    "packNpmRelationList": [],
+    "minifyWXSS": true,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "useCompilerPlugins": false,
+    "condition": false,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    }
   },
-  "compileType": "miniprogram"
+  "compileType": "miniprogram",
+  "simulatorPluginLibVersion": {},
+  "packOptions": {
+    "ignore": [],
+    "include": []
+  },
+  "editorSetting": {}
 }

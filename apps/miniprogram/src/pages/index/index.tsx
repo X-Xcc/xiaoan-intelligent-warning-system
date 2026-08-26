@@ -19,8 +19,9 @@ export default function LoginEntry() {
       await loginWithWechat()
       Taro.redirectTo({ url: '/pages/main/main?mode=visitor' })
     } catch (error) {
-      setLoginError('暂时无法完成微信登录，请确认登录服务已启动后重试。')
-      Taro.showToast({ title: '登录服务不可用', icon: 'none' })
+      setLoginError('当前以群众演示模式进入，正式域名配置后会恢复微信登录。')
+      Taro.showToast({ title: '已进入群众演示模式', icon: 'none' })
+      Taro.redirectTo({ url: '/pages/main/main?mode=visitor' })
     } finally {
       setLoggingIn(false)
     }
@@ -37,8 +38,23 @@ export default function LoginEntry() {
           <View className='brand-mark'>
             <Image className='brand-logo' src={logoUrl} mode='aspectFit' />
           </View>
-          <Text className='login-title'>今日江滩</Text>
-          <Text className='login-subtitle'>使用微信账号登录，查看服务记录和处置进度</Text>
+          <Text className='login-title'>夜市智防</Text>
+          <Text className='login-subtitle'>使用微信账号登录，查看求助、上报和处置进度</Text>
+        </View>
+
+        <View className='login-value'>
+          <View>
+            <Text>网格态势</Text>
+            <Text>7 个重点网格</Text>
+          </View>
+          <View>
+            <Text>联动点位</Text>
+            <Text>PTU / AED / 服务站</Text>
+          </View>
+          <View>
+            <Text>业务范围</Text>
+            <Text>求助 / 上报 / 进度</Text>
+          </View>
         </View>
 
         <View className='login-panel auth-panel'>
@@ -46,18 +62,18 @@ export default function LoginEntry() {
             <View className='auth-wechat-avatar'>微</View>
             <View>
               <Text>微信账号快捷登录</Text>
-              <Text>仅用于同步你的求助、反馈和服务进度。</Text>
+              <Text>仅用于同步你的求助、上报和处置进度。</Text>
             </View>
           </View>
 
           <View className='auth-scope-list'>
             <View>
-              <Text>服务记录</Text>
-              <Text>保存求助、反馈和失物登记进度</Text>
+              <Text>事件记录</Text>
+              <Text>保存求助、上报和线索登记进度</Text>
             </View>
             <View>
               <Text>身份识别</Text>
-              <Text>通过微信 openid 识别同一位游客</Text>
+              <Text>通过微信 openid 识别同一位商户或群众</Text>
             </View>
           </View>
 
@@ -72,7 +88,7 @@ export default function LoginEntry() {
         </View>
 
         <LanguagePicker className='login-language' />
-        <Text className='login-support'>登录即表示同意《隐私说明》，江滩服务中心 7x24 巡防在线。</Text>
+        <Text className='login-support'>登录即表示同意《隐私说明》，夜市智防中心 20:00-02:00 巡防在线。</Text>
       </View>
     </View>
   )

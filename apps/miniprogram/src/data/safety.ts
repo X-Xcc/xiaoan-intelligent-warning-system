@@ -1,8 +1,8 @@
 import type { EventStatus, SafetyEvent } from '@/types/events'
 
-export const bayOptions = ['龙沙湾', '摩天湾', '凤凰湾', '九龙湾', '万紫滩', '千红滩', '观洲湾', '七星湾', '青洲湾']
+export const bayOptions = ['主街烧烤区', '三号门夜食街', '后巷摊位区', '停车场入口', '啤酒广场', '亲子餐饮区', '商户服务站']
 
-export const reportCategories = ['违规野泳', '儿童独自涉水', '设施损坏', '夜间照明异常', '噪音扰民', '其他']
+export const reportCategories = ['街霸滋扰', '打架斗殴', '扒窃线索', '摊位纠纷', '夜间照明异常', '噪音扰民', '其他']
 
 export const statusFlow: EventStatus[] = ['已提交', '已派单', '已接收', '已到达', '处理中', '已完成']
 
@@ -13,46 +13,46 @@ export const statusRank: Record<EventStatus, number> = statusFlow.reduce(
 
 export const initialEvents: SafetyEvent[] = [
   {
-    id: 'JT-260802-001',
+    id: 'YS-260815-001',
     kind: 'report',
-    title: '救生圈箱门松动',
-    bay: '万紫滩',
+    title: '烧烤摊前多人推搡',
+    bay: '三号门夜食街',
     level: '中风险',
-    source: '游客反馈',
+    source: 'AI视频预警',
     status: '已接收',
     owner: '李敏',
-    distance: '1.1km',
-    time: '15:08',
-    updatedAt: '15:18',
-    description: '救生圈箱门无法完全闭合，可能影响取用。',
+    distance: '180m',
+    time: '21:08',
+    updatedAt: '21:10',
+    description: 'AI识别到摊位前多人聚集推搡，疑似酒后消费纠纷升级，请附近巡防组先期劝阻。',
   },
   {
-    id: 'JT-260802-002',
+    id: 'YS-260815-002',
     kind: 'help',
-    title: '儿童靠近水边',
-    bay: '摩天湾',
+    title: '商户一键求助：疑似街霸滋扰',
+    bay: '主街烧烤区',
     level: '高风险',
-    source: '现场协同求助',
+    source: '夜市平安码',
     status: '已到达',
     owner: '王队',
-    distance: '420m',
-    time: '15:22',
-    updatedAt: '15:26',
-    description: '亲水平台附近儿童独自靠近水边。',
+    distance: '90m',
+    time: '21:22',
+    updatedAt: '21:25',
+    description: '商户通过夜市平安码上报，两名醉酒人员拍打桌椅、威胁摊主，现场有围观聚集风险。',
   },
   {
-    id: 'JT-260802-003',
+    id: 'YS-260815-003',
     kind: 'lost',
-    title: '黑色双肩包遗失',
-    bay: '龙沙湾',
+    title: '粉色手机疑似扒窃',
+    bay: '三号门夜食街',
     level: '低风险',
-    source: '失物招领',
+    source: '群众报警',
     status: '已完成',
-    owner: '服务台',
-    distance: '服务点',
-    time: '14:48',
-    updatedAt: '15:02',
-    description: '游客已在服务台取回。',
-    result: '已核验失主信息并完成领取登记。',
+    owner: '研判组',
+    distance: '指挥室',
+    time: '20:48',
+    updatedAt: '21:06',
+    description: '群众报警称手机在夜市三号门附近遗失，研判组通过轨迹比对锁定疑似扒窃人员。',
+    result: '已完成视频轨迹复盘，嫌疑目标交由处置组跟进。',
   },
 ]

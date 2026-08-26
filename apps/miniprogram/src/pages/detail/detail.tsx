@@ -18,7 +18,7 @@ export default function DetailPage() {
     <View className='detail-page'>
       <View className='detail-topbar'>
         <Button className='detail-back' onClick={() => Taro.navigateBack({ delta: 1 })}>‹ 返回</Button>
-        <Text>江滩服务</Text>
+        <Text>夜市智防</Text>
       </View>
       <View className={`detail-hero ${type}`}>
         <Text className='detail-badge'>{meta.badge}</Text>
@@ -34,25 +34,25 @@ function DetailContent({ type, params }: { type: DetailType; params: Record<stri
   const title = params.title ? decodeURIComponent(params.title) : ''
   const id = params.id || 'JT-260802-002'
   const status = params.status ? decodeURIComponent(params.status) : '已派单'
-  const bay = params.bay ? decodeURIComponent(params.bay) : '3号湾区'
+  const bay = params.bay ? decodeURIComponent(params.bay) : '主街烧烤区'
   const level = params.level ? decodeURIComponent(params.level) : '中风险'
 
   if (type === 'serviceOrder') {
     return (
       <View>
-        <StatusCard label='当前状态' value={status} desc={`${bay} · 编号 ${id} · 工作人员会持续更新`} tone={level === '高风险' ? 'danger' : 'blue'} />
+        <StatusCard label='当前状态' value={status} desc={`${bay} · 编号 ${id} · 巡防组会持续更新`} tone={level === '高风险' ? 'danger' : 'blue'} />
         <View className='order-summary'>
-          <Text>{title || '游客现场协同求助'}</Text>
-          <Text>我们已收到你的信息，并同步给附近工作人员。</Text>
-          <Text>当前位置：{bay}亲水平台附近。</Text>
+          <Text>{title || '夜市现场一键求助'}</Text>
+          <Text>我们已收到你的信息，并同步给附近巡防组。</Text>
+          <Text>当前位置：{bay}附近。</Text>
           <Text>预计联系：2 分钟内。</Text>
         </View>
         <View className='soft-map'>
           <Text>位置已同步</Text>
-          <Text>{bay} · 亲水平台外侧 · 距离最近服务点约 360m</Text>
+          <Text>{bay} · 夜市主通道 · 距离最近联动点约 90m</Text>
         </View>
         <FlowCard active={status} />
-        <Button className='primary-action' onClick={() => Taro.showToast({ title: '已提醒工作人员', icon: 'none' })}>提醒工作人员</Button>
+        <Button className='primary-action' onClick={() => Taro.showToast({ title: '已提醒巡防组', icon: 'none' })}>提醒巡防组</Button>
       </View>
     )
   }
@@ -66,7 +66,7 @@ function DetailContent({ type, params }: { type: DetailType; params: Record<stri
           <Text>先确认人员安全，再同步现场照片和处置结果；高风险工单优先请求支援。</Text>
         </View>
         <View className='action-grid'>
-          <Button onClick={() => Taro.showToast({ title: '已联系游客', icon: 'none' })}>联系游客</Button>
+          <Button onClick={() => Taro.showToast({ title: '已联系群众', icon: 'none' })}>联系群众</Button>
           <Button onClick={() => Taro.showToast({ title: '已请求支援', icon: 'none' })}>请求支援</Button>
           <Button onClick={() => Taro.showToast({ title: '已打开路线', icon: 'none' })}>查看路线</Button>
           <Button onClick={() => Taro.showToast({ title: '已同步指挥端', icon: 'none' })}>同步指挥</Button>
@@ -79,10 +79,10 @@ function DetailContent({ type, params }: { type: DetailType; params: Record<stri
   if (type === 'lost') {
     return (
       <View>
-        <StatusCard label='待认领' value='2 件' desc='服务点会持续同步失物信息' tone='warn' />
-        <RecordCard title='儿童蓝色水杯' meta='3号湾区服务点 · 待认领' desc='请到服务点核验颜色、贴纸或姓名标识。' status='待认领' />
-        <RecordCard title='白色遮阳帽' meta='5号湾区服务台 · 待认领' desc='服务台保管中，认领需描述遗失时间。' status='待认领' />
-        <Button className='primary-action' onClick={() => Taro.showToast({ title: '已生成认领登记', icon: 'none' })}>提交认领登记</Button>
+        <StatusCard label='线索登记' value='2 条' desc='研判组会持续同步遗失与扒窃线索' tone='warn' />
+        <RecordCard title='粉色手机遗失' meta='三号门夜食街 · 待核验' desc='请补充手机壳、遗失时间和最后出现点位。' status='待核验' />
+        <RecordCard title='黑色双肩包遗失' meta='啤酒广场 · 待核验' desc='请描述包内物品，便于研判组比对轨迹。' status='待核验' />
+        <Button className='primary-action' onClick={() => Taro.showToast({ title: '已生成线索登记', icon: 'none' })}>提交线索登记</Button>
       </View>
     )
   }
@@ -90,14 +90,14 @@ function DetailContent({ type, params }: { type: DetailType; params: Record<stri
   if (type === 'rescue') {
     return (
       <View>
-        <StatusCard label='最近服务点' value='360m' desc='A03 服务岗亭在线，AED 和医药箱可用' tone='safe' />
+        <StatusCard label='最近联动点' value='90m' desc='PTU快反点在线，AED 和警戒物资可用' tone='safe' />
         <View className='soft-map'>
-          <Text>附近服务覆盖</Text>
-          <Text>3号湾区 5 分钟步行圈，覆盖岗亭、卫生间、AED 和服务驿站。</Text>
+          <Text>附近联动覆盖</Text>
+          <Text>主街烧烤区 3 分钟响应圈，覆盖PTU快反点、卫生间、AED 和商户服务站。</Text>
         </View>
-        <ResourceCard title='A03 服务岗亭' desc='工作人员在线 · 饮水与问询 · 距你 360m' action='去这里' />
-        <ResourceCard title='亲水平台服务点' desc='医药箱可用 · AED 正常 · 志愿者 2 人' action='联系' />
-        <ResourceCard title='公共卫生间' desc='沿江步道内侧 · 约 280m · 当前开放' action='导航' />
+        <ResourceCard title='PTU快反点' desc='巡防组在线 · 警戒物资 · 距你 90m' action='去这里' />
+        <ResourceCard title='商户服务站' desc='平安码咨询 · AED 正常 · 义警 2 人' action='联系' />
+        <ResourceCard title='公共卫生间' desc='夜市东侧通道 · 约 120m · 当前开放' action='导航' />
       </View>
     )
   }
@@ -105,37 +105,37 @@ function DetailContent({ type, params }: { type: DetailType; params: Record<stri
   if (type === 'bay') {
     return (
       <View>
-        <StatusCard label='当前开放' value='7 个湾区' desc='3号湾区人流稍多，建议老人儿童走外侧步道' tone='blue' />
+        <StatusCard label='当前网格' value='7 个网格' desc='主街烧烤区重点巡防，建议避开围观聚集点' tone='blue' />
         <View className='bay-dashboard'>
           <View><Text>稍多</Text><Text>当前人流</Text></View>
           <View><Text>29°C</Text><Text>体感温度</Text></View>
-          <View><Text>360m</Text><Text>最近服务点</Text></View>
+          <View><Text>90m</Text><Text>最近联动点</Text></View>
         </View>
         {[
-          ['1号湾区 · 开放中', '舒适'],
-          ['2号湾区 · 开放中', '舒适'],
-          ['3号湾区 · 人流稍多', '建议慢行'],
-          ['4号湾区 · 开放中', '舒适'],
-          ['5号湾区 · 设施处理中', '绕行'],
-          ['6号湾区 · 开放中', '舒适'],
-          ['7号湾区 · 开放中', '舒适'],
+          ['主街烧烤区 · 重点巡防', '关注'],
+          ['三号门夜食街 · 客流稍多', '慢行'],
+          ['后巷摊位区 · 机器狗巡逻', '平稳'],
+          ['停车场入口 · 散场关注', '平稳'],
+          ['啤酒广场 · AI预警在线', '关注'],
+          ['亲子餐饮区 · 义警在线', '舒适'],
+          ['商户服务站 · 正常运行', '在线'],
         ].map(([item, state]) => <View className='simple-row' key={item}><Text>{item}</Text><Text>{state}</Text></View>)}
       </View>
     )
   }
 
   if (type === 'processing' || type === 'help' || type === 'report') {
-    const recordTitle = type === 'help' ? '儿童无人看护' : type === 'report' ? '救生圈箱门松动' : '儿童蓝色水杯认领'
-    const recordMeta = type === 'help' ? '3号湾区 · 工作人员已到达' : type === 'report' ? '5号湾区 · 已接收' : '3号湾区服务点 · 待核验'
+    const recordTitle = type === 'help' ? '商户一键求助' : type === 'report' ? '烧烤摊前多人推搡' : '粉色手机线索登记'
+    const recordMeta = type === 'help' ? '主街烧烤区 · 巡防组已到达' : type === 'report' ? '三号门夜食街 · 已接收' : '三号门夜食街 · 待核验'
     const recordDesc = type === 'help'
-      ? '亲水平台附近儿童独自靠近水边，工作人员已到达现场。'
+      ? '商户上报疑似街霸滋扰，巡防组已到达现场。'
       : type === 'report'
-        ? '设施问题已进入处理队列，游客可继续关注进度。'
-        : '认领登记已提交，服务台会核对物品特征并联系你。'
+        ? '夜市秩序问题已进入处理队列，群众可继续关注进度。'
+        : '线索登记已提交，研判组会核对轨迹和物品特征并联系你。'
     const recordStatus = type === 'help' ? '已到达' : type === 'report' ? '已接收' : '已提交'
     return (
       <View>
-        <StatusCard label='当前记录' value={type === 'help' ? '1 条' : type === 'report' ? '1 条' : '3 条'} desc='求助、反馈和失物登记都会在这里持续更新' tone='blue' />
+        <StatusCard label='当前记录' value={type === 'help' ? '1 条' : type === 'report' ? '1 条' : '3 条'} desc='求助、上报和线索登记都会在这里持续更新' tone='blue' />
         <RecordCard title={recordTitle} meta={recordMeta} desc={recordDesc} status={recordStatus} />
       </View>
     )
@@ -146,8 +146,8 @@ function DetailContent({ type, params }: { type: DetailType; params: Record<stri
       <View>
         <StatusCard label='数据使用' value='仅为服务' desc='演示版仅使用本机模拟数据' tone='safe' />
         {[
-          '定位只用于求助、反馈和附近服务匹配。',
-          '联系方式为可选项，仅用于工作人员回访。',
+          '定位只用于求助、上报和附近联动点匹配。',
+          '联系方式为可选项，仅用于巡防组回访。',
           '真实版本应支持授权撤回、记录查询和数据删除申请。',
         ].map((item) => <View className='policy-row' key={item}><Text>{item}</Text></View>)}
       </View>
@@ -157,10 +157,10 @@ function DetailContent({ type, params }: { type: DetailType; params: Record<stri
   if (type === 'about') {
     return (
       <View>
-        <StatusCard label='系统定位' value='游客服务助手' desc='帮助游客游得安心、找得到服务、遇事能求助' tone='blue' />
+        <StatusCard label='系统定位' value='夜市智防助手' desc='帮助群众遇事能求助、商户有事能上报、巡防处置可闭环' tone='blue' />
         <View className='info-section'>
           <Text>服务范围</Text>
-          <Text>提供今日提醒、区域开放、附近服务、紧急求助、问题反馈和失物招领。</Text>
+          <Text>提供今日提醒、智防网格、附近联动点、紧急求助、隐患上报和线索登记。</Text>
         </View>
       </View>
     )
@@ -168,15 +168,15 @@ function DetailContent({ type, params }: { type: DetailType; params: Record<stri
 
   return (
     <View>
-      <StatusCard label='今日提醒' value='人流稍多' desc='请照看好老人儿童，亲水平台内侧请勿越线停留' tone='warn' />
+      <StatusCard label='今日提醒' value='客流稍多' desc='请避开围观聚集，商户遇到滋扰可优先使用平安码同步点位' tone='warn' />
       <View className='soft-map guide-map'>
-        <Text>推荐游玩方式</Text>
-        <Text>走外侧步道更舒适；老人儿童建议避开亲水平台边缘区域。</Text>
+        <Text>推荐通行方式</Text>
+        <Text>走主街外侧通道更顺畅；老人儿童建议避开啤酒广场拥挤区域。</Text>
       </View>
       {[
-        '儿童请全程陪同，不要单独靠近水边。',
-        '橙色围挡外为暂不开放区域，请勿翻越。',
-        '发现设施损坏或人员异常，可以先反馈位置。',
+        '儿童请全程陪同，不要在高峰通道长时间停留。',
+        '发现人员围观、推搡或酒后滋事，请先保持安全距离。',
+        '发现摊位纠纷、扒窃线索或人员异常，可以先上报位置。',
         '紧急情况请优先拨打 110 或 120，再同步现场位置。',
       ].map((item) => <View className='policy-row' key={item}><Text>{item}</Text></View>)}
     </View>
@@ -212,13 +212,13 @@ function FlowCard({ active }: { active: string }) {
   const index = Math.max(0, statusFlow.indexOf(active as typeof statusFlow[number]))
   return (
     <View className='flow-card'>
-      <Text>服务进度</Text>
+      <Text>事件进度</Text>
       {statusFlow.map((step, stepIndex) => (
         <View className='flow-row' key={step}>
           <Text className={stepIndex <= index ? 'flow-dot active' : 'flow-dot'} />
           <View>
             <Text>{step}</Text>
-            <Text>{stepIndex <= index ? '已同步给你' : '等待工作人员更新'}</Text>
+            <Text>{stepIndex <= index ? '已同步给你' : '等待巡防组更新'}</Text>
           </View>
         </View>
       ))}

@@ -1,7 +1,7 @@
 import Taro from '@tarojs/taro'
 import type { EventStatus, ReportForm, SafetyEvent } from '@/types/events'
 
-const API_BASE_URL = process.env.TARO_APP_API_BASE_URL || 'http://127.0.0.1:8010/api'
+const API_BASE_URL = process.env.TARO_APP_API_BASE_URL || 'https://undergraduate-ears-powell-roots.trycloudflare.com/api'
 const AUTH_TOKEN_KEY = 'jiangtan-auth-token'
 const AUTH_USER_KEY = 'jiangtan-auth-user'
 
@@ -29,6 +29,7 @@ async function request<T>(path: string, options: Taro.request.Option = {}): Prom
     data: options.data,
     header: {
       'content-type': 'application/json',
+      ...(getAuthToken() ? { authorization: `Bearer ${getAuthToken()}` } : {}),
       ...options.header,
     },
   })
@@ -102,10 +103,10 @@ export async function createReportEvent(form: ReportForm, photoCount: number): P
   return data.event
 }
 
-export async function createLostClaimEvent(itemName = '儿童蓝色水杯'): Promise<SafetyEvent> {
+export async function createLostClaimEvent(itemName = '粉色手机'): Promise<SafetyEvent> {
   const data = await request<{ event: SafetyEvent }>('/events/lost-claims', {
     method: 'POST',
-    data: { itemName, bay: '凤凰湾' },
+    data: { itemName, bay: '三号门夜食街' },
   })
   return data.event
 }

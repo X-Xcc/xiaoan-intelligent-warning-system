@@ -1,0 +1,336 @@
+- main [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - img "夜市智防" [ref=e6]
+      - generic [ref=e7]:
+        - paragraph [ref=e8]: Night Market Command
+        - heading "夜市综合治理总指挥大屏" [level=1] [ref=e9]
+    - generic [ref=e10]:
+      - generic [ref=e11]: 事件链路在线
+      - button "刷新" [ref=e13] [cursor=pointer]:
+        - img [ref=e14]
+        - text: 刷新
+      - link "管理端" [ref=e17] [cursor=pointer]:
+        - /url: /admin
+        - img [ref=e18]
+        - text: 管理端
+  - generic [ref=e21]:
+    - article [ref=e22]:
+      - img [ref=e23]
+      - generic [ref=e25]:
+        - paragraph [ref=e26]: 今日事件
+        - strong [ref=e27]: 5起
+    - article [ref=e28]:
+      - img [ref=e29]
+      - generic [ref=e35]:
+        - paragraph [ref=e36]: 待处置工单
+        - strong [ref=e37]: 4单
+    - article [ref=e38]:
+      - img [ref=e39]
+      - generic [ref=e44]:
+        - paragraph [ref=e45]: 在线巡防
+        - strong [ref=e46]: 18人
+    - article [ref=e47]:
+      - img [ref=e48]
+      - generic [ref=e51]:
+        - paragraph [ref=e52]: 闭环率
+        - strong [ref=e53]: 20%
+  - generic [ref=e54]:
+    - article [ref=e55]:
+      - generic [ref=e56]:
+        - generic [ref=e57]:
+          - paragraph [ref=e58]: Map
+          - heading "夜市商圈实时态势" [level=2] [ref=e59]
+        - generic [ref=e60]:
+          - img [ref=e61]
+          - text: 21 个夜市点 · 4 个活跃点
+      - generic "夜市商圈实时智防地图" [ref=e63]:
+        - generic [ref=e64]:
+          - generic:
+            - generic:
+              - button [ref=e65] [cursor=pointer]
+              - button [ref=e67] [cursor=pointer]
+              - button [ref=e69] [cursor=pointer]
+              - button [ref=e71] [cursor=pointer]
+              - button [ref=e73] [cursor=pointer]
+              - button [ref=e75] [cursor=pointer]
+              - button [ref=e77] [cursor=pointer]
+              - button [ref=e79] [cursor=pointer]
+              - button [ref=e81] [cursor=pointer]
+              - button [ref=e83] [cursor=pointer]
+              - button [ref=e85] [cursor=pointer]
+              - button [ref=e87] [cursor=pointer]
+              - button [ref=e89] [cursor=pointer]
+              - button [ref=e91] [cursor=pointer]
+              - button [ref=e93] [cursor=pointer]
+              - button [ref=e95] [cursor=pointer]
+              - button [ref=e97] [cursor=pointer]
+              - button [ref=e99] [cursor=pointer]
+              - button [ref=e101] [cursor=pointer]
+              - button [ref=e103] [cursor=pointer]
+              - button [ref=e105] [cursor=pointer]
+              - button [ref=e107] [cursor=pointer]
+              - button [ref=e109] [cursor=pointer]
+              - button [ref=e111] [cursor=pointer]
+              - button [ref=e113] [cursor=pointer]
+              - button [ref=e115] [cursor=pointer]
+              - button [ref=e117] [cursor=pointer]
+              - button [ref=e119] [cursor=pointer]
+              - button [ref=e121] [cursor=pointer]
+              - button [ref=e123] [cursor=pointer]
+              - button [ref=e125] [cursor=pointer]
+              - button [ref=e127] [cursor=pointer]
+              - button [ref=e129] [cursor=pointer]
+              - button [ref=e131] [cursor=pointer]
+              - button [ref=e133] [cursor=pointer]
+            - generic:
+              - tooltip
+              - tooltip
+              - tooltip
+              - tooltip
+              - tooltip
+              - tooltip
+              - tooltip
+              - tooltip "主街烧烤区 1":
+                - generic: 主街烧烤区
+                - strong: "1"
+              - tooltip "三号门夜食街 1":
+                - generic: 三号门夜食街
+                - strong: "1"
+              - tooltip "后巷摊位区":
+                - generic: 后巷摊位区
+              - tooltip "停车场入口":
+                - generic: 停车场入口
+              - tooltip "啤酒广场 1":
+                - generic: 啤酒广场
+                - strong: "1"
+              - tooltip "亲子餐饮区":
+                - generic: 亲子餐饮区
+              - tooltip "商户服务站 1":
+                - generic: 商户服务站
+                - strong: "1"
+              - tooltip
+              - tooltip
+              - tooltip
+              - tooltip
+              - tooltip
+              - tooltip
+              - tooltip
+              - tooltip
+              - tooltip
+              - tooltip
+              - tooltip
+              - tooltip
+              - tooltip
+              - tooltip
+              - tooltip
+              - tooltip
+              - tooltip
+              - tooltip
+              - tooltip
+              - tooltip
+              - tooltip
+              - tooltip
+              - tooltip
+              - tooltip
+              - tooltip
+          - generic:
+            - generic [ref=e135]:
+              - button "Zoom in" [ref=e136] [cursor=pointer]: +
+              - button "Zoom out" [ref=e137] [cursor=pointer]: −
+            - generic [ref=e138]:
+              - link "Leaflet" [ref=e139] [cursor=pointer]:
+                - /url: https://leafletjs.com
+                - img [ref=e140]
+                - text: Leaflet
+              - text: "| ©"
+              - link "OpenStreetMap" [ref=e144] [cursor=pointer]:
+                - /url: https://www.openstreetmap.org/copyright
+        - generic [ref=e145]:
+          - img [ref=e146]
+          - text: 南昌全市夜市点位 · 21 处
+        - generic [ref=e149]:
+          - generic [ref=e150]: 高风险
+          - generic [ref=e152]: 待处置
+          - generic [ref=e154]: 平稳网格
+          - generic [ref=e156]: 巡防/装备点
+      - generic [ref=e158]:
+        - button "王队 近" [ref=e159] [cursor=pointer]:
+          - img [ref=e160]
+          - text: 王队
+          - generic [ref=e165]: 近
+        - button "李敏 3分" [ref=e166] [cursor=pointer]:
+          - img [ref=e167]
+          - text: 李敏
+          - generic [ref=e172]: 3分
+        - button "陈安 4分" [ref=e173] [cursor=pointer]:
+          - img [ref=e174]
+          - text: 陈安
+          - generic [ref=e179]: 4分
+        - button "义警联络员 5分" [ref=e180] [cursor=pointer]:
+          - img [ref=e181]
+          - text: 义警联络员
+          - generic [ref=e186]: 5分
+    - article [ref=e187]:
+      - generic [ref=e188]:
+        - generic [ref=e189]:
+          - paragraph [ref=e190]: Distribution
+          - heading "来源分布" [level=2] [ref=e191]
+        - generic [ref=e192]: 5 类事件
+      - generic [ref=e194]:
+        - strong [ref=e195]: "4"
+        - generic [ref=e196]: 活跃
+      - generic [ref=e197]:
+        - generic [ref=e198]:
+          - generic [ref=e199]: 一键报警小程序
+          - strong [ref=e200]: 高
+        - generic [ref=e201]:
+          - generic [ref=e202]: 机器狗多模态巡防
+          - strong [ref=e203]: 中
+        - generic [ref=e204]:
+          - generic [ref=e205]: 视频重点监控
+          - strong [ref=e206]: 复核
+    - article [ref=e207]:
+      - generic [ref=e208]:
+        - generic [ref=e209]:
+          - paragraph [ref=e210]: Realtime
+          - heading "实时事件队列" [level=2] [ref=e211]
+        - generic [ref=e212]:
+          - button "全部" [ref=e213] [cursor=pointer]
+          - button "已提交" [ref=e214] [cursor=pointer]
+          - button "已派单" [ref=e215] [cursor=pointer]
+          - button "已接收" [ref=e216] [cursor=pointer]
+          - button "已到达" [ref=e217] [cursor=pointer]
+          - button "处理中" [ref=e218] [cursor=pointer]
+          - button "已完成" [ref=e219] [cursor=pointer]
+      - generic [ref=e220]:
+        - button "中风险 机器狗巡防发现高声争执 啤酒广场 机器狗巡防 已派单" [ref=e221] [cursor=pointer]:
+          - generic [ref=e222]: 中风险
+          - strong [ref=e223]: 机器狗巡防发现高声争执
+          - emphasis [ref=e224]: 啤酒广场
+          - generic [ref=e225]: 机器狗巡防
+          - generic [ref=e226]: 已派单
+        - button "高风险 重点关注人员进入东入口 商户服务站 重点人员库 已接收" [ref=e227] [cursor=pointer]:
+          - generic [ref=e228]: 高风险
+          - strong [ref=e229]: 重点关注人员进入东入口
+          - emphasis [ref=e230]: 商户服务站
+          - generic [ref=e231]: 重点人员库
+          - generic [ref=e232]: 已接收
+        - button "中风险 烧烤摊前多人推搡 三号门夜食街 AI视频预警 已接收" [ref=e233] [cursor=pointer]:
+          - generic [ref=e234]: 中风险
+          - strong [ref=e235]: 烧烤摊前多人推搡
+          - emphasis [ref=e236]: 三号门夜食街
+          - generic [ref=e237]: AI视频预警
+          - generic [ref=e238]: 已接收
+        - button "高风险 商户一键求助：疑似街霸滋扰 主街烧烤区 夜市平安码 已到达" [ref=e239] [cursor=pointer]:
+          - generic [ref=e240]: 高风险
+          - strong [ref=e241]: 商户一键求助：疑似街霸滋扰
+          - emphasis [ref=e242]: 主街烧烤区
+          - generic [ref=e243]: 夜市平安码
+          - generic [ref=e244]: 已到达
+        - button "低风险 粉色手机疑似扒窃 三号门夜食街 群众报警 已完成" [ref=e245] [cursor=pointer]:
+          - generic [ref=e246]: 低风险
+          - strong [ref=e247]: 粉色手机疑似扒窃
+          - emphasis [ref=e248]: 三号门夜食街
+          - generic [ref=e249]: 群众报警
+          - generic [ref=e250]: 已完成
+    - complementary [ref=e251]:
+      - generic [ref=e252]:
+        - generic [ref=e253]:
+          - paragraph [ref=e254]: Handling
+          - heading "事件处置" [level=2] [ref=e255]
+        - generic [ref=e256]: 14:39
+      - generic [ref=e257]:
+        - generic [ref=e258]: 中风险
+        - heading "机器狗巡防发现高声争执" [level=3] [ref=e259]
+        - paragraph [ref=e260]: YS-260815-004 · 啤酒广场
+      - paragraph [ref=e264]: 已派单 · 负责人 陈安
+      - generic [ref=e265]:
+        - generic [ref=e266]:
+          - generic [ref=e267]: 事件类型
+          - strong [ref=e268]: argument
+        - generic [ref=e269]:
+          - generic [ref=e270]: 数据源
+          - strong [ref=e271]: robot_dog
+        - generic [ref=e272]:
+          - generic [ref=e273]: 模型/规则
+          - strong [ref=e274]: 视觉姿态 + 音频声压 + VLM描述
+      - paragraph [ref=e275]: 机器狗前置摄像头和麦克风同时发现多人高声争执，声压和围观人数超过巡防阈值，建议附近队员靠近核验。
+      - generic [ref=e276]:
+        - generic [ref=e277]: 派给
+        - combobox "派给" [ref=e278]:
+          - option "王队" [selected]
+          - option "李敏"
+          - option "陈安"
+          - option "义警联络员"
+          - option "最近巡防组"
+          - option "商户义警"
+      - generic [ref=e279]:
+        - button "派单" [ref=e280] [cursor=pointer]:
+          - img [ref=e281]
+          - text: 派单
+        - button "推进" [ref=e284] [cursor=pointer]:
+          - img [ref=e285]
+          - text: 推进
+      - button "复核闭环" [ref=e291] [cursor=pointer]:
+        - img [ref=e292]
+        - text: 复核闭环
+  - region "三类核心业务链路" [ref=e295]:
+    - article [ref=e296]:
+      - generic [ref=e297]:
+        - img [ref=e299]
+        - generic [ref=e301]:
+          - strong [ref=e302]: 一键报警小程序
+          - paragraph [ref=e303]: 商户/顾客主动报警，处理已经发生的现场情况
+      - generic [ref=e304]:
+        - generic [ref=e305]:
+          - term [ref=e306]: 来源
+          - definition [ref=e307]: 平安码 / 小程序 / 商户端
+        - generic [ref=e308]:
+          - term [ref=e309]: 入库
+          - definition [ref=e310]: 报警人、摊位、定位、描述、附件、附近摄像头快照
+        - generic [ref=e311]:
+          - term [ref=e312]: 处置
+          - definition [ref=e313]: 自动入库成高优先级工单，推送指挥屏并派发最近巡防组
+    - article [ref=e314]:
+      - generic [ref=e315]:
+        - img [ref=e317]
+        - generic [ref=e320]:
+          - strong [ref=e321]: 机器狗多模态巡防
+          - paragraph [ref=e322]: 移动巡逻发现冲突、拌嘴、不文明行为
+      - generic [ref=e323]:
+        - generic [ref=e324]:
+          - term [ref=e325]: 来源
+          - definition [ref=e326]: 机器狗视频、音频、坐标、任务路线
+        - generic [ref=e327]:
+          - term [ref=e328]: 入库
+          - definition [ref=e329]: 姿态动作、声压异常、围观人数、巡防坐标、前后片段
+        - generic [ref=e330]:
+          - term [ref=e331]: 处置
+          - definition [ref=e332]: 低风险提示，高风险联动队员靠近核验并留存证据
+    - article [ref=e333]:
+      - generic [ref=e334]:
+        - img [ref=e336]
+        - generic [ref=e348]:
+          - strong [ref=e349]: 视频重点监控
+          - paragraph [ref=e350]: 固定摄像头识别重点人员进入和异常行为
+      - generic [ref=e351]:
+        - generic [ref=e352]:
+          - term [ref=e353]: 来源
+          - definition [ref=e354]: 入口人脸机 / 视频流 / 重点人员库
+        - generic [ref=e355]:
+          - term [ref=e356]: 入库
+          - definition [ref=e357]: 命中分数、抓拍图、轨迹片段、人工复核状态
+        - generic [ref=e358]:
+          - term [ref=e359]: 处置
+          - definition [ref=e360]: 命中后重点关注，不直接定性，必须人工复核闭环
+  - generic [ref=e361]:
+    - button "登记现场求助" [ref=e362] [cursor=pointer]:
+      - img [ref=e363]
+      - text: 登记现场求助
+    - button "就近派发" [ref=e370] [cursor=pointer]:
+      - img [ref=e371]
+      - text: 就近派发
+    - button "广播联动" [ref=e373] [cursor=pointer]:
+      - img [ref=e374]
+      - text: 广播联动
