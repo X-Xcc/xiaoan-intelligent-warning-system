@@ -88,6 +88,38 @@ export async function createHelpEvent(payload: {
   return data.event
 }
 
+export async function fetchStaffTasks(staff = '王队'): Promise<SafetyEvent[]> {
+  const data = await request<{ items: SafetyEvent[] }>(`/events/staff-tasks?staff=${encodeURIComponent(staff)}`)
+  return data.items
+}
+
+export async function updateStaffLocation(payload: {
+  staff?: string
+  latitude: number
+  longitude: number
+  accuracy?: number
+}) {
+  const data = await request<{ staff: unknown }>('/events/staff-location', {
+    method: 'POST',
+    data: { staff: '王队', ...payload },
+  })
+  return data.staff
+}
+
+export async function refreshEventRoute(id: string, payload: {
+  staff?: string
+  latitude?: number
+  longitude?: number
+  accuracy?: number
+} = {}): Promise<SafetyEvent> {
+  const params = Object.entries({ staff: '王队', ...payload })
+    .filter(([, value]) => value !== undefined && value !== null)
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
+    .join('&')
+  const data = await request<{ event: SafetyEvent }>(`/events/${id}/route?${params}`)
+  return data.event
+}
+
 export async function createReportEvent(form: ReportForm, photoCount: number): Promise<SafetyEvent> {
   const data = await request<{ event: SafetyEvent }>('/events/reports', {
     method: 'POST',

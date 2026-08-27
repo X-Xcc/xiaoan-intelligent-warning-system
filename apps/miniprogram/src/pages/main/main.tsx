@@ -9,6 +9,7 @@ import { bayOptions, reportCategories, statusFlow, statusRank } from '@/data/saf
 import { useSafetyEvents, type ProgressFilter } from '@/hooks/useSafetyEvents'
 import type { AppMode, EventKind, EventStatus, ReportForm, SafetyEvent, TabKey } from '@/types/events'
 import { openDetail } from '@/utils/navigation'
+import { fetchStaffTasks, refreshEventRoute, updateStaffLocation } from '@/utils/api'
 import { useLocale } from '@/i18n'
 import markerDanger from '@/assets/map-marker-danger.png'
 import markerSafe from '@/assets/map-marker-safe.png'
@@ -192,6 +193,30 @@ function callEmergency(phoneNumber = '110') {
 
 function findJiangtanPointByBay(bay: string) {
   return jiangtanMapPoints.find((point) => point.name === bay || point.bay === bay) ?? jiangtanMapPoints[1]
+}
+
+function getEventAlarmPoint(event: SafetyEvent): MapProps.point {
+  const metaPoint = event.meta?.alarmLocation || event.meta?.reporterLocation
+  if (metaPoint?.latitude && metaPoint?.longitude) {
+    return { latitude: metaPoint.latitude, longitude: metaPoint.longitude }
+  }
+  if (event.meta?.latitude && event.meta?.longitude) {
+    return { latitude: event.meta.latitude, longitude: event.meta.longitude }
+  }
+  const bayPoint = findJiangtanPointByBay(event.bay)
+  return { latitude: bayPoint.latitude, longitude: bayPoint.longitude }
+}
+
+function routeLinePoints(event: SafetyEvent): MapProps.point[] {
+  return (event.meta?.route?.points || [])
+    .filter((point) => point.latitude && point.longitude)
+    .map((point) => ({ latitude: point.latitude, longitude: point.longitude }))
+}
+
+function routeLabel(event: SafetyEvent) {
+  const route = event.meta?.route
+  if (!route) return '等待路线推荐'
+  return `${route.modeLabel} · ${route.distanceLabel} · ${route.etaLabel}`
 }
 
 function eventMarkerTone(event: SafetyEvent): MarkerTone {
@@ -694,10 +719,83 @@ function StaffWorkView({
   const [expandedId, setExpandedId] = useState(events[0]?.id || '')
   const [resultText, setResultText] = useState('')
   const [staffTab, setStaffTab] = useState<StaffTab>('tasks')
-  const activeOrders = events.filter((event) => event.status !== '已完成')
-  const completedOrders = events.filter((event) => event.status === '已完成')
-  const pendingCount = events.filter((event) => event.status === '已提交' || event.status === '已派单').length
-  const processingCount = events.length - pendingCount - completedOrders.length
+  const [staffLocation, setStaffLocation] = useState<MapProps.point | null>(null)
+  const [staffEvents, setStaffEvents] = useState<SafetyEvent[]>([])
+  const staffName = '王队'
+  const ownedEvents = events.filter((event) => event.owner === staffName || event.meta?.assignment?.staffName === staffName)
+  const visibleStaffEvents = staffEvents.length ? staffEvents : (ownedEvents.length ? ownedEvents : events)
+  const activeOrders = visibleStaffEvents.filter((event) => event.status !== '已完成')
+  const completedOrders = visibleStaffEvents.filter((event) => event.status === '已完成')
+  const pendingCount = visibleStaffEvents.filter((event) => event.status === '已提交' || event.status === '已派单').length
+  const processingCount = visibleStaffEvents.length - pendingCount - completedOrders.length
+  const primaryOrderId = activeOrders[0]?.id || ''
+
+  const replaceStaffEvent = (next: SafetyEvent) => {
+    setStaffEvents((current) => {
+      const exists = current.some((event) => event.id === next.id)
+      return exists ? current.map((event) => event.id === next.id ? next : event) : [next].concat(current)
+    })
+  }
+
+  useEffect(() => {
+    let mounted = true
+    const loadStaffTasks = async (silent = false) => {
+      try {
+        const tasks = await fetchStaffTasks(staffName)
+        if (mounted) {
+          setStaffEvents(tasks)
+          if (!expandedId && tasks[0]) setExpandedId(tasks[0].id)
+        }
+      } catch {
+        if (!silent && mounted) {
+          Taro.showToast({ title: '我的任务同步失败，显示本地任务', icon: 'none' })
+        }
+      }
+    }
+    loadStaffTasks()
+    const timer = setInterval(() => loadStaffTasks(true), 15000)
+    return () => {
+      mounted = false
+      clearInterval(timer)
+    }
+  }, [])
+
+  useEffect(() => {
+    let mounted = true
+    const syncLocation = async () => {
+      try {
+        const location = await Taro.getLocation({ type: 'gcj02' })
+        const point = { latitude: location.latitude, longitude: location.longitude }
+        if (mounted) setStaffLocation(point)
+        await updateStaffLocation({
+          staff: staffName,
+          latitude: location.latitude,
+          longitude: location.longitude,
+          accuracy: location.accuracy,
+        })
+        const target = visibleStaffEvents.find((event) => event.id === primaryOrderId)
+        if (target) {
+          const next = await refreshEventRoute(target.id, {
+            staff: staffName,
+            latitude: location.latitude,
+            longitude: location.longitude,
+            accuracy: location.accuracy,
+          })
+          if (mounted) replaceStaffEvent(next)
+        }
+      } catch {
+        if (mounted) {
+          Taro.showToast({ title: '未获取实时定位，地图显示默认巡防点', icon: 'none' })
+        }
+      }
+    }
+    syncLocation()
+    const timer = setInterval(syncLocation, 60000)
+    return () => {
+      mounted = false
+      clearInterval(timer)
+    }
+  }, [primaryOrderId])
   const taskCardTone = (item: SafetyEvent) => {
     if (item.level === '高风险') return 'high-risk'
     if (item.status === '处理中') return 'processing'
@@ -727,7 +825,8 @@ function StaffWorkView({
     const action = nextAction(item)
     const isComplete = action.next === '已完成'
     try {
-      await updateEventStatus(item.id, action.next, '王队', isComplete ? resultText || '现场风险已解除，已同步指挥端复盘。' : undefined)
+      const next = await updateEventStatus(item.id, action.next, staffName, isComplete ? resultText || '现场风险已解除，已同步指挥端复盘。' : undefined)
+      replaceStaffEvent(next)
       Taro.showToast({ title: isComplete ? '处置已闭环' : `已更新为${action.next}`, icon: 'none' })
       if (isComplete) {
         setResultText('')
@@ -761,9 +860,9 @@ function StaffWorkView({
           </View>
         ))}
       </View>
-      {staffTab === 'map' && <StaffMapView events={events} />}
-      {staffTab === 'ledger' && <StaffLedgerView events={events} />}
-      {staffTab === 'mine' && <StaffMineView events={events} logout={logout} />}
+      {staffTab === 'map' && <StaffMapView events={visibleStaffEvents} staffName={staffName} staffLocation={staffLocation} />}
+      {staffTab === 'ledger' && <StaffLedgerView events={visibleStaffEvents} />}
+      {staffTab === 'mine' && <StaffMineView events={visibleStaffEvents} logout={logout} />}
       {staffTab === 'tasks' && (
         <View className='staff-task-dashboard'>
           <View className='staff-task-metrics'>
@@ -797,10 +896,20 @@ function StaffWorkView({
                   <Text>⌖</Text>
                   <Text>{item.bay} ({item.distance})</Text>
                 </View>
+                <View className='staff-route-pill'>
+                  <Text>路线</Text>
+                  <Text>{routeLabel(item)}</Text>
+                </View>
                 {expandedId === item.id && (
                   <View className='staff-task-detail'>
                     <Text>{item.description}</Text>
                     <Text>负责人：{item.owner} · 来源：{item.source}</Text>
+                    {item.meta?.route && (
+                      <View className='staff-route-detail'>
+                        <Text>推荐交通：{item.meta.route.modeLabel}</Text>
+                        <Text>距离 {item.meta.route.distanceLabel} · 预计 {item.meta.route.etaLabel}</Text>
+                      </View>
+                    )}
                     <View className='timeline compact-line'>
                       {statusFlow.map((status) => <Text key={status} className={statusRank[item.status] >= statusRank[status] ? 'active-step' : ''}>{status}</Text>)}
                     </View>
@@ -855,38 +964,74 @@ function StaffWorkView({
 
 type StaffTab = 'tasks' | 'map' | 'ledger' | 'mine'
 
-function StaffMapView({ events }: { events: SafetyEvent[] }) {
-  const activeCount = events.filter((event) => event.status !== '已完成').length
+function StaffMapView({
+  events,
+  staffName,
+  staffLocation,
+}: {
+  events: SafetyEvent[]
+  staffName: string
+  staffLocation: MapProps.point | null
+}) {
+  const activeOrders = events.filter((event) => event.status !== '已完成')
+  const activeCount = activeOrders.length
+  const selfPoint = staffLocation || { latitude: 28.6827, longitude: 115.8593 }
   const staffMapPoints = useMemo(() => {
-    const eventPoints: JiangtanMapPoint[] = events
+    const eventPoints: JiangtanMapPoint[] = activeOrders
       .filter((event) => event.status !== '已完成')
       .map((event, index) => {
         const bayPoint = findJiangtanPointByBay(event.bay)
+        const alarmPoint = getEventAlarmPoint(event)
         return {
           id: 100 + index,
           bay: event.bay,
           name: event.title,
           address: bayPoint.address,
-          latitude: bayPoint.latitude + index * 0.0012,
-          longitude: bayPoint.longitude + index * 0.001,
+          latitude: alarmPoint.latitude,
+          longitude: alarmPoint.longitude,
           tone: eventMarkerTone(event),
-          summary: `${event.bay} · ${event.status} · ${event.owner}`,
+          summary: `${event.bay} · ${event.status} · ${event.owner} · ${routeLabel(event)}`,
         }
       })
+    const selfMarker: JiangtanMapPoint = {
+      id: 9001,
+      bay: '我的位置',
+      name: `${staffName}当前位置`,
+      address: '工作人员端实时定位',
+      latitude: selfPoint.latitude,
+      longitude: selfPoint.longitude,
+      tone: 'service',
+      summary: staffLocation ? '已同步给指挥端' : '使用默认巡防点',
+    }
 
-    return [...jiangtanMapPoints, ...staffPatrolPoints, ...eventPoints]
-  }, [events])
+    return [selfMarker, ...jiangtanMapPoints, ...staffPatrolPoints, ...eventPoints]
+  }, [activeOrders, selfPoint.latitude, selfPoint.longitude, staffLocation, staffName])
   const staffMapMarkers = useMemo(() => createMapMarkers(staffMapPoints), [staffMapPoints])
+  const routeLines = useMemo(() => activeOrders
+    .map((event, index) => {
+      const points = routeLinePoints(event)
+      if (points.length < 2) return null
+      return {
+        points,
+        color: index === 0 ? '#0084FF' : '#10B981',
+        width: index === 0 ? 6 : 4,
+        dottedLine: false,
+        arrowLine: true,
+      }
+    })
+    .filter(Boolean), [activeOrders])
   const staffIncludePoints = useMemo(
-    () => staffMapPoints.map(({ latitude, longitude }) => ({ latitude, longitude })),
-    [staffMapPoints],
+    () => staffMapPoints
+      .map(({ latitude, longitude }) => ({ latitude, longitude }))
+      .concat(activeOrders.flatMap(routeLinePoints)),
+    [activeOrders, staffMapPoints],
   )
 
   return (
     <View className='staff-subpage'>
       <View className='staff-summary-card'>
         <Text>夜市商圈态势</Text>
-        <Text>当前有 {activeCount} 个任务需要巡防力量关注</Text>
+        <Text>当前有 {activeCount} 个我的任务需要关注，蓝色线路为优先处置路线</Text>
       </View>
       <View className='staff-map'>
         <Map
@@ -897,6 +1042,7 @@ function StaffMapView({ events }: { events: SafetyEvent[] }) {
           minScale={14}
           maxScale={19}
           markers={staffMapMarkers}
+          polyline={routeLines as MapProps.polyline[]}
           includePoints={staffIncludePoints}
           showLocation
           showCompass
@@ -917,6 +1063,15 @@ function StaffMapView({ events }: { events: SafetyEvent[] }) {
         <View><View className='legend-dot danger' /><Text>重点</Text></View>
         <View><View className='legend-dot service' /><Text>巡防/装备</Text></View>
       </View>
+      {activeOrders.slice(0, 2).map((event) => (
+        <View className='staff-route-card' key={event.id}>
+          <View>
+            <Text>{event.title}</Text>
+            <Text>{event.bay} · 报警点已同步</Text>
+          </View>
+          <Text>{routeLabel(event)}</Text>
+        </View>
+      ))}
       <View className='content-card'>
         <CardTitle title='附近巡防力量' action='3 组在线' />
         {['PTU快反点 · 王队 · 90m', '无人机机巢 · 李敏 · 待命', '机器狗巡逻点 · 陈安 · 后巷补盲'].map((item) => (

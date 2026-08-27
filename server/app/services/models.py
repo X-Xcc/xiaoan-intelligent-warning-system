@@ -42,6 +42,20 @@ class EventAuditLog(Base):
     createdAt: Mapped[str] = mapped_column(String(32), nullable=False)
 
 
+class PatrolStaff(Base):
+    __tablename__ = "patrol_staff"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    name: Mapped[str] = mapped_column(String(80), nullable=False, unique=True)
+    role: Mapped[str] = mapped_column(String(80), nullable=False)
+    latitude: Mapped[float] = mapped_column(nullable=False)
+    longitude: Mapped[float] = mapped_column(nullable=False)
+    modes: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    online: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    updatedAt: Mapped[str] = mapped_column(String(32), nullable=False)
+    accuracy: Mapped[float | None] = mapped_column(nullable=True)
+
+
 class WechatUser(Base):
     __tablename__ = "wechat_users"
 

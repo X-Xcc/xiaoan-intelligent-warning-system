@@ -1,16 +1,63 @@
 from __future__ import annotations
 
 from datetime import datetime
+from math import atan2, cos, radians, sin, sqrt
 from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.services.database import DB_LOCK, SessionLocal, init_database
-from app.services.models import EventAuditLog, SafetyEvent
+from app.services.models import EventAuditLog, PatrolStaff, SafetyEvent
 
 
 STATUS_FLOW = ["已提交", "已派单", "已接收", "已到达", "处理中", "已完成"]
+
+STAFF_ROSTER: dict[str, dict[str, Any]] = {
+    "wang": {
+        "id": "wang",
+        "name": "王队",
+        "role": "PTU快反组",
+        "latitude": 28.6827,
+        "longitude": 115.8593,
+        "modes": ["walk", "bike", "drive"],
+    },
+    "li": {
+        "id": "li",
+        "name": "李敏",
+        "role": "无人机机动组",
+        "latitude": 28.6847,
+        "longitude": 115.861,
+        "modes": ["bike", "drive"],
+    },
+    "chen": {
+        "id": "chen",
+        "name": "陈安",
+        "role": "机器狗巡逻点",
+        "latitude": 28.6804,
+        "longitude": 115.8614,
+        "modes": ["walk", "bike"],
+    },
+}
+
+STAFF_LOCATIONS: dict[str, dict[str, Any]] = {
+    staff_id: {
+        "latitude": staff["latitude"],
+        "longitude": staff["longitude"],
+        "updatedAt": "系统初始",
+    }
+    for staff_id, staff in STAFF_ROSTER.items()
+}
+
+BAY_COORDS: dict[str, dict[str, float]] = {
+    "主街烧烤区": {"latitude": 28.682, "longitude": 115.8585},
+    "三号门夜食街": {"latitude": 28.684, "longitude": 115.8606},
+    "后巷摊位区": {"latitude": 28.6805, "longitude": 115.8612},
+    "停车场入口": {"latitude": 28.6834, "longitude": 115.8571},
+    "啤酒广场": {"latitude": 28.6812, "longitude": 115.8597},
+    "亲子餐饮区": {"latitude": 28.6829, "longitude": 115.8609},
+    "商户服务点": {"latitude": 28.6818, "longitude": 115.8578},
+}
 
 SEED_EVENTS = [
     {
@@ -399,6 +446,148 @@ def _new_id(prefix: str = "JT") -> str:
     return f"{prefix}-{datetime.now().strftime('%y%m%d-%H%M%S-%f')[:20]}"
 
 
+def _staff_key(staff: str | None) -> str | None:
+    if not staff:
+        return None
+    normalized = staff.strip()
+    for staff_id, item in STAFF_ROSTER.items():
+        if normalized in {staff_id, item["name"], item["role"]}:
+            return staff_id
+    return None
+
+
+def _location(latitude: float, longitude: float, name: str, source: str = "gps") -> dict[str, Any]:
+    return {
+        "latitude": round(float(latitude), 6),
+        "longitude": round(float(longitude), 6),
+        "name": name,
+        "source": source,
+    }
+
+
+def _event_location(event: dict[str, Any]) -> dict[str, Any]:
+    meta = event.get("meta") or {}
+    reporter = meta.get("reporterLocation") or meta.get("alarmLocation")
+    if isinstance(reporter, dict) and reporter.get("latitude") is not None and reporter.get("longitude") is not None:
+        return _location(reporter["latitude"], reporter["longitude"], event["bay"], reporter.get("source", "gps"))
+    if meta.get("latitude") is not None and meta.get("longitude") is not None:
+        return _location(meta["latitude"], meta["longitude"], event["bay"], "legacy_gps")
+    fallback = BAY_COORDS.get(event["bay"]) or BAY_COORDS["主街烧烤区"]
+    return _location(fallback["latitude"], fallback["longitude"], event["bay"], "bay_fallback")
+
+
+def _staff_location(staff_id: str, session: Session | None = None) -> dict[str, Any]:
+    staff = STAFF_ROSTER[staff_id]
+    if session is not None:
+        row = session.get(PatrolStaff, staff_id)
+        if row:
+            return _location(
+                row.latitude,
+                row.longitude,
+                row.name,
+                "staff_gps" if row.updatedAt != "系统初始" else "staff_default",
+            )
+    current = STAFF_LOCATIONS.get(staff_id) or {}
+    return _location(
+        current.get("latitude", staff["latitude"]),
+        current.get("longitude", staff["longitude"]),
+        staff["name"],
+        "staff_gps" if current.get("updatedAt") != "系统初始" else "staff_default",
+    )
+
+
+def _haversine_meters(origin: dict[str, Any], destination: dict[str, Any]) -> int:
+    radius = 6371000
+    lat1 = radians(float(origin["latitude"]))
+    lat2 = radians(float(destination["latitude"]))
+    delta_lat = radians(float(destination["latitude"]) - float(origin["latitude"]))
+    delta_lon = radians(float(destination["longitude"]) - float(origin["longitude"]))
+    a = sin(delta_lat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(delta_lon / 2) ** 2
+    return round(radius * 2 * atan2(sqrt(a), sqrt(1 - a)))
+
+
+def _format_distance(distance_meters: int) -> str:
+    if distance_meters < 1000:
+        return f"{distance_meters}m"
+    return f"{distance_meters / 1000:.1f}km"
+
+
+def _recommend_transport(distance_meters: int, staff_id: str, session: Session | None = None) -> dict[str, Any]:
+    row = session.get(PatrolStaff, staff_id) if session is not None else None
+    available = row.modes if row else STAFF_ROSTER[staff_id]["modes"]
+    if distance_meters <= 800 and "walk" in available:
+        mode = "walk"
+        speed = 80
+        label = "步行"
+    elif distance_meters <= 2500 and "bike" in available:
+        mode = "bike"
+        speed = 180
+        label = "骑行"
+    else:
+        mode = "drive" if "drive" in available else available[-1]
+        speed = 420 if mode == "drive" else 180
+        label = "驾车" if mode == "drive" else "骑行"
+    eta = max(1, round(distance_meters / speed))
+    return {"mode": mode, "modeLabel": label, "etaMinutes": eta, "etaLabel": f"{eta}分钟"}
+
+
+def _build_route(
+    origin: dict[str, Any],
+    destination: dict[str, Any],
+    staff_id: str,
+    session: Session | None = None,
+) -> dict[str, Any]:
+    distance_meters = _haversine_meters(origin, destination)
+    transport = _recommend_transport(distance_meters, staff_id, session)
+    mid_lat = (origin["latitude"] + destination["latitude"]) / 2
+    mid_lon = (origin["longitude"] + destination["longitude"]) / 2
+    offset = min(0.00045, max(0.00012, distance_meters / 10000000))
+    points = [
+        {"latitude": origin["latitude"], "longitude": origin["longitude"]},
+        {"latitude": round(mid_lat + offset, 6), "longitude": round(mid_lon - offset, 6)},
+        {"latitude": destination["latitude"], "longitude": destination["longitude"]},
+    ]
+    return {
+        **transport,
+        "distanceMeters": distance_meters,
+        "distanceLabel": _format_distance(distance_meters),
+        "origin": origin,
+        "destination": destination,
+        "points": points,
+        "provider": "local_recommendation",
+    }
+
+
+def _build_assignment(event: dict[str, Any], staff_id: str | None = None, session: Session | None = None) -> dict[str, Any]:
+    destination = _event_location(event)
+    candidates: list[dict[str, Any]] = []
+    staff_ids = [staff_id] if staff_id else list(STAFF_ROSTER.keys())
+    for candidate_id in staff_ids:
+        origin = _staff_location(candidate_id, session)
+        route = _build_route(origin, destination, candidate_id, session)
+        row = session.get(PatrolStaff, candidate_id) if session is not None else None
+        staff = STAFF_ROSTER[candidate_id]
+        candidates.append(
+            {
+                "staffId": candidate_id,
+                "staffName": row.name if row else staff["name"],
+                "role": row.role if row else staff["role"],
+                "route": route,
+                "score": route["distanceMeters"],
+            }
+        )
+    best = min(candidates, key=lambda item: item["score"])
+    return {
+        "staffId": best["staffId"],
+        "staffName": best["staffName"],
+        "role": best["role"],
+        "assignedAt": datetime.now().isoformat(timespec="seconds"),
+        "reason": "按实时距离与可用交通方式推荐",
+        "route": best["route"],
+        "candidates": candidates,
+    }
+
+
 def _event_to_dict(event: SafetyEvent) -> dict[str, Any]:
     return {
         "id": event.id,
@@ -468,9 +657,50 @@ def _append_log(
     )
 
 
+def _seed_staff(session: Session) -> None:
+    now_iso = datetime.now().isoformat(timespec="seconds")
+    for staff_id, staff in STAFF_ROSTER.items():
+        row = session.get(PatrolStaff, staff_id)
+        if row:
+            continue
+        session.add(
+            PatrolStaff(
+                id=staff_id,
+                name=staff["name"],
+                role=staff["role"],
+                latitude=staff["latitude"],
+                longitude=staff["longitude"],
+                modes=staff["modes"],
+                online=True,
+                updatedAt="系统初始",
+                accuracy=None,
+            )
+        )
+        STAFF_LOCATIONS[staff_id] = {
+            "latitude": staff["latitude"],
+            "longitude": staff["longitude"],
+            "updatedAt": "系统初始",
+        }
+
+
+def _staff_to_dict(row: PatrolStaff) -> dict[str, Any]:
+    return {
+        "id": row.id,
+        "name": row.name,
+        "role": row.role,
+        "location": _location(row.latitude, row.longitude, row.name, "staff_gps" if row.updatedAt != "系统初始" else "staff_default"),
+        "updatedAt": row.updatedAt,
+        "modes": row.modes,
+        "online": row.online,
+        "accuracy": row.accuracy,
+    }
+
+
 def init_db() -> None:
     init_database()
     with DB_LOCK, SessionLocal() as session:
+        _seed_staff(session)
+        session.commit()
         count = session.scalar(select(func.count()).select_from(SafetyEvent)) or 0
         if count == 0:
             for item in SEED_EVENTS:
@@ -586,6 +816,16 @@ def create_help_event(
 ) -> dict[str, Any]:
     init_db()
     label = _now_label()
+    alarm_location = (
+        _location(latitude, longitude, bay, "visitor_gps")
+        if latitude is not None and longitude is not None
+        else _location(
+            BAY_COORDS.get(bay, BAY_COORDS["主街烧烤区"])["latitude"],
+            BAY_COORDS.get(bay, BAY_COORDS["主街烧烤区"])["longitude"],
+            bay,
+            "bay_fallback",
+        )
+    )
     event = {
         "id": _new_id("HELP"),
         "kind": "help",
@@ -601,9 +841,20 @@ def create_help_event(
         "description": description or "商户或群众已同步夜市点位，请巡防组尽快联系并前往核实。",
         "result": None,
         "anonymous": False,
-        "meta": {"latitude": latitude, "longitude": longitude, "contact": contact},
+        "meta": {
+            "latitude": latitude,
+            "longitude": longitude,
+            "contact": contact,
+            "reporterLocation": alarm_location,
+            "alarmLocation": alarm_location,
+        },
     }
     with DB_LOCK, SessionLocal() as session:
+        assignment = _build_assignment(event, session=session)
+        event["owner"] = assignment["staffName"]
+        event["distance"] = assignment["route"]["distanceLabel"]
+        event["meta"]["assignment"] = {key: value for key, value in assignment.items() if key != "route"}
+        event["meta"]["route"] = assignment["route"]
         insert_event(session, event)
         session.commit()
     return get_event(event["id"]) or event
@@ -706,6 +957,142 @@ def update_event(
     return get_event(event_id)
 
 
+def assign_event(event_id: str, staff: str, operator: str | None = None) -> dict[str, Any] | None:
+    init_db()
+    staff_id = _staff_key(staff)
+    if not staff_id:
+        raise ValueError(f"Unsupported staff: {staff}")
+
+    label = _now_label()
+    with DB_LOCK, SessionLocal() as session:
+        current = session.get(SafetyEvent, event_id)
+        if not current:
+            return None
+        event = _event_to_dict(current)
+        assignment = _build_assignment(event, staff_id, session)
+        meta = dict(current.meta_json or {})
+        meta["assignment"] = {key: value for key, value in assignment.items() if key != "route"}
+        meta["route"] = assignment["route"]
+        meta["alarmLocation"] = assignment["route"]["destination"]
+        current.status = "已派单"
+        current.owner = assignment["staffName"]
+        current.distance = assignment["route"]["distanceLabel"]
+        current.meta_json = meta
+        current.updatedAt = label
+        current.updatedAtIso = datetime.now().isoformat(timespec="seconds")
+        _append_log(
+            session,
+            event_id,
+            "派发工单",
+            current.status,
+            current.owner,
+            operator or "指挥中心",
+            f"已派给{assignment['staffName']}，推荐{assignment['route']['modeLabel']}，预计{assignment['route']['etaLabel']}",
+        )
+        session.commit()
+    return get_event(event_id)
+
+
+def list_staff() -> list[dict[str, Any]]:
+    init_db()
+    with SessionLocal() as session:
+        rows = session.scalars(select(PatrolStaff).order_by(PatrolStaff.id.asc())).all()
+        return [_staff_to_dict(row) for row in rows]
+
+
+def update_staff_location(
+    staff: str,
+    latitude: float,
+    longitude: float,
+    accuracy: float | None = None,
+) -> dict[str, Any]:
+    staff_id = _staff_key(staff)
+    if not staff_id:
+        raise ValueError(f"Unsupported staff: {staff}")
+    now_iso = datetime.now().isoformat(timespec="seconds")
+    STAFF_LOCATIONS[staff_id] = {
+        "latitude": latitude,
+        "longitude": longitude,
+        "accuracy": accuracy,
+        "updatedAt": now_iso,
+    }
+    init_db()
+    with DB_LOCK, SessionLocal() as session:
+        row = session.get(PatrolStaff, staff_id)
+        if not row:
+            _seed_staff(session)
+            row = session.get(PatrolStaff, staff_id)
+        if not row:
+            raise ValueError(f"Unsupported staff: {staff}")
+        row.latitude = latitude
+        row.longitude = longitude
+        row.accuracy = accuracy
+        row.online = True
+        row.updatedAt = now_iso
+        session.commit()
+        return _staff_to_dict(row)
+
+
+def list_staff_tasks(staff: str) -> list[dict[str, Any]]:
+    staff_id = _staff_key(staff)
+    if not staff_id:
+        raise ValueError(f"Unsupported staff: {staff}")
+    init_db()
+    with SessionLocal() as session:
+        row = session.get(PatrolStaff, staff_id)
+        staff_name = row.name if row else STAFF_ROSTER[staff_id]["name"]
+    return [
+        event
+        for event in list_events()
+        if event["owner"] == staff_name or (event.get("meta") or {}).get("assignment", {}).get("staffId") == staff_id
+    ]
+
+
+def recommend_route(
+    event_id: str,
+    staff: str,
+    latitude: float | None = None,
+    longitude: float | None = None,
+    accuracy: float | None = None,
+) -> dict[str, Any] | None:
+    staff_id = _staff_key(staff)
+    if not staff_id:
+        raise ValueError(f"Unsupported staff: {staff}")
+    if latitude is not None and longitude is not None:
+        update_staff_location(staff_id, latitude, longitude, accuracy)
+
+    label = _now_label()
+    with DB_LOCK, SessionLocal() as session:
+        current = session.get(SafetyEvent, event_id)
+        if not current:
+            return None
+        staff_row = session.get(PatrolStaff, staff_id)
+        staff_name = staff_row.name if staff_row else STAFF_ROSTER[staff_id]["name"]
+        staff_role = staff_row.role if staff_row else STAFF_ROSTER[staff_id]["role"]
+        event = _event_to_dict(current)
+        route = _build_route(_staff_location(staff_id, session), _event_location(event), staff_id, session)
+        meta = dict(current.meta_json or {})
+        meta["route"] = route
+        assignment = dict(meta.get("assignment") or {})
+        assignment.update(
+            {
+                "staffId": staff_id,
+                "staffName": staff_name,
+                "role": staff_role,
+                "assignedAt": assignment.get("assignedAt") or datetime.now().isoformat(timespec="seconds"),
+                "reason": assignment.get("reason") or "按实时距离与可用交通方式推荐",
+            }
+        )
+        meta["assignment"] = assignment
+        current.owner = staff_name
+        current.distance = route["distanceLabel"]
+        current.meta_json = meta
+        current.updatedAt = label
+        current.updatedAtIso = datetime.now().isoformat(timespec="seconds")
+        session.commit()
+    return get_event(event_id)
+
+
 def supplement_event(event_id: str, text: str) -> dict[str, Any] | None:
     init_db()
     label = _now_label()
@@ -735,6 +1122,7 @@ def list_night_markets() -> list[dict[str, Any]]:
 
 def overview() -> dict[str, Any]:
     events = list_events()
+    staff = list_staff()
     open_events = [event for event in events if event["status"] != "已完成"]
     urgent = [event for event in events if event["level"] == "高风险"]
     closed = [event for event in events if event["status"] == "已完成"]
@@ -744,14 +1132,14 @@ def overview() -> dict[str, Any]:
         "stats": {
             "today_events": len(events),
             "pending_orders": len(open_events),
-            "online_staff": 18,
+            "online_staff": len([item for item in staff if item["online"]]),
             "avg_response_minutes": 2.1,
             "completion_rate": round((len(closed) / len(events)) * 100) if events else 0,
             "urgent_events": len(urgent),
         },
         "events": events,
         "night_markets": list_night_markets(),
-        "patrol_staff": ["王队", "李敏", "陈安", "义警联络员"],
+        "patrol_staff": staff,
         "ai_copilot": {
             "skills": [
                 {

@@ -1179,6 +1179,39 @@ page {
   line-height: 1.45;
 }
 
+.staff-route-pill,
+.staff-route-detail,
+.staff-route-card {
+  border: 1px solid rgba(0, 132, 255, 0.12);
+  background: rgba(0, 132, 255, 0.06);
+}
+
+.staff-route-pill {
+  margin-top: 8px;
+  min-height: 34px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.staff-route-pill text:first-child {
+  color: var(--primary);
+  font-size: 11px;
+  line-height: 1.2;
+  font-weight: 800;
+}
+
+.staff-route-pill text:last-child {
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.3;
+  font-weight: 800;
+  text-align: right;
+}
+
 .staff-task-detail {
   margin-top: 10px;
   padding: 12px;
@@ -1201,6 +1234,25 @@ page {
   color: var(--muted);
   font-size: 12px;
   line-height: 1.45;
+}
+
+.staff-route-detail {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+}
+
+.staff-route-detail text:first-child {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.staff-route-detail text:last-child {
+  margin-top: 3px;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .compact-line {
@@ -1309,6 +1361,44 @@ page {
 
 .legend-dot.service {
   background: var(--primary);
+}
+
+.staff-route-card {
+  padding: 10px 12px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.staff-route-card view {
+  min-width: 0;
+}
+
+.staff-route-card text {
+  display: block;
+}
+
+.staff-route-card view text:first-child {
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.35;
+  font-weight: 800;
+}
+
+.staff-route-card view text:last-child {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.staff-route-card > text {
+  flex-shrink: 0;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .ledger-card {

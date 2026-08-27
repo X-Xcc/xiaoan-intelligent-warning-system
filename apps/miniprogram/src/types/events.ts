@@ -8,6 +8,52 @@ export type EventStatus = '已提交' | '已派单' | '已接收' | '已到达' 
 
 export type RiskLevel = '高风险' | '中风险' | '低风险'
 
+export type GeoPoint = {
+  latitude: number
+  longitude: number
+  name?: string
+  source?: string
+}
+
+export type SafetyRoute = {
+  mode: 'walk' | 'bike' | 'drive' | string
+  modeLabel: string
+  etaMinutes: number
+  etaLabel: string
+  distanceMeters: number
+  distanceLabel: string
+  origin: GeoPoint
+  destination: GeoPoint
+  points: GeoPoint[]
+  provider?: string
+}
+
+export type EventAssignment = {
+  staffId: string
+  staffName: string
+  role: string
+  assignedAt?: string
+  reason?: string
+  candidates?: Array<{
+    staffId: string
+    staffName: string
+    role: string
+    score: number
+    route: SafetyRoute
+  }>
+}
+
+export type EventMeta = {
+  latitude?: number
+  longitude?: number
+  contact?: string | null
+  reporterLocation?: GeoPoint
+  alarmLocation?: GeoPoint
+  assignment?: EventAssignment
+  route?: SafetyRoute
+  [key: string]: unknown
+}
+
 export type SafetyEvent = {
   id: string
   kind: EventKind
@@ -23,6 +69,7 @@ export type SafetyEvent = {
   updatedAt: string
   result?: string
   anonymous?: boolean
+  meta?: EventMeta
 }
 
 export type ReportForm = {

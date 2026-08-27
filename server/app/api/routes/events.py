@@ -37,6 +37,18 @@ class EventStatusIn(BaseModel):
     operator: str | None = None
 
 
+class AssignIn(BaseModel):
+    staff: str
+    operator: str | None = None
+
+
+class StaffLocationIn(BaseModel):
+    staff: str = "王队"
+    latitude: float
+    longitude: float
+    accuracy: float | None = None
+
+
 class SupplementIn(BaseModel):
     text: str = Field(min_length=1)
 
@@ -55,6 +67,29 @@ def overview():
 def night_markets():
     items = event_store.list_night_markets()
     return {"count": len(items), "items": items}
+
+
+@router.get("/staff")
+def staff_list():
+    return {"items": event_store.list_staff()}
+
+
+@router.post("/staff-location")
+def update_staff_location(payload: StaffLocationIn):
+    try:
+        staff = event_store.update_staff_location(payload.staff, payload.latitude, payload.longitude, payload.accuracy)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"staff": staff}
+
+
+@router.get("/staff-tasks")
+def staff_tasks(staff: str = "王队"):
+    try:
+        items = event_store.list_staff_tasks(staff)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"items": items}
 
 
 @router.post("/help")
@@ -97,6 +132,34 @@ def update_status(event_id: str, payload: EventStatusIn):
     if not event:
         raise HTTPException(status_code=404, detail="事件不存在")
     return {"event": event}
+
+
+@router.patch("/{event_id}/assign")
+def assign_event(event_id: str, payload: AssignIn):
+    try:
+        event = event_store.assign_event(event_id, payload.staff, payload.operator)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if not event:
+        raise HTTPException(status_code=404, detail="事件不存在")
+    return {"event": event}
+
+
+@router.get("/{event_id}/route")
+def route_event(
+    event_id: str,
+    staff: str = "王队",
+    latitude: float | None = None,
+    longitude: float | None = None,
+    accuracy: float | None = None,
+):
+    try:
+        event = event_store.recommend_route(event_id, staff, latitude, longitude, accuracy)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if not event:
+        raise HTTPException(status_code=404, detail="事件不存在")
+    return {"event": event, "route": (event.get("meta") or {}).get("route")}
 
 
 @router.patch("/{event_id}/supplement")

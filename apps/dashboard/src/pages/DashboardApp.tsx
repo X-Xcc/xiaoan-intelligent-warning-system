@@ -38,6 +38,34 @@ type SafetyEvent = {
   updatedAt: string;
   description: string;
   result?: string | null;
+  meta?: {
+    alarmLocation?: GeoPoint;
+    reporterLocation?: GeoPoint;
+    assignment?: {
+      staffId: string;
+      staffName: string;
+      role: string;
+      reason?: string;
+      assignedAt?: string;
+    };
+    route?: SafetyRoute;
+  };
+};
+type GeoPoint = {
+  latitude: number;
+  longitude: number;
+  name?: string;
+  source?: string;
+};
+type SafetyRoute = {
+  mode: string;
+  modeLabel: string;
+  etaLabel: string;
+  distanceLabel: string;
+  distanceMeters: number;
+  origin: GeoPoint;
+  destination: GeoPoint;
+  points?: GeoPoint[];
 };
 type NightMarket = {
   id: string;
@@ -48,6 +76,15 @@ type NightMarket = {
   longitude: number;
   tone: 'danger' | 'warn' | 'safe' | 'service';
   summary: string;
+};
+type PatrolStaff = {
+  id: string;
+  name: string;
+  role: string;
+  online: boolean;
+  location?: GeoPoint;
+  updatedAt?: string;
+  modes?: string[];
 };
 type Overview = {
   project: string;
@@ -62,6 +99,7 @@ type Overview = {
   };
   events: SafetyEvent[];
   night_markets?: NightMarket[];
+  patrol_staff?: PatrolStaff[];
   ai_copilot?: {
     agents?: Array<{ name: string; status: string; currentTask: string; latency: string }>;
     mcp_connectors?: Array<{ name: string; status: string; scope: string; lastSync: string }>;
@@ -383,6 +421,7 @@ function CommandPage({
   const selected = overview.events.find((event) => event.id === selectedId) ?? filtered[0];
   const nightMarkets = overview.night_markets?.length ? overview.night_markets : fallbackMarkets;
   const selectedMarket = nightMarkets.find((market) => market.id === selectedMarketId) ?? nightMarkets[0];
+  const dispatchStaff = overview.patrol_staff?.length ? overview.patrol_staff.filter((staff) => staff.online).map((staff) => staff.name) : ['王队', '李敏', '陈安'];
 
   useEffect(() => {
     if (!overview.events.some((event) => event.id === selectedId)) setSelectedId(overview.events[0]?.id ?? '');
@@ -413,6 +452,25 @@ function CommandPage({
       refresh();
     } catch {
       notify('状态更新失败，请确认 FastAPI 服务已启动');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const assignTo = async (staff: string) => {
+    if (!selected) return;
+    setUpdating(true);
+    try {
+      const response = await fetch(`${API_BASE}/events/${selected.id}/assign`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ staff, operator: '指挥中心' }),
+      });
+      if (!response.ok) throw new Error();
+      notify(`事件 ${selected.id} 已派给 ${staff}`);
+      refresh();
+    } catch {
+      notify('派单失败，请确认 FastAPI 服务已启动');
     } finally {
       setUpdating(false);
     }
@@ -515,6 +573,21 @@ function CommandPage({
                 <Property label="来源" value={selected.source} />
                 <Property label="当前" value={selected.status} />
               </div>
+              <div className="dispatch-card">
+                <span>派单与路线</span>
+                <strong>{selected.meta?.assignment?.staffName ?? selected.owner}</strong>
+                <p>
+                  {selected.meta?.assignment?.role ?? '等待指挥端派单'} · {selected.meta?.route ? `${selected.meta.route.modeLabel} ${selected.meta.route.distanceLabel} / ${selected.meta.route.etaLabel}` : '等待路线生成'}
+                </p>
+              </div>
+              <label className="field-label">派给工作人员</label>
+              <div className="dispatch-actions">
+                {dispatchStaff.map((staff) => (
+                  <button className={selected.owner === staff ? 'active' : ''} key={staff} onClick={() => assignTo(staff)} disabled={updating}>
+                    {staff}
+                  </button>
+                ))}
+              </div>
               <div className="detail-description">{selected.description}</div>
               <label className="field-label">更新事件状态</label>
               <div className="status-actions">
@@ -582,6 +655,8 @@ function AdminPage({ overview, apiOnline, refresh }: { overview: Overview; apiOn
     ['GET', '/api/events/overview', '态势总览'],
     ['GET', '/api/events', '事件工单与时间线'],
     ['PATCH', '/api/events/{event_id}/status', '状态流转'],
+    ['PATCH', '/api/events/{event_id}/assign', '数据库派单与路线'],
+    ['POST', '/api/events/staff-location', '工作人员定位入库'],
     ['POST', '/api/events/help', '群众 / 商户求助'],
   ];
   const agents = overview.ai_copilot?.agents ?? [];
