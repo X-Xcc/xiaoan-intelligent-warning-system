@@ -5,9 +5,11 @@ import prodConfig from './prod'
 
 export default defineConfig<'webpack5'>(async (merge) => {
   const outputRoot = process.env.TARO_ENV === 'alipay' ? 'dist-alipay' : 'dist'
+  const apiBaseUrl = process.env.TARO_APP_API_BASE_URL || 'http://120.26.137.173/api'
+  const enableDevLogin = process.env.TARO_APP_ENABLE_DEV_LOGIN || (process.env.NODE_ENV !== 'production' ? 'true' : 'false')
 
   const baseConfig: UserConfigExport<'webpack5'> = {
-    projectName: 'jiangtan-zhifang-miniprogram',
+    projectName: 'yanhuo-shaobing-miniprogram',
     date: '2026-08-02',
     designWidth: 750,
     deviceRatio: {
@@ -19,7 +21,10 @@ export default defineConfig<'webpack5'>(async (merge) => {
     sourceRoot: 'src',
     outputRoot,
     plugins: ['@tarojs/plugin-generator'],
-    defineConstants: {},
+    defineConstants: {
+      'process.env.TARO_APP_API_BASE_URL': JSON.stringify(apiBaseUrl),
+      'process.env.TARO_APP_ENABLE_DEV_LOGIN': JSON.stringify(enableDevLogin)
+    },
     copy: {
       patterns: [],
       options: {}
@@ -77,7 +82,7 @@ export default defineConfig<'webpack5'>(async (merge) => {
       }
     },
     rn: {
-      appName: 'JiangtanZhifang',
+      appName: 'YanhuoShaobing',
       postcss: {
         cssModules: {
           enable: false

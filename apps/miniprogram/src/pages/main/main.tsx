@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Button, Input, Map, Text, Textarea, View } from '@tarojs/components'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Button, Image, Input, Map, Text, Textarea, View } from '@tarojs/components'
 import type { MapProps } from '@tarojs/components/types/Map'
 import Taro, { useRouter } from '@tarojs/taro'
 import { CardTitle, MetricCard, PageHeader } from '@/components/common'
@@ -7,14 +7,29 @@ import { LanguagePicker } from '@/components/LanguagePicker'
 import { Tabbar } from '@/components/Tabbar'
 import { bayOptions, reportCategories, statusFlow, statusRank } from '@/data/safety'
 import { useSafetyEvents, type ProgressFilter } from '@/hooks/useSafetyEvents'
-import type { AppMode, EventKind, EventStatus, ReportForm, SafetyEvent, TabKey } from '@/types/events'
+import type { AppMode, EventKind, EventStatus, HelpForm, ReportForm, SafetyEvent, SecurityOpsOverview, TabKey } from '@/types/events'
 import { openDetail } from '@/utils/navigation'
-import { fetchStaffTasks, refreshEventRoute, updateStaffLocation } from '@/utils/api'
+import {
+  compareIdentityArchive,
+  connectRealtimeEvents,
+  createAnalysisReport,
+  createContainmentPlan,
+  fetchSecurityFeeds,
+  fetchSecurityNotifications,
+  fetchSecurityOpsOverview,
+  fetchStaffTasks,
+  generateSecurityDutyPlans,
+  refreshEventRoute,
+  submitVoiceIntake,
+  updateStaffLocation,
+} from '@/utils/api'
 import { useLocale } from '@/i18n'
 import markerDanger from '@/assets/map-marker-danger.png'
 import markerSafe from '@/assets/map-marker-safe.png'
 import markerService from '@/assets/map-marker-service.png'
 import markerWarn from '@/assets/map-marker-warn.png'
+import yanhuoShaobingLogo from '@/assets/yanhuo-shaobing-logo.png'
+import yanhuoShaobingMark from '@/assets/yanhuo-shaobing-mark.png'
 import './main.scss'
 
 type MainMode = Exclude<AppMode, 'login'>
@@ -35,7 +50,7 @@ function normalizeTab(tab?: string): TabKey {
 
 type MarkerTone = 'safe' | 'warn' | 'danger' | 'service'
 
-type JiangtanMapPoint = {
+type NightMarketMapPoint = {
   id: number
   bay: string
   name: string
@@ -46,7 +61,7 @@ type JiangtanMapPoint = {
   summary: string
 }
 
-const jiangtanCenter: MapProps.point = { latitude: 28.682, longitude: 115.8585 }
+const nightMarketCenter: MapProps.point = { latitude: 28.682, longitude: 115.8585 }
 
 const mapMarkerIcons: Record<MarkerTone, string> = {
   safe: markerSafe,
@@ -55,7 +70,7 @@ const mapMarkerIcons: Record<MarkerTone, string> = {
   service: markerService,
 }
 
-const jiangtanMapPoints: JiangtanMapPoint[] = [
+const nightMarketMapPoints: NightMarketMapPoint[] = [
   {
     id: 1,
     bay: '网格A',
@@ -84,7 +99,7 @@ const jiangtanMapPoints: JiangtanMapPoint[] = [
     latitude: 28.6808,
     longitude: 115.862,
     tone: 'safe',
-    summary: '机器狗巡逻补齐监控盲区',
+    summary: '后巷通道与临时摊点关注区',
   },
   {
     id: 4,
@@ -114,7 +129,7 @@ const jiangtanMapPoints: JiangtanMapPoint[] = [
     latitude: 28.6853,
     longitude: 115.8581,
     tone: 'safe',
-    summary: '客流平稳，义警巡查在线',
+    summary: '家庭餐饮和亲子休息片区',
   },
   {
     id: 7,
@@ -124,19 +139,13 @@ const jiangtanMapPoints: JiangtanMapPoint[] = [
     latitude: 28.6815,
     longitude: 115.8551,
     tone: 'service',
-    summary: '商户义警、急救物资和便民服务点',
+    summary: '商户联络、急救物资和便民服务点',
   },
 ]
 
-const staffPatrolPoints: JiangtanMapPoint[] = [
-  { id: 31, bay: '巡防点', name: 'PTU快反点', address: '主街烧烤区东侧巡防岗', latitude: 28.6827, longitude: 115.8593, tone: 'service', summary: '王队在线，距主街烧烤区 90m' },
-  { id: 32, bay: '巡防点', name: '无人机机巢', address: '三号门夜食街楼顶机巢', latitude: 28.6847, longitude: 115.861, tone: 'service', summary: '李敏在线，空中巡查待命' },
-  { id: 33, bay: '巡防点', name: '机器狗巡逻点', address: '后巷摊位区入口', latitude: 28.6804, longitude: 115.8614, tone: 'service', summary: '陈安在线，补盲巡逻中' },
-]
+const nightMarketIncludePoints: MapProps.point[] = nightMarketMapPoints.map(({ latitude, longitude }) => ({ latitude, longitude }))
 
-const jiangtanIncludePoints: MapProps.point[] = jiangtanMapPoints.map(({ latitude, longitude }) => ({ latitude, longitude }))
-
-function createMapMarkers(points: JiangtanMapPoint[]): MapProps.marker[] {
+function createMapMarkers(points: NightMarketMapPoint[]): MapProps.marker[] {
   return points.map((point) => ({
     id: point.id,
     latitude: point.latitude,
@@ -163,7 +172,7 @@ function createMapMarkers(points: JiangtanMapPoint[]): MapProps.marker[] {
   }))
 }
 
-function showMapPoint(point: JiangtanMapPoint) {
+function showMapPoint(point: NightMarketMapPoint) {
   Taro.showModal({
     title: point.name,
     content: `${point.address}\n${point.summary}`,
@@ -184,15 +193,11 @@ function showMapPoint(point: JiangtanMapPoint) {
 }
 
 function mapLoadFailed() {
-  Taro.showToast({ title: '地图加载异常，请检查定位权限或网络', icon: 'none' })
+  Taro.showToast({ title: '地图没加载出来，请看定位权限或网络', icon: 'none' })
 }
 
-function callEmergency(phoneNumber = '110') {
-  Taro.makePhoneCall({ phoneNumber })
-}
-
-function findJiangtanPointByBay(bay: string) {
-  return jiangtanMapPoints.find((point) => point.name === bay || point.bay === bay) ?? jiangtanMapPoints[1]
+function findNightMarketPointByBay(bay: string) {
+  return nightMarketMapPoints.find((point) => point.name === bay || point.bay === bay) ?? nightMarketMapPoints[1]
 }
 
 function getEventAlarmPoint(event: SafetyEvent): MapProps.point {
@@ -203,7 +208,7 @@ function getEventAlarmPoint(event: SafetyEvent): MapProps.point {
   if (event.meta?.latitude && event.meta?.longitude) {
     return { latitude: event.meta.latitude, longitude: event.meta.longitude }
   }
-  const bayPoint = findJiangtanPointByBay(event.bay)
+  const bayPoint = findNightMarketPointByBay(event.bay)
   return { latitude: bayPoint.latitude, longitude: bayPoint.longitude }
 }
 
@@ -227,10 +232,12 @@ function eventMarkerTone(event: SafetyEvent): MarkerTone {
 
 export default function MainPage() {
   const router = useRouter()
+  const routerParams = router.params ?? {}
   const { t } = useLocale()
-  const routeMode: MainMode = router.params.mode === 'staffLogin' ? 'staffLogin' : 'visitor'
+  const routeMode: MainMode = routerParams.mode === 'staffLogin' ? 'staffLogin' : routerParams.mode === 'staff' ? 'staff' : 'visitor'
   const [mode, setMode] = useState<MainMode>(routeMode)
-  const [tab, setTab] = useState<TabKey>(normalizeTab(router.params.tab))
+  const [tab, setTab] = useState<TabKey>(normalizeTab(routerParams.tab))
+  const [staffName, setStaffName] = useState('')
   const {
     events,
     latestHelp,
@@ -246,20 +253,32 @@ export default function MainPage() {
   } = useSafetyEvents()
 
   useEffect(() => {
-    setTab(normalizeTab(router.params.tab))
-  }, [router.params.tab])
+    setTab(normalizeTab(routerParams.tab))
+  }, [routerParams.tab])
 
   useEffect(() => {
-    const title = mode === 'staff' ? '巡防工作台' : mode === 'staffLogin' ? t('login.staff') : t(visitorTitleKeys[tab])
-    Taro.setNavigationBarTitle({ title })
+    const title = mode === 'staff' ? '巡防工作台' : mode === 'staffLogin' ? '管理员登录' : t(visitorTitleKeys[tab])
+    if (typeof Taro.setNavigationBarTitle === 'function') {
+      Taro.setNavigationBarTitle({ title })
+    }
   }, [mode, tab])
 
-  const sendHelp = async () => {
+  useEffect(() => {
+    if (mode !== 'visitor') return undefined
+    return connectRealtimeEvents((message) => {
+      if (message.type?.startsWith('alarm.') || message.type?.startsWith('event.')) {
+        reloadEvents(true)
+      }
+    })
+  }, [mode])
+
+  const sendHelp = async (form?: { bay?: string; description?: string; contact?: string; evidence?: Array<{ kind: 'image' | 'video'; filePath: string }> }) => {
     try {
-      await createHelp()
+      await createHelp(form)
       setTab('help')
     } catch (error) {
-      Taro.showToast({ title: '求助同步失败，请检查后端服务', icon: 'none' })
+      Taro.showToast({ title: '求助没发出去，请稍后再试', icon: 'none' })
+      throw error
     }
   }
 
@@ -269,11 +288,21 @@ export default function MainPage() {
   }
 
   if (mode === 'staffLogin') {
-    return <StaffLoginView back={() => Taro.reLaunch({ url: '/pages/index/index' })} login={() => setMode('staff')} />
+    return <StaffLoginView back={() => Taro.reLaunch({ url: '/pages/index/index' })} login={(name) => {
+      setStaffName(name)
+      setMode('staff')
+    }} />
+  }
+
+  if (mode === 'staff' && !staffName) {
+    return <StaffLoginView back={() => Taro.reLaunch({ url: '/pages/index/index' })} login={(name) => {
+      setStaffName(name)
+      setMode('staff')
+    }} />
   }
 
   if (mode === 'staff') {
-    return <StaffWorkView events={events} updateEventStatus={updateEventStatus} logout={() => Taro.reLaunch({ url: '/pages/index/index' })} />
+    return <StaffWorkView staffName={staffName} events={events} updateEventStatus={updateEventStatus} logout={() => Taro.reLaunch({ url: '/pages/index/index' })} />
   }
 
   return (
@@ -286,8 +315,8 @@ export default function MainPage() {
             serviceError={serviceError}
             reloadEvents={reloadEvents}
             setTab={setTab}
-            createLostClaim={async (itemName?: string) => {
-              await createLostClaim(itemName)
+            createLostClaim={async (itemName: string, bay: string) => {
+              await createLostClaim(itemName, bay)
               openProgress('lost')
             }}
           />
@@ -329,73 +358,96 @@ function HomeView({
   serviceError: string
   reloadEvents: () => Promise<void>
   setTab: (tab: TabKey) => void
-  createLostClaim: (itemName?: string) => Promise<void>
+  createLostClaim: (itemName: string, bay: string) => Promise<void>
 }) {
   const activeEvents = events.filter((event) => event.status !== '已完成')
   const latest = activeEvents[0]
-  const homeMapMarkers = useMemo(() => createMapMarkers(jiangtanMapPoints), [])
+  const urgentCount = activeEvents.filter((event) => event.level === '高风险').length
+  const latestBay = latest?.bay ?? '今晚还没有待处置事件'
+  const latestStatus = latest ? latest.status : '等待刷新'
+  const homeMapMarkers = useMemo(() => createMapMarkers(nightMarketMapPoints), [])
   const serviceItems = [
-    { key: 'rescue', title: '联动点位', desc: 'PTU AED 卫生间', icon: '点' },
-    { key: 'guide', title: '夜市提醒', desc: '客流 风险 巡防建议', icon: '智' },
-    { key: 'parking', title: '停车疏导', desc: '停车场与出口导航', icon: '停' },
-    { key: 'station', title: '商户服务站', desc: '平安码 义警联络', icon: '站' },
-    { key: 'lost', title: '失物线索', desc: '遗失 扒窃 轨迹', icon: '线' },
-    { key: 'report', title: '隐患上报', desc: '街霸 斗殴 噪音', icon: '报' },
+    { key: 'rescue', title: '附近点位', desc: 'PTU、AED、卫生间', icon: '＋' },
+    { key: 'guide', title: '夜市提醒', desc: '客流、重点、巡防', icon: '◇' },
+    { key: 'parking', title: '停车疏导', desc: '停车场与出口导航', icon: 'P' },
+    { key: 'station', title: '商户服务站', desc: '平安码 联系人', icon: 'i' },
+    { key: 'lost', title: '失物线索', desc: '物品、人员、经过', icon: '⌁' },
+    { key: 'report', title: '隐患上报', desc: '滋扰、斗殴、噪音', icon: '!' },
   ]
 
   return (
     <View className='page home-page figma-home'>
       <View className='home-hero-card'>
         <View>
-          <Text>夜市智防</Text>
-          <Text>主街烧烤区关注中，三号门客流稍多</Text>
+          <View className='home-brand'>
+            <Image className='home-brand-logo' src={yanhuoShaobingMark} mode='aspectFit' />
+            <Text className='home-brand-name'>烟火哨兵</Text>
+          </View>
+          <Text className='home-hero-status'>{latest ? `${latest.bay} · ${latest.status}` : '今晚暂无待处置事件'}</Text>
+          <View className='home-hero-actions'>
+            <Text onClick={() => setTab('help')}>一键求助</Text>
+            <Text onClick={() => setTab('report')}>隐患上报</Text>
+          </View>
         </View>
         <View className='home-hero-weather'>
-          <Text>29°C</Text>
-          <Text>多云</Text>
+          <Text>{activeEvents.length}</Text>
+          <Text>待处置</Text>
         </View>
       </View>
 
       {serviceError && (
         <View className='error-card service-error-card' onClick={reloadEvents}>
-          <Text>服务同步失败</Text>
-          <Text>当前显示本地初始数据，点击重试。</Text>
+          <Text>事件没刷新出来</Text>
+          <Text>点这里再试一次。</Text>
         </View>
       )}
-      {loading && <View className='home-activity-banner sync-banner'><Text>!</Text><Text>正在同步后端事件数据</Text></View>}
+      {loading && <View className='home-activity-banner sync-banner'><Text>!</Text><Text>正在刷新事件</Text></View>}
 
       <View className='home-status-grid'>
         <View className='home-status-card weather'>
-          <Text>今日态势</Text>
-          <Text>重点巡防</Text>
+          <Text>今日情况</Text>
+          <Text>{urgentCount ? `${urgentCount}个高风险` : '未收到高风险'}</Text>
         </View>
         <View className='home-status-card people' onClick={() => openDetail('bay')}>
-          <Text>客流</Text>
-          <Text>稍多</Text>
+          <Text>最新点位</Text>
+          <Text>{latestBay}</Text>
         </View>
         <View className='home-status-card water' onClick={() => openDetail('guide')}>
-          <Text>AI预警</Text>
-          <Text>在线</Text>
+          <Text>最新状态</Text>
+          <Text>{latestStatus}</Text>
         </View>
       </View>
 
       <View className='home-map-card'>
+        <View className='home-map-header'>
+          <Text>夜市地图</Text>
+          <Text>点一下看位置</Text>
+        </View>
+        <View className='home-map-visual'>
+          <View className='map-road main-road' />
+          <View className='map-road side-road one' />
+          <View className='map-road side-road two' />
+          <View className='map-point danger'>主街</View>
+          <View className='map-point warn'>三号门</View>
+          <View className='map-point safe'>亲子区</View>
+          <View className='map-point service'>服务站</View>
+        </View>
         <Map
           className='native-map'
-          longitude={jiangtanCenter.longitude}
-          latitude={jiangtanCenter.latitude}
+          longitude={nightMarketCenter.longitude}
+          latitude={nightMarketCenter.latitude}
           scale={16}
           minScale={14}
           maxScale={18}
           markers={homeMapMarkers}
-          includePoints={jiangtanIncludePoints}
+          includePoints={nightMarketIncludePoints}
           showLocation
           showScale
           enablePoi
           enableBuilding
           onTap={() => openDetail('bay')}
           onMarkerTap={(event) => {
-            const point = jiangtanMapPoints.find((item) => item.id === Number(event.detail.markerId))
+            const point = nightMarketMapPoints.find((item) => item.id === Number(event.detail.markerId))
             if (point) showMapPoint(point)
           }}
           onError={mapLoadFailed}
@@ -408,22 +460,22 @@ function HomeView({
 
       <View className='home-key-tiles'>
         <View onClick={() => openDetail('bay')}>
-          <Text>智防网格</Text>
+          <Text>夜市网格</Text>
           <Text>7处</Text>
         </View>
         <View onClick={() => openDetail('guide')}>
-          <Text>巡防状态</Text>
-          <Text>在线</Text>
+          <Text>事件记录</Text>
+          <Text>{events.length}条</Text>
         </View>
         <View onClick={() => openDetail('rescue')}>
-          <Text>最近联动</Text>
-          <Text>90m</Text>
+          <Text>报警推送</Text>
+          <Text>{events.filter((event) => event.kind === 'help').length}条</Text>
         </View>
       </View>
 
       <View className='home-section-title'>
         <Text>夜市服务</Text>
-        <Text onClick={() => openDetail('rescue')}>联动点位</Text>
+        <Text onClick={() => openDetail('rescue')}>附近点位</Text>
       </View>
 
       <View className='figma-service-grid'>
@@ -437,7 +489,18 @@ function HomeView({
                 return
               }
               if (item.key === 'lost') {
-                createLostClaim().catch(() => Taro.showToast({ title: '线索登记提交失败', icon: 'none' }))
+                type LostModalResult = Taro.showModal.SuccessCallbackResult & { content?: string }
+                const options = {
+                  title: '登记线索',
+                  editable: true,
+                  placeholderText: '填物品名称或线索，比如黑色钱包',
+                  success(result: LostModalResult) {
+                    const itemName = result.content?.trim()
+                    if (!result.confirm || !itemName) return
+                    createLostClaim(itemName, latest?.bay ?? '主街烧烤区').catch(() => Taro.showToast({ title: '线索登记没提交成功', icon: 'none' }))
+                  },
+                } as Taro.showModal.Option
+                Taro.showModal(options)
                 return
               }
               openDetail(item.key === 'parking' || item.key === 'station' ? 'rescue' : item.key)
@@ -445,21 +508,22 @@ function HomeView({
           >
             <View className={`figma-service-icon ${item.key}`}><Text>{item.icon}</Text></View>
             <Text>{item.title}</Text>
+            <Text>{item.desc}</Text>
           </View>
         ))}
       </View>
 
       <View className='home-report-entry' onClick={() => setTab('report')}>
         <View>
-          <Text>群众随手拍 · 夜市隐患上报</Text>
-          <Text>发现街霸滋扰、打架苗头、扒窃线索、噪音扰民等问题，可提交点位和照片，后续在进度页查看处置结果。</Text>
+          <Text>现场问题上报</Text>
+          <Text>遇到滋扰、争执、扒窃线索、噪音扰民等情况，可以写清位置并附照片，后续在进度页看处理结果。</Text>
         </View>
         <Text>去上报</Text>
       </View>
 
       <View className='home-activity-banner' onClick={() => latest ? openDetail('serviceOrder', { id: latest.id, title: latest.title, status: latest.status, bay: latest.bay, level: latest.level }) : openDetail('guide')}>
         <Text>!</Text>
-        <Text>{latest ? `${latest.title} · ${latest.status}` : '今晚运行平稳，巡防组、商户义警和智能装备在线'}</Text>
+        <Text>{latest ? `${latest.title} · ${latest.status}` : '今晚暂无待处置记录'}</Text>
       </View>
     </View>
   )
@@ -481,7 +545,7 @@ function ReportView({
 
   const addPhoto = async () => {
     if (photos.length >= 3) {
-      setPhotoNotice('最多添加 3 张照片。')
+      setPhotoNotice('最多添加 3 张照片')
       return
     }
     try {
@@ -494,13 +558,13 @@ function ReportView({
       setPhotos(nextPhotos)
       setPhotoNotice(`已添加 ${nextPhotos.length} / 3 张照片`)
     } catch (error) {
-      setPhotoNotice('未选择照片。')
+      setPhotoNotice('这次没有选照片')
     }
   }
 
   const submit = async () => {
     if (!form.description.trim() && photos.length === 0) {
-      setError('请写一句现场情况，或至少上传一张照片。')
+      setError('请写一句现场情况，或传一张照片。')
       return
     }
     setError('')
@@ -508,7 +572,7 @@ function ReportView({
     try {
       setSubmitted(await createReport(form, photos.length))
     } catch (error) {
-      setError('提交失败，请确认后端服务已启动。')
+      setError('上报没提交成功，请稍后再试。')
     } finally {
       setSubmitting(false)
     }
@@ -516,19 +580,19 @@ function ReportView({
 
   return (
     <View className='page report-page'>
-      <PageHeader title='隐患上报' subtitle='街霸滋扰、摊位纠纷、扒窃线索、噪音扰民等现场问题，都可以在这里告诉我们。' />
+      <PageHeader title='隐患上报' subtitle='摊位纠纷、扒窃线索、噪音扰民，都可以在这里说清楚。' />
       {submitted ? (
         <View className='success-card'>
-          <Text>已收到你的上报</Text>
+          <Text>我们收到了</Text>
           <Text>编号 {submitted.id}</Text>
-          <Text>{submitted.bay} · {submitted.title} · 巡防组会尽快查看</Text>
+          <Text>{submitted.bay} · {submitted.title} · 巡防组会查看</Text>
           <Button className='primary block' onClick={openProgress}>查看进度</Button>
           <Button className='ghost block' onClick={() => setSubmitted(null)}>继续上报</Button>
         </View>
       ) : (
         <View>
           <View className='form-card'>
-            <Text className='field-label'>想上报什么？</Text>
+            <Text className='field-label'>是什么情况？</Text>
             <View className='choice-grid'>
               {reportCategories.map((category) => (
                 <View key={category} className={`choice-chip ${form.category === category ? 'selected' : ''}`} onClick={() => setForm({ ...form, category })}>
@@ -538,7 +602,7 @@ function ReportView({
             </View>
           </View>
           <View className='form-card'>
-            <Text className='field-label'>在哪个区域？</Text>
+            <Text className='field-label'>在哪一片？</Text>
             <View className='choice-grid bay-choice'>
               {bayOptions.map((bay) => (
                 <View key={bay} className={`choice-chip ${form.bay === bay ? 'selected' : ''}`} onClick={() => setForm({ ...form, bay })}>
@@ -549,19 +613,19 @@ function ReportView({
           </View>
           <View className='form-card'>
             <Text className='field-label'>补充说明</Text>
-            <Textarea value={form.description} placeholder='例如：有人酒后拍桌威胁商户，或发现疑似扒窃人员在三号门徘徊。' onInput={(event) => setForm({ ...form, description: event.detail.value })} />
+            <Textarea value={form.description} placeholder='比如：有人酒后拍桌吵闹，或有人在三号门附近反复贴身。' onInput={(event) => setForm({ ...form, description: event.detail.value })} />
           </View>
           <Button className='secondary block compact-upload' onClick={addPhoto}>{photoNotice || `添加照片（${photos.length}/3）`}</Button>
           <View className='form-card'>
             <Text className='field-label'>联系方式</Text>
-            <Input value={form.contact} placeholder='可选，方便巡防组回访' onInput={(event) => setForm({ ...form, contact: event.detail.value })} />
+            <Input value={form.contact} placeholder='可不填，方便回访时再留' onInput={(event) => setForm({ ...form, contact: event.detail.value })} />
           </View>
           <View className='switch-row' onClick={() => setForm({ ...form, anonymous: !form.anonymous })}>
-            <Text>{form.anonymous ? '已选择匿名上报' : '实名上报，点击切换匿名'}</Text>
+            <Text>{form.anonymous ? '匿名上报' : '不匿名，点这里可切换'}</Text>
             <Text className={`switch ${form.anonymous ? 'on' : ''}`}>{form.anonymous ? '开' : '关'}</Text>
           </View>
           {error && <View className='error-card'><Text>{error}</Text></View>}
-          <Button className='primary block sticky-submit' loading={submitting} onClick={submit}>{submitting ? '提交中' : '提交上报'}</Button>
+          <Button className='primary block sticky-submit' loading={submitting} onClick={submit}>{submitting ? '正在提交' : '提交上报'}</Button>
         </View>
       )}
     </View>
@@ -575,10 +639,47 @@ function HelpView({
   openProgress,
 }: {
   latestHelp?: SafetyEvent
-  createHelp: () => Promise<void>
+  createHelp: (form?: { bay?: string; description?: string; contact?: string; evidence?: Array<{ kind: 'image' | 'video'; filePath: string }> }) => Promise<void>
   openProgress: () => void
 }) {
   const [sending, setSending] = useState(false)
+  const [form, setForm] = useState<HelpForm>({ bay: '主街烧烤区', description: '', contact: '', evidence: [] })
+  const [mediaNotice, setMediaNotice] = useState('')
+
+  const addImage = async () => {
+    if (form.evidence.length >= 3) {
+      setMediaNotice('最多 3 条证据')
+      return
+    }
+    try {
+      const result = await Taro.chooseImage({
+        count: 3 - form.evidence.length,
+        sizeType: ['compressed'],
+        sourceType: ['album', 'camera'],
+      })
+      const next = (result.tempFilePaths || []).map((filePath) => ({ kind: 'image' as const, filePath }))
+      setForm({ ...form, evidence: form.evidence.concat(next).slice(0, 3) })
+      setMediaNotice(`已添加 ${Math.min(3, form.evidence.length + next.length)} 条证据`)
+    } catch {
+      setMediaNotice('这次没有选到照片')
+    }
+  }
+
+  const addVideo = async () => {
+    if (form.evidence.length >= 3) {
+      setMediaNotice('最多 3 条证据')
+      return
+    }
+    try {
+      const result = await Taro.chooseVideo({ compressed: true, sourceType: ['album', 'camera'] })
+      if (result.tempFilePath) {
+        setForm({ ...form, evidence: form.evidence.concat({ kind: 'video', filePath: result.tempFilePath }).slice(0, 3) })
+        setMediaNotice('已添加 1 条视频证据')
+      }
+    } catch {
+      setMediaNotice('这次没有选到视频')
+    }
+  }
 
   const launchHelp = async () => {
     if (latestHelp) {
@@ -587,10 +688,15 @@ function HelpView({
     }
     setSending(true)
     try {
-      await createHelp()
-      Taro.showToast({ title: '已发起一键报警', icon: 'none' })
+      await createHelp({
+        bay: form.bay,
+        description: form.description,
+        contact: form.contact,
+        evidence: form.evidence,
+      })
+      Taro.showToast({ title: '求助已发出', icon: 'none' })
     } catch (error) {
-      Taro.showToast({ title: '报警失败，请重试', icon: 'none' })
+      Taro.showToast({ title: '求助没发出去，请重试', icon: 'none' })
     } finally {
       setSending(false)
     }
@@ -604,8 +710,45 @@ function HelpView({
         <Button className={`help-orb ${latestHelp ? 'active' : ''}`} loading={sending} disabled={sending} onClick={launchHelp}>
           <Text className='help-orb-kicker'>{latestHelp ? '求助处理中' : '一键报警'}</Text>
           <Text className='help-orb-title'>SOS</Text>
-          <Text className='help-orb-sub'>{latestHelp ? '点击查看处置进度' : '同步定位给巡防组'}</Text>
+          <Text className='help-orb-sub'>{latestHelp ? '查看编号和处理进度' : '把当前位置发给指挥中心'}</Text>
         </Button>
+        <View className='help-status-card'>
+          <Text>{latestHelp ? '指挥中心已收到求助' : '发出后会按位置派给附近巡防组'}</Text>
+          {latestHelp && (
+            <>
+              <Text>{latestHelp.id} · {latestHelp.meta?.alarmLocation?.name ?? latestHelp.bay}</Text>
+              <Text>{latestHelp.meta?.route?.modeLabel ?? '待生成'} · {latestHelp.meta?.route?.distanceLabel ?? '待生成'} · {latestHelp.meta?.route?.etaLabel ?? '待生成'}</Text>
+            </>
+          )}
+        </View>
+        {!latestHelp && (
+          <View className='form-card'>
+            <Text className='field-label'>夜市位置</Text>
+            <View className='choice-grid bay-choice'>
+              {bayOptions.map((bay) => (
+                <View key={bay} className={`choice-chip ${form.bay === bay ? 'selected' : ''}`} onClick={() => setForm({ ...form, bay })}>
+                  <Text>{bay}</Text>
+                </View>
+              ))}
+            </View>
+            <Text className='field-label'>现场说明</Text>
+            <Textarea value={form.description} placeholder='简单写清楚发生了什么。' onInput={(event) => setForm({ ...form, description: event.detail.value })} />
+            <Text className='field-label'>联系方式</Text>
+            <Input value={form.contact} placeholder='方便回访时再留' onInput={(event) => setForm({ ...form, contact: event.detail.value })} />
+            <View className='help-media-actions'>
+              <Button className='secondary compact-upload' onClick={addImage}>{mediaNotice || `加照片（${form.evidence.length}/3）`}</Button>
+              <Button className='secondary compact-upload' onClick={addVideo}>加视频</Button>
+            </View>
+            <View className='help-evidence-list'>
+              {form.evidence.map((item, index) => (
+                <View key={`${item.kind}-${index}`} className='help-evidence-item'>
+                  <Text>{item.kind === 'video' ? '视频' : '照片'} {index + 1}</Text>
+                  <Text>{item.filePath.split(/[\\/]/).pop()}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
       </View>
     </View>
   )
@@ -626,7 +769,7 @@ function ProgressView({
   const visibleEvents = filter === 'all' ? events : events.filter((event) => event.kind === filter)
   return (
     <View className='page progress-page'>
-      <PageHeader title='我的进度' subtitle='求助、上报、线索登记都会在这里更新。' />
+      <PageHeader title='我的进度' subtitle='求助、上报和线索登记，处理到哪一步都在这里看。' />
       <View className='segmented'>
         {[
           ['all', '全部'],
@@ -642,7 +785,7 @@ function ProgressView({
       {visibleEvents.length === 0 && (
         <View className='empty-state'>
           <Text>还没有记录</Text>
-          <Text>可以先发起求助，或上报一个现场问题。</Text>
+          <Text>遇到现场问题，可以先求助或上报。</Text>
           <View>
             <Button className='primary compact' onClick={goHelp}>去求助</Button>
             <Button className='secondary compact' onClick={goReport}>去上报</Button>
@@ -673,45 +816,117 @@ function ProgressView({
   )
 }
 
-function StaffLoginView({ back, login }: { back: () => void; login: () => void }) {
+function StaffLoginView({ back, login }: { back: () => void; login: (staff: string) => void }) {
   const [staffId, setStaffId] = useState('')
   const [password, setPassword] = useState('')
+  const [accepted, setAccepted] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
 
   const submit = () => {
+    if (!accepted) {
+      setError('请先勾选协议。')
+      return
+    }
     if (!staffId.trim() || !password.trim()) {
-      setError('请输入工号和密码。')
+      setError('请填写账号和密码。')
       return
     }
     setError('')
-    login()
+    login(staffId.trim())
   }
 
   return (
-    <View className='page with-top'>
-      <PageHeader title='巡防人员登录' subtitle='登录后查看派发工单和处置任务。' />
-      <View className='form-card elevated'>
-        <View className='field'>
-          <Text>工号</Text>
-          <Input value={staffId} placeholder='请输入工号，如 YS001' onInput={(event) => setStaffId(event.detail.value)} />
+    <View className='auth-page'>
+      <View className='auth-hero'>
+        <View className='auth-hero-copy auth-brand'>
+          <View className='brand-header'>
+            <View className='brand-mark'>
+              <Image className='brand-logo-image' src={yanhuoShaobingLogo} mode='aspectFit' />
+            </View>
+            <Text className='login-title'>烟火哨兵</Text>
+            <Text className='login-subtitle'>面向夜间商圈的安全治理与联动处置平台</Text>
+          </View>
         </View>
-        <View className='field'>
-          <Text>密码</Text>
-          <Input password value={password} placeholder='请输入密码' onInput={(event) => setPassword(event.detail.value)} />
+        <View className='auth-hero-pill'>
+          <Text className='auth-hero-pill-left'>···</Text>
+          <Text className='auth-hero-pill-right' />
         </View>
-        {error && <View className='error-card'><Text>{error}</Text></View>}
-        <Button className='primary block' onClick={submit}>登录查看工单</Button>
-        <Button className='ghost block' onClick={back}>返回群众端</Button>
+        <View className='auth-hero-art'>
+          <View className='auth-art-orbit' />
+          <View className='auth-art-device'>
+            <View className='auth-art-screen' />
+            <View className='auth-art-base' />
+          </View>
+        </View>
+      </View>
+
+      <View className='auth-surface'>
+        <View className='auth-tabs'>
+          <View className='auth-tab' onClick={back}>
+            <Text className='auth-tab-title'>用户登录</Text>
+            <View className='auth-tab-indicator' />
+          </View>
+          <View className='auth-tab active'>
+            <Text className='auth-tab-title'>管理员登录</Text>
+            <View className='auth-tab-indicator' />
+          </View>
+        </View>
+
+        <View className='auth-card'>
+          <View className='auth-input-list'>
+            <View className='auth-input-shell'>
+              <Text className='auth-input-icon'>◫</Text>
+              <Input
+                className='auth-input'
+                value={staffId}
+                placeholder='请输入账号'
+                onInput={(event) => setStaffId(event.detail.value)}
+              />
+            </View>
+            <View className='auth-input-shell'>
+              <Text className='auth-input-icon'>◻</Text>
+              <Input
+                className='auth-input'
+                password={!showPassword}
+                value={password}
+                placeholder='请输入密码'
+                onInput={(event) => setPassword(event.detail.value)}
+              />
+              <Text className='auth-input-action' onClick={() => setShowPassword(!showPassword)}>
+                {showPassword ? '○' : '◉'}
+              </Text>
+            </View>
+          </View>
+
+          <View className='auth-links'>
+            <Text onClick={() => Taro.showToast({ title: '注册功能待接入', icon: 'none' })}>没有账号？立即注册</Text>
+            <Text onClick={() => Taro.showToast({ title: '找回密码待接入', icon: 'none' })}>忘记密码</Text>
+          </View>
+
+          <View className='auth-check-row' onClick={() => setAccepted(!accepted)}>
+            <View className={`auth-checkbox ${accepted ? 'checked' : ''}`}>
+              {accepted && <Text>✓</Text>}
+            </View>
+            <Text>《烟火哨兵用户服务协议》及《隐私政策》</Text>
+          </View>
+
+          <Button className='auth-primary-btn' onClick={submit}>登录</Button>
+
+          {error && <Text className='auth-error'>{error}</Text>}
+        </View>
       </View>
     </View>
   )
 }
 
 function StaffWorkView({
+  staffName,
   events,
   updateEventStatus,
   logout,
 }: {
+  staffName: string
   events: SafetyEvent[]
   updateEventStatus: (id: string, status: EventStatus, owner?: string, result?: string) => Promise<SafetyEvent>
   logout: () => void
@@ -721,44 +936,50 @@ function StaffWorkView({
   const [staffTab, setStaffTab] = useState<StaffTab>('tasks')
   const [staffLocation, setStaffLocation] = useState<MapProps.point | null>(null)
   const [staffEvents, setStaffEvents] = useState<SafetyEvent[]>([])
-  const staffName = '王队'
-  const ownedEvents = events.filter((event) => event.owner === staffName || event.meta?.assignment?.staffName === staffName)
-  const visibleStaffEvents = staffEvents.length ? staffEvents : (ownedEvents.length ? ownedEvents : events)
+  const ownedEvents = events.filter((event) => event.owner === staffName || (event.status !== '已提交' && event.meta?.assignment?.staffName === staffName))
+  const visibleStaffEvents = staffEvents.length ? staffEvents : ownedEvents
   const activeOrders = visibleStaffEvents.filter((event) => event.status !== '已完成')
   const completedOrders = visibleStaffEvents.filter((event) => event.status === '已完成')
   const pendingCount = visibleStaffEvents.filter((event) => event.status === '已提交' || event.status === '已派单').length
   const processingCount = visibleStaffEvents.length - pendingCount - completedOrders.length
   const primaryOrderId = activeOrders[0]?.id || ''
 
-  const replaceStaffEvent = (next: SafetyEvent) => {
+  const replaceStaffEvent = useCallback((next: SafetyEvent) => {
     setStaffEvents((current) => {
       const exists = current.some((event) => event.id === next.id)
       return exists ? current.map((event) => event.id === next.id ? next : event) : [next].concat(current)
     })
-  }
+  }, [])
 
-  useEffect(() => {
-    let mounted = true
-    const loadStaffTasks = async (silent = false) => {
-      try {
-        const tasks = await fetchStaffTasks(staffName)
-        if (mounted) {
-          setStaffEvents(tasks)
-          if (!expandedId && tasks[0]) setExpandedId(tasks[0].id)
-        }
-      } catch {
-        if (!silent && mounted) {
-          Taro.showToast({ title: '我的任务同步失败，显示本地任务', icon: 'none' })
-        }
+  const loadStaffTasks = useCallback(async (silent = false) => {
+    if (!staffName.trim()) {
+      setStaffEvents([])
+      return
+    }
+    try {
+      const tasks = await fetchStaffTasks(staffName)
+      setStaffEvents(tasks)
+      if (tasks[0]) {
+        setExpandedId((current) => current || tasks[0].id)
+      }
+    } catch {
+      if (!silent) {
+        Taro.showToast({ title: '任务没刷新出来，请重试', icon: 'none' })
       }
     }
+  }, [staffName])
+
+  useEffect(() => {
     loadStaffTasks()
     const timer = setInterval(() => loadStaffTasks(true), 15000)
-    return () => {
-      mounted = false
-      clearInterval(timer)
+    return () => clearInterval(timer)
+  }, [loadStaffTasks])
+
+  useEffect(() => connectRealtimeEvents((message) => {
+    if (message.type === 'event.assigned' && (!message.staff || message.staff === staffName)) {
+      loadStaffTasks(true)
     }
-  }, [])
+  }), [loadStaffTasks])
 
   useEffect(() => {
     let mounted = true
@@ -784,8 +1005,8 @@ function StaffWorkView({
           if (mounted) replaceStaffEvent(next)
         }
       } catch {
-        if (mounted) {
-          Taro.showToast({ title: '未获取实时定位，地图显示默认巡防点', icon: 'none' })
+        if (mounted && staffTab === 'map') {
+          Taro.showToast({ title: '没拿到定位，先显示默认巡防点', icon: 'none' })
         }
       }
     }
@@ -795,7 +1016,7 @@ function StaffWorkView({
       mounted = false
       clearInterval(timer)
     }
-  }, [primaryOrderId])
+  }, [primaryOrderId, staffTab])
   const taskCardTone = (item: SafetyEvent) => {
     if (item.level === '高风险') return 'high-risk'
     if (item.status === '处理中') return 'processing'
@@ -803,9 +1024,9 @@ function StaffWorkView({
   }
   const taskTypeLabel = (item: SafetyEvent) => {
     if (item.level === '高风险') return '高风险'
-    if (item.source.includes('AI')) return 'AI预警'
+    if (item.source.endsWith('视频提示')) return '视频提示'
     if (item.kind === 'report') return '秩序处置'
-    if (item.kind === 'lost') return '线索研判'
+    if (item.kind === 'lost') return '线索核验'
     return item.source
   }
   const taskPrimaryLabel = (item: SafetyEvent) => {
@@ -825,9 +1046,9 @@ function StaffWorkView({
     const action = nextAction(item)
     const isComplete = action.next === '已完成'
     try {
-      const next = await updateEventStatus(item.id, action.next, staffName, isComplete ? resultText || '现场风险已解除，已同步指挥端复盘。' : undefined)
+      const next = await updateEventStatus(item.id, action.next, staffName, isComplete ? resultText || '现场已处理，结果已发给指挥端。' : undefined)
       replaceStaffEvent(next)
-      Taro.showToast({ title: isComplete ? '处置已闭环' : `已更新为${action.next}`, icon: 'none' })
+      Taro.showToast({ title: isComplete ? '处置已完成' : `已更新为${action.next}`, icon: 'none' })
       if (isComplete) {
         setResultText('')
         setExpandedId(activeOrders.find((order) => order.id !== item.id)?.id || '')
@@ -835,7 +1056,7 @@ function StaffWorkView({
         setExpandedId(item.id)
       }
     } catch (error) {
-      Taro.showToast({ title: '状态更新失败，请检查后端服务', icon: 'none' })
+      Taro.showToast({ title: '状态没更新成功，请重试', icon: 'none' })
     }
   }
 
@@ -844,7 +1065,7 @@ function StaffWorkView({
       <View className='staff-top'>
         <View>
           <Text>巡防工作台</Text>
-          <Text>王队 · 在线 · 主街烧烤区优先响应</Text>
+          <Text>{staffName} · 已登录 · 仅显示派给我的任务</Text>
         </View>
         <Button className='ghost mini-btn' onClick={logout}>退出</Button>
       </View>
@@ -853,6 +1074,7 @@ function StaffWorkView({
           ['tasks', '任务'],
           ['map', '地图'],
           ['ledger', '台账'],
+          ['ops', '勤务'],
           ['mine', '我的'],
         ] as Array<[StaffTab, string]>).map(([key, label]) => (
           <View key={key} className={staffTab === key ? 'selected' : ''} onClick={() => setStaffTab(key)}>
@@ -862,7 +1084,8 @@ function StaffWorkView({
       </View>
       {staffTab === 'map' && <StaffMapView events={visibleStaffEvents} staffName={staffName} staffLocation={staffLocation} />}
       {staffTab === 'ledger' && <StaffLedgerView events={visibleStaffEvents} />}
-      {staffTab === 'mine' && <StaffMineView events={visibleStaffEvents} logout={logout} />}
+      {staffTab === 'ops' && <StaffOpsView events={visibleStaffEvents} />}
+      {staffTab === 'mine' && <StaffMineView staffName={staffName} events={visibleStaffEvents} logout={logout} />}
       {staffTab === 'tasks' && (
         <View className='staff-task-dashboard'>
           <View className='staff-task-metrics'>
@@ -872,12 +1095,12 @@ function StaffWorkView({
           </View>
           <View className='staff-task-section-head'>
             <Text>今日任务</Text>
-            <Text onClick={() => Taro.showToast({ title: '已显示全部任务', icon: 'none' })}>全部 ›</Text>
+            <Text onClick={() => Taro.showToast({ title: '已显示全部', icon: 'none' })}>全部 ›</Text>
           </View>
           {activeOrders.length === 0 && (
             <View className='empty-state'>
               <Text>暂无待处理工单</Text>
-              <Text>当前夜市网格运行平稳，继续保持巡查节奏。</Text>
+              <Text>当前没有派给你的新工单，按原路线巡查即可。</Text>
             </View>
           )}
           <View className='staff-task-list'>
@@ -904,6 +1127,8 @@ function StaffWorkView({
                   <View className='staff-task-detail'>
                     <Text>{item.description}</Text>
                     <Text>负责人：{item.owner} · 来源：{item.source}</Text>
+                    <Text>报警点：{item.meta?.alarmLocation?.name ?? item.bay} · 联系方式：{String(item.meta?.contact || '后续回访')}</Text>
+                    {item.meta?.assignment?.assignedAt && <Text>派单时间：{item.meta.assignment.assignedAt}</Text>}
                     {item.meta?.route && (
                       <View className='staff-route-detail'>
                         <Text>推荐交通：{item.meta.route.modeLabel}</Text>
@@ -914,7 +1139,7 @@ function StaffWorkView({
                       {statusFlow.map((status) => <Text key={status} className={statusRank[item.status] >= statusRank[status] ? 'active-step' : ''}>{status}</Text>)}
                     </View>
                     {item.status === '处理中' && (
-                      <Textarea value={resultText} placeholder='填写处置结果，如：已劝离滋事人员，商户恢复经营秩序。' onInput={(event) => setResultText(event.detail.value)} />
+                      <Textarea value={resultText} placeholder='写一下现场怎么处理的，例如：已劝离争执人员，摊位恢复营业。' onInput={(event) => setResultText(event.detail.value)} />
                     )}
                   </View>
                 )}
@@ -954,7 +1179,7 @@ function StaffWorkView({
           </View>
           <View className='content-card'>
             <CardTitle title='已完成记录' action={`${completedOrders.length}单`} />
-            {completedOrders.map((item) => <View className='resource-row' key={item.id}><View><Text>{item.title}</Text><Text>{item.bay} · {item.owner}</Text></View><Text className='row-chip safe-chip'>闭环</Text></View>)}
+            {completedOrders.map((item) => <View className='resource-row' key={item.id}><View><Text>{item.title}</Text><Text>{item.bay} · {item.owner}</Text></View><Text className='row-chip safe-chip'>完成</Text></View>)}
           </View>
         </View>
       )}
@@ -962,7 +1187,7 @@ function StaffWorkView({
   )
 }
 
-type StaffTab = 'tasks' | 'map' | 'ledger' | 'mine'
+type StaffTab = 'tasks' | 'map' | 'ledger' | 'ops' | 'mine'
 
 function StaffMapView({
   events,
@@ -975,12 +1200,11 @@ function StaffMapView({
 }) {
   const activeOrders = events.filter((event) => event.status !== '已完成')
   const activeCount = activeOrders.length
-  const selfPoint = staffLocation || { latitude: 28.6827, longitude: 115.8593 }
   const staffMapPoints = useMemo(() => {
-    const eventPoints: JiangtanMapPoint[] = activeOrders
+    const eventPoints: NightMarketMapPoint[] = activeOrders
       .filter((event) => event.status !== '已完成')
       .map((event, index) => {
-        const bayPoint = findJiangtanPointByBay(event.bay)
+        const bayPoint = findNightMarketPointByBay(event.bay)
         const alarmPoint = getEventAlarmPoint(event)
         return {
           id: 100 + index,
@@ -993,19 +1217,21 @@ function StaffMapView({
           summary: `${event.bay} · ${event.status} · ${event.owner} · ${routeLabel(event)}`,
         }
       })
-    const selfMarker: JiangtanMapPoint = {
-      id: 9001,
-      bay: '我的位置',
-      name: `${staffName}当前位置`,
-      address: '工作人员端实时定位',
-      latitude: selfPoint.latitude,
-      longitude: selfPoint.longitude,
-      tone: 'service',
-      summary: staffLocation ? '已同步给指挥端' : '使用默认巡防点',
-    }
+    const selfMarkers: NightMarketMapPoint[] = staffLocation
+      ? [{
+          id: 9001,
+          bay: '我的位置',
+          name: `${staffName}当前位置`,
+          address: '工作人员定位',
+          latitude: staffLocation.latitude,
+          longitude: staffLocation.longitude,
+          tone: 'service',
+          summary: '位置已发给指挥端',
+        }]
+      : []
 
-    return [selfMarker, ...jiangtanMapPoints, ...staffPatrolPoints, ...eventPoints]
-  }, [activeOrders, selfPoint.latitude, selfPoint.longitude, staffLocation, staffName])
+    return [...selfMarkers, ...nightMarketMapPoints, ...eventPoints]
+  }, [activeOrders, staffLocation, staffName])
   const staffMapMarkers = useMemo(() => createMapMarkers(staffMapPoints), [staffMapPoints])
   const routeLines = useMemo(() => activeOrders
     .map((event, index) => {
@@ -1030,14 +1256,14 @@ function StaffMapView({
   return (
     <View className='staff-subpage'>
       <View className='staff-summary-card'>
-        <Text>夜市商圈态势</Text>
-        <Text>当前有 {activeCount} 个我的任务需要关注，蓝色线路为优先处置路线</Text>
+        <Text>夜市任务地图</Text>
+        <Text>当前有 {activeCount} 个任务需要关注，蓝色线路先处理</Text>
       </View>
       <View className='staff-map'>
         <Map
           className='native-map'
-          longitude={jiangtanCenter.longitude}
-          latitude={jiangtanCenter.latitude}
+          longitude={nightMarketCenter.longitude}
+          latitude={nightMarketCenter.latitude}
           scale={16}
           minScale={14}
           maxScale={19}
@@ -1067,19 +1293,20 @@ function StaffMapView({
         <View className='staff-route-card' key={event.id}>
           <View>
             <Text>{event.title}</Text>
-            <Text>{event.bay} · 报警点已同步</Text>
+            <Text>{event.bay} · 报警点已定位</Text>
           </View>
           <Text>{routeLabel(event)}</Text>
         </View>
       ))}
       <View className='content-card'>
-        <CardTitle title='附近巡防力量' action='3 组在线' />
-        {['PTU快反点 · 王队 · 90m', '无人机机巢 · 李敏 · 待命', '机器狗巡逻点 · 陈安 · 后巷补盲'].map((item) => (
-          <View className='resource-row' key={item}>
-            <Text>{item}</Text>
-            <Text className='row-chip safe-chip'>在线</Text>
+        <CardTitle title='我的路线' action={`${activeOrders.length}单`} />
+        {activeOrders.map((item) => (
+          <View className='resource-row' key={item.id}>
+            <Text>{item.title} · {routeLabel(item)}</Text>
+            <Text className='row-chip safe-chip'>{item.status}</Text>
           </View>
         ))}
+        {activeOrders.length === 0 && <Text className='body-copy'>现在没有派给你的路线。</Text>}
       </View>
     </View>
   )
@@ -1090,7 +1317,7 @@ function StaffLedgerView({ events }: { events: SafetyEvent[] }) {
     <View className='staff-subpage'>
       <View className='staff-summary-card'>
         <Text>处置台账</Text>
-        <Text>记录每一条事件的来源、负责人和闭环结果</Text>
+        <Text>记录每条事件的来源、负责人和处理结果</Text>
       </View>
       <View className='ledger-card'>
         <View className='ledger-row ledger-head'>
@@ -1110,29 +1337,165 @@ function StaffLedgerView({ events }: { events: SafetyEvent[] }) {
         ))}
       </View>
       <View className='content-card'>
-        <CardTitle title='闭环提醒' action='今日' />
-        <Text className='body-copy'>完成处置后请及时填写结果，系统会同步给群众端和 Web 指挥舱。</Text>
+        <CardTitle title='处置提醒' action='今日' />
+        <Text className='body-copy'>完成后记得补一句处理结果，群众端和指挥端都会看到。</Text>
       </View>
     </View>
   )
 }
 
-function StaffMineView({ events, logout }: { events: SafetyEvent[]; logout: () => void }) {
+function StaffOpsView({ events }: { events: SafetyEvent[] }) {
+  const [ops, setOps] = useState<SecurityOpsOverview>({})
+  const [transcript, setTranscript] = useState('主街烧烤区有人打架，请尽快处理')
+  const [bay, setBay] = useState(events[0]?.bay ?? '主街烧烤区')
+  const [query, setQuery] = useState('重点关注')
+  const [identityItems, setIdentityItems] = useState<Array<{ personKey: string; name: string; score?: number; tags?: string[] }>>([])
+  const [busy, setBusy] = useState('')
+  const activeEvent = events.find((event) => event.status !== '已完成') ?? events[0]
+
+  const reload = useCallback(async () => {
+    try {
+      const [overview, notifications, feeds] = await Promise.all([
+        fetchSecurityOpsOverview(),
+        fetchSecurityNotifications(),
+        fetchSecurityFeeds(),
+      ])
+      setOps({ ...overview, notifications: { ...(overview.notifications || {}), items: notifications }, feeds: { ...(overview.feeds || {}), items: feeds } })
+    } catch {
+      Taro.showToast({ title: '勤务数据没刷新出来', icon: 'none' })
+    }
+  }, [])
+
+  useEffect(() => {
+    reload()
+  }, [reload])
+
+  const run = async (key: string, action: () => Promise<void>) => {
+    setBusy(key)
+    try {
+      await action()
+      await reload()
+    } catch {
+      Taro.showToast({ title: '操作没完成，请重试', icon: 'none' })
+    } finally {
+      setBusy('')
+    }
+  }
+
+  const makeDutyPlan = () => run('duty', async () => {
+    await generateSecurityDutyPlans()
+    Taro.showToast({ title: '勤务预案已生成', icon: 'none' })
+  })
+
+  const sendVoice = () => run('voice', async () => {
+    const result = await submitVoiceIntake({ transcript, bay, autoAssign: true })
+    Taro.showToast({ title: `${result.label} · 已入库`, icon: 'none' })
+  })
+
+  const compare = () => run('compare', async () => {
+    const items = await compareIdentityArchive(query)
+    setIdentityItems(items)
+    Taro.showToast({ title: items.length ? `匹配到${items.length}条档案` : '没有匹配档案', icon: 'none' })
+  })
+
+  const makeContainment = () => run('containment', async () => {
+    if (!activeEvent) throw new Error('no_active_event')
+    await createContainmentPlan(activeEvent.id)
+    Taro.showToast({ title: '合围方案已生成', icon: 'none' })
+  })
+
+  const makeReport = () => run('report', async () => {
+    await createAnalysisReport('day')
+    Taro.showToast({ title: '复盘报告已生成', icon: 'none' })
+  })
+
+  const dutyItems = ops.duty?.items ?? []
+  const notificationItems = ops.notifications?.items ?? []
+  const feedItems = ops.feeds?.items ?? []
+  const analysis = ops.analysis
+
+  return (
+    <View className='staff-subpage staff-ops-page'>
+      <View className='staff-summary-card'>
+        <Text>智慧勤务</Text>
+        <Text>备勤、接警、研判、协同和复盘统一落库</Text>
+      </View>
+
+      <View className='staff-task-metrics'>
+        <View className='staff-task-metric pending'><Text>{ops.duty?.total ?? 0}</Text><Text>勤务预案</Text></View>
+        <View className='staff-task-metric processing'><Text>{ops.voice?.total ?? 0}</Text><Text>语音接警</Text></View>
+        <View className='staff-task-metric done'><Text>{analysis?.total ?? 0}</Text><Text>复盘报告</Text></View>
+      </View>
+
+      <View className='content-card'>
+        <CardTitle title='现场动作' action={activeEvent ? activeEvent.bay : '暂无事件'} />
+        <View className='staff-ops-actions'>
+          <Button className='primary compact' loading={busy === 'duty'} onClick={makeDutyPlan}>生成勤务预案</Button>
+          <Button className='secondary compact' loading={busy === 'containment'} disabled={!activeEvent} onClick={makeContainment}>生成合围方案</Button>
+          <Button className='secondary compact' loading={busy === 'report'} onClick={makeReport}>生成复盘报告</Button>
+        </View>
+      </View>
+
+      <View className='content-card'>
+        <CardTitle title='语音接警' action='自动派单' />
+        <Textarea value={transcript} placeholder='输入报警人语音转写内容' onInput={(event) => setTranscript(event.detail.value)} />
+        <Input className='staff-ops-input' value={bay} placeholder='所属夜市点位' onInput={(event) => setBay(event.detail.value)} />
+        <Button className='primary block' loading={busy === 'voice'} onClick={sendVoice}>提交语音接警</Button>
+      </View>
+
+      <View className='content-card'>
+        <CardTitle title='身份档案比对' action='研判' />
+        <View className='staff-ops-inline'>
+          <Input value={query} placeholder='姓名、编号或标签' onInput={(event) => setQuery(event.detail.value)} />
+          <Button className='secondary compact' loading={busy === 'compare'} onClick={compare}>比对</Button>
+        </View>
+        {identityItems.length === 0
+          ? <Text className='body-copy'>输入关键词后查询身份档案。</Text>
+          : identityItems.map((item) => (
+            <View className='resource-row' key={item.personKey}>
+              <View><Text>{item.name}</Text><Text>{item.tags?.join(' · ') || item.personKey}</Text></View>
+              <Text className='row-chip warn-chip'>{item.score ? `${Math.round(item.score * 100)}%` : '匹配'}</Text>
+            </View>
+          ))}
+      </View>
+
+      <View className='content-card'>
+        <CardTitle title='数据与通知' action={`${notificationItems.length}条通知`} />
+        {feedItems.slice(0, 5).map((item) => (
+          <View className='resource-row' key={item.sourceKey}>
+            <View><Text>{item.name}</Text><Text>{item.kind} · {item.lastSyncAt || '尚未同步'}</Text></View>
+            <Text className={`row-chip ${item.status === '在线' ? 'safe-chip' : 'warn-chip'}`}>{item.status}</Text>
+          </View>
+        ))}
+        {notificationItems.slice(0, 3).map((item) => (
+          <View className='resource-row' key={item.noticeId}>
+            <View><Text>{item.title}</Text><Text>{item.channel} · {item.target}</Text></View>
+            <Text className='row-chip safe-chip'>{item.status}</Text>
+          </View>
+        ))}
+      </View>
+
+      {dutyItems[0] && <View className='staff-route-card'><Text>{dutyItems[0].summary}</Text><Text>{dutyItems[0].timeSlot}</Text></View>}
+    </View>
+  )
+}
+
+function StaffMineView({ staffName, events, logout }: { staffName: string; events: SafetyEvent[]; logout: () => void }) {
   const completedCount = events.filter((event) => event.status === '已完成').length
 
   return (
     <View className='staff-subpage'>
       <View className='staff-profile'>
-        <View className='staff-avatar'>王</View>
+        <View className='staff-avatar'>{staffName.slice(0, 1)}</View>
         <View>
-          <Text>王队</Text>
-          <Text>夜市巡防 · 主街烧烤区</Text>
+          <Text>{staffName}</Text>
+          <Text>夜市巡防 · 已登录</Text>
         </View>
         <Text className='online-dot'>在线</Text>
       </View>
       <View className='home-metrics'>
         <MetricCard label='今日任务' value={`${events.length}`} tone='blue' />
-        <MetricCard label='已闭环' value={`${completedCount}`} tone='safe' />
+        <MetricCard label='已完成' value={`${completedCount}`} tone='safe' />
         <MetricCard label='响应等级' value='优先' tone='warn' />
       </View>
       <View className='mine-section'>
@@ -1152,17 +1515,17 @@ function StaffMineView({ events, logout }: { events: SafetyEvent[]; logout: () =
 function MineView({ events, logout }: { events: SafetyEvent[]; logout: () => void }) {
   const myOpen = useMemo(() => events.filter((event) => event.status !== '已完成').length, [events])
   const serviceRows = [{ label: '我的求助', type: 'help' }, { label: '我的上报', type: 'report' }, { label: '线索登记记录', type: 'lost' }]
-  const infoRows = [{ label: '隐私说明', type: 'privacy' }, { label: '关于夜市智防', type: 'about' }]
+  const infoRows = [{ label: '隐私说明', type: 'privacy' }, { label: '关于烟火哨兵', type: 'about' }]
 
   return (
     <View className='page mine-page figma-mine'>
       <View className='mine-topbar'>
         <Text>我的</Text>
-        <Text>夜市智防</Text>
+        <Text>烟火哨兵</Text>
       </View>
       <View className='profile-card figma-profile-card'>
         <View className='avatar'>夜</View>
-        <View><Text>微信群众</Text><Text>今日记录 {events.length} 条 · 处理中 {myOpen} 条</Text></View>
+        <View><Text>微信用户</Text><Text>今日记录 {events.length} 条 · 处理中 {myOpen} 条</Text></View>
       </View>
       <View className='mine-section figma-mine-section'>
         <Text>我的事件</Text>

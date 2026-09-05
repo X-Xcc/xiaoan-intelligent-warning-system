@@ -8,6 +8,7 @@ __pycache__/
 .venv/
 venv/
 server/.venv/
+server/.venv-runtime/
 
 # Node
 node_modules/
@@ -31,6 +32,17 @@ apps/**/.swc/
 
 # Logs
 *.log
+server/logs/
 
 # Local runtime data
 server/data/*.db
+server/security-data/
+server/.pgdata/
+server/.secrets/
+
+# Local Codex/browser state and verification artifacts
+.codex/
+.codex-*/
+.codex-screenshots/
+.verify/
+_artifact_work/lo_*/

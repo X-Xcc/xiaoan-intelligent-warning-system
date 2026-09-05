@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-type NightMarket = {
+export type PoliceIncidentGeo = {
   id: string;
-  name: string;
-  district: string;
+  incidentNo: string;
+  title: string;
+  jurisdiction: string;
   address: string;
   latitude: number;
   longitude: number;
-  tone: 'danger' | 'warn' | 'safe' | 'service';
-  summary: string;
 };
 
 type MapState = 'loading' | 'ready' | 'missing-key' | 'error';
@@ -17,30 +16,29 @@ declare global {
   interface Window {
     AMap?: any;
     _AMapSecurityConfig?: { securityJsCode?: string };
-    __nightMarketAmapLoader?: Promise<any>;
+    __publicSecurityPlatformAmapLoader?: Promise<any>;
   }
 }
 
 const AMAP_KEY = import.meta.env.VITE_AMAP_KEY as string | undefined;
 const AMAP_SECURITY_JS_CODE = import.meta.env.VITE_AMAP_SECURITY_JS_CODE as string | undefined;
-export function NanchangAmapMap({
-  markets,
-  selectedMarketId,
+export function PoliceJurisdictionAmapMap({
+  incidents,
+  selectedIncidentId,
 }: {
-  markets: NightMarket[];
-  selectedMarketId: string;
+  incidents: PoliceIncidentGeo[];
+  selectedIncidentId: string;
 }) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
   const geocoderRef = useRef<any>(null);
   const lookupIdRef = useRef(0);
   const [state, setState] = useState<MapState>(AMAP_KEY ? 'loading' : 'missing-key');
-  const [mapReady, setMapReady] = useState(false);
   const [geocoderReady, setGeocoderReady] = useState(false);
 
-  const selectedMarket = useMemo(
-    () => markets.find((market) => market.id === selectedMarketId) ?? markets[0],
-    [markets, selectedMarketId],
+  const selectedIncident = useMemo(
+    () => incidents.find((incident) => incident.id === selectedIncidentId) ?? incidents[0],
+    [incidents, selectedIncidentId],
   );
 
   useEffect(() => {
@@ -75,7 +73,6 @@ export function NanchangAmapMap({
         });
 
         mapRef.current = map;
-        setMapReady(true);
         setState('ready');
 
         try {
@@ -104,20 +101,20 @@ export function NanchangAmapMap({
         mapRef.current = null;
       }
       geocoderRef.current = null;
-      setMapReady(false);
       setGeocoderReady(false);
+      setState(AMAP_KEY ? 'loading' : 'missing-key');
     };
-  }, [markets]);
+  }, [incidents]);
 
   useEffect(() => {
-    if (!mapReady || !mapRef.current || !selectedMarket) return;
+    if (state !== 'ready' || !mapRef.current || !selectedIncident) return;
 
     const lookupId = ++lookupIdRef.current;
     const moveTo = (position: [number, number]) => {
       if (lookupId !== lookupIdRef.current || !mapRef.current) return;
       mapRef.current.setZoomAndCenter(17, position, false, 650);
     };
-    const fallbackPosition: [number, number] = [selectedMarket.longitude, selectedMarket.latitude];
+    const fallbackPosition: [number, number] = [selectedIncident.longitude, selectedIncident.latitude];
     const geocoder = geocoderRef.current;
 
     if (!geocoder) {
@@ -125,7 +122,7 @@ export function NanchangAmapMap({
       return;
     }
 
-    geocoder.getLocation(`${selectedMarket.name} ${selectedMarket.address}`, (status: string, result: any) => {
+    geocoder.getLocation(`${selectedIncident.title} ${selectedIncident.address}`, (status: string, result: any) => {
       const location = status === 'complete' && result?.info === 'OK' ? result.geocodes?.[0]?.location : null;
       if (location) {
         moveTo([location.lng, location.lat]);
@@ -133,22 +130,22 @@ export function NanchangAmapMap({
         moveTo(fallbackPosition);
       }
     });
-  }, [geocoderReady, mapReady, selectedMarket]);
+  }, [geocoderReady, state, selectedIncident]);
 
   const fallback = state === 'missing-key'
-    ? '请配置 `VITE_AMAP_KEY` 后显示高德真实地图'
+    ? '配置 VITE_AMAP_KEY 后显示公安辖区警情地图'
     : state === 'error'
-      ? '高德地图加载失败，请检查 key、securityJsCode 和网络'
-      : '高德地图加载中...';
+      ? '公安辖区警情地图加载失败，请检查 key、securityJsCode 和网络'
+      : '公安辖区警情地图加载中';
 
   return (
     <div className="amap-shell">
       <div ref={hostRef} className="amap-canvas" />
       {state !== 'ready' && <div className="amap-placeholder">{fallback}</div>}
-      {selectedMarket && (
+      {selectedIncident && (
         <div className="amap-selected">
-          <strong>{selectedMarket.name}</strong>
-          <span>{selectedMarket.district} · {selectedMarket.address}</span>
+          <strong>{selectedIncident.incidentNo} · {selectedIncident.title}</strong>
+          <span>{selectedIncident.jurisdiction} · {selectedIncident.address}</span>
         </div>
       )}
     </div>
@@ -157,14 +154,14 @@ export function NanchangAmapMap({
 
 async function loadAmapSdk() {
   if (window.AMap) return window.AMap;
-  if (window.__nightMarketAmapLoader) return window.__nightMarketAmapLoader;
+  if (window.__publicSecurityPlatformAmapLoader) return window.__publicSecurityPlatformAmapLoader;
   if (!AMAP_KEY) throw new Error('Missing AMap key');
 
   if (AMAP_SECURITY_JS_CODE) {
     window._AMapSecurityConfig = { securityJsCode: AMAP_SECURITY_JS_CODE };
   }
 
-  window.__nightMarketAmapLoader = new Promise((resolve, reject) => {
+  window.__publicSecurityPlatformAmapLoader = new Promise((resolve, reject) => {
     const script = document.createElement('script');
     script.async = true;
     script.src = `https://webapi.amap.com/maps?v=2.0&key=${encodeURIComponent(AMAP_KEY)}&plugin=AMap.ToolBar,AMap.Scale`;
@@ -173,5 +170,5 @@ async function loadAmapSdk() {
     document.head.appendChild(script);
   });
 
-  return window.__nightMarketAmapLoader;
+  return window.__publicSecurityPlatformAmapLoader;
 }

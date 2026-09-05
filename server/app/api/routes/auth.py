@@ -5,7 +5,7 @@ import os
 import urllib.parse
 import urllib.request
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, Field
 
 from app.services import auth_store
@@ -24,6 +24,8 @@ def _wechat_code2session(code: str) -> dict:
     appid = os.getenv("WECHAT_APPID", "wxdd3f448369e6ca9f")
     secret = os.getenv("WECHAT_APP_SECRET")
     if not secret:
+        if os.getenv("APP_ENV") != "development":
+            raise HTTPException(status_code=503, detail="Wechat AppSecret is not configured")
         return {
             "openid": f"dev_{code[-12:]}",
             "session_key": None,
@@ -68,3 +70,14 @@ def wechat_login(payload: WechatLoginIn):
         "provider": "wechat",
         "dev": bool(wechat_session.get("dev")),
     }
+
+
+@router.get("/me")
+def me(authorization: str | None = Header(default=None)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="未登录")
+    token = authorization.removeprefix("Bearer ").strip()
+    user = auth_store.get_user_by_token(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="令牌无效")
+    return {"user": user}

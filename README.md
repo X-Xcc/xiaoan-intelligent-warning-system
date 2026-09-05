@@ -1,15 +1,15 @@
-# 夜市智防
+# 烟火哨兵
 
-夜市智防是一套面向夜市商圈、文旅街区和商业综合体周边夜间消费场景的数智安全治理系统原型。项目提供群众端小程序、巡防人员移动端、Web 指挥后台和 FastAPI 后端，形成从风险感知、隐患上报、紧急协同、工单处置到后台态势展示的闭环。
+烟火哨兵是一套面向夜市商圈、文旅街区和商业综合体周边夜间消费场景的安全治理原型。项目提供群众端小程序、巡防人员移动端、Web 指挥后台和 FastAPI 后端，连成从风险发现、隐患上报、紧急协同、工单处置到后台展示的一条线。
 
-当前版本重点不是做一个单纯展示页，而是让小程序、后台和后端真实连起来：群众或商户在小程序发起求助或上报，后端生成事件与工单，巡防人员端更新处置状态，Web 后台读取同一组事件数据展示夜市态势。
+当前版本重点不是做一个单纯展示页，而是让小程序、后台和后端真正连起来：群众或商户在小程序发起求助或上报，后端生成事件与工单，巡防人员端更新处置状态，Web 后台读取同一组事件数据展示现场情况。
 
 ## 功能概览
 
 ### 群众端小程序
 
 - 微信一键登录：用户点击后通过 `wx.login` 获取 code，交给后端换取 openid 和系统 token。
-- 夜市智防首页：展示网格态势、客流、AI 预警、地图点位、附近联动点和夜市提醒。
+- 烟火哨兵首页：展示网格情况、客流、视频提示、地图点位、附近联动点和夜市提醒。
 - 隐患上报：支持选择街霸滋扰、打架斗殴、扒窃线索、摊位纠纷等类型，补充描述、照片数量、联系方式和匿名提交。
 - 紧急求助：强调 110 / 120 优先，小程序用于同步位置和现场信息给夜市巡防组。
 - 我的进度：按求助、上报、线索登记筛选，查看事件流转状态。
@@ -29,17 +29,19 @@
 
 ### Web 指挥后台
 
-- 态势总览：读取后端事件概览数据，展示今日事件、待处置任务、在线巡防、平均响应等指标。
+- 运行总览：读取后端事件概览数据，展示今日事件、待处置任务、在线巡防、处理进度等指标。
 - 事件工单：展示事件列表和当前状态。
-- 管理入口：面向指挥展示夜市人员、智能装备、处突物资、联动预案等模块。
+- 跨夜市联防：统一接入市场、区域、设备、风险记录和无人机任务，按事件主链联动处置。
+- 管理入口：面向指挥展示服务健康、接口链路、事件库和审计状态。
 - 后端联动：后台和小程序共用 `/api/events` 数据链路。
 
 ### 后端服务
 
 - FastAPI 服务，默认运行在 `http://127.0.0.1:8010`。
-- SQLAlchemy 数据库层，默认使用本地 SQLite，生产建议配置 PostgreSQL。
-- 事件接口覆盖求助、上报、线索登记、状态更新和补充信息。
-- 微信登录接口支持真实 `code2Session`，本地未配置 AppSecret 时提供开发态会话。
+- SQLAlchemy 数据库层，本机和服务器统一使用 PostgreSQL。
+- 事件接口覆盖求助、报警推送、指挥派单、状态更新和补充信息。
+- WebSocket 实时通道用于报警进入指挥中心、指挥派单同步工作人员端。
+- 微信登录接口支持真实 `code2Session`；开发测试会话需要显式设置 `APP_ENV=development`。
 
 ## 技术栈
 
@@ -51,7 +53,7 @@
 | Web 后台 | React 19 + Vite + TypeScript |
 | 图表与视觉 | ECharts、Three.js、React Three Fiber、Lucide Icons |
 | 后端 | FastAPI + Uvicorn |
-| 数据库 | SQLAlchemy + PostgreSQL / MySQL / SQLite |
+| 数据库 | SQLAlchemy + PostgreSQL |
 | 工作区管理 | npm workspaces |
 
 ## 目录结构
@@ -66,7 +68,7 @@ D:\CICSIC
 │     ├─ src
 │     │  ├─ assets           Logo、地图 marker 等资源
 │     │  ├─ components       通用组件、语言组件、底部导航
-│     │  ├─ data             静态业务配置与详情内容
+│     │  ├─ data             基础选项配置
 │     │  ├─ hooks            事件数据 hook
 │     │  ├─ i18n             多语言配置
 │     │  ├─ pages            index / main / detail 页面
@@ -229,7 +231,7 @@ $env:WECHAT_APPID="你的微信小程序 AppID"
 $env:WECHAT_APP_SECRET="你的微信小程序 AppSecret"
 ```
 
-开发期没有配置 `WECHAT_APP_SECRET` 时，后端会返回本地开发会话，便于页面和接口联调。上线前必须配置真实 AppSecret，且 AppSecret 只能放在后端，不能写进小程序前端代码。
+开发测试如需临时会话，必须同时设置 `APP_ENV=development`。上线前必须配置真实 AppSecret，且 AppSecret 只能放在后端，不能写进小程序前端代码。
 
 ## API 概览
 
@@ -244,13 +246,21 @@ $env:WECHAT_APP_SECRET="你的微信小程序 AppSecret"
 | `GET` | `/health` | 健康检查 |
 | `POST` | `/auth/wechat-login` | 微信小程序登录 |
 | `GET` | `/events` | 获取事件列表 |
-| `GET` | `/events/overview` | 获取态势概览 |
+| `GET` | `/events/overview` | 获取运行概览 |
+| `GET` | `/events/alarm-pushes` | 获取报警推送队列 |
 | `POST` | `/events/help` | 创建群众/商户求助事件 |
 | `POST` | `/events/reports` | 创建隐患上报事件 |
 | `POST` | `/events/lost-claims` | 创建失物/扒窃线索登记事件 |
 | `PATCH` | `/events/{event_id}/status` | 更新事件状态 |
+| `PATCH` | `/events/{event_id}/assign` | 指挥中心派单 |
 | `PATCH` | `/events/{event_id}/supplement` | 补充事件描述 |
-| `GET` | `/demo` | 后端浏览器演示页 |
+| `PATCH` | `/events/alarm-pushes/{push_id}/acknowledge` | 确认报警推送 |
+
+实时通道：
+
+```text
+ws://127.0.0.1:8010/api/events/realtime
+```
 
 示例：创建求助事件
 
@@ -276,35 +286,93 @@ Invoke-WebRequest `
 
 ## 数据库说明
 
-后端通过 `DATABASE_URL` 连接数据库。开发期不配置时会自动使用本地 SQLite：
-
-```text
-server/data/jiangtan.db
-```
-
-该文件是本地运行数据，已在 `.gitignore` 中忽略，不应提交到仓库。首次启动后端会自动初始化数据表和示例事件。
-
-生产或多人联调建议使用 PostgreSQL：
+后端通过 `DATABASE_URL` 连接 PostgreSQL。本机开发和服务器部署使用同一类数据库，服务启动时会自动初始化业务表。
 
 ```powershell
-$env:DATABASE_URL="postgresql://jiangtan:你的密码@数据库地址:5432/jiangtan_zhifang"
-npm run server:dev
-```
-
-也支持 MySQL：
-
-```powershell
-$env:DATABASE_URL="mysql+pymysql://jiangtan:你的密码@数据库地址:3306/jiangtan_zhifang?charset=utf8mb4"
+$env:DATABASE_URL="postgresql://yanhuo:你的密码@数据库地址:5432/yanhuo_shaobing"
 npm run server:dev
 ```
 
 当前核心表：
 
 - `safety_events`：求助、反馈、失物登记和工单流转事件。
-- `event_audit_logs`：事件创建、派单、接收、到达、处理、闭环审计记录。
+- `alarm_pushes`：一键报警推送到指挥中心的确认记录。
+- `event_audit_logs`：事件创建、派单、接收、到达、处理、结果记录。
+- `security_detections`：YOLO/视频检测结果、动作、相机和证据索引。
 - `wechat_users`：微信 openid、session_key、系统 token 和登录时间。
 
 后续可以继续补充巡防人员账号、设备、物资、预案、权限和消息通知等表。
+
+## 视频检测与画面复核接入
+
+项目采用“本地实时检测 + 数据库入库 + 画面复核”的接入路径。YOLO 负责快速发现人员聚集、打架、跌倒、离岗等线索；CICSIC 先保存检测记录，再生成事件工单；复核服务通过可配置 API 对关键帧或短片段再看一遍，输出风险等级和处置建议。复核结果会回写事件等级与派单优先级，相同 `eventKey` 保持一次事件归并。
+
+默认本地检测文件为：
+
+```text
+server/models/yolov8n-pose.pt
+```
+
+默认检测数据目录为：
+
+```text
+server/security-data
+```
+
+检测程序生成的 `detection_*.json` 包含 `actions`、`person_count`、`camera_name`、`camera_id` 等字段时，后端会先导入 `security_detections`，再把支持的动作生成 `视频提示` 事件，并进入指挥中心报警推送队列。大屏 `/monitor` 显示实时视频、检测状态和复核状态，`/command` 继续承接派单、路线和处理结果。
+
+核心接口：
+
+```text
+GET  /api/security-video/status
+GET  /api/security-video/cameras
+GET  /api/security-video/feed?cam=cam-001
+GET  /api/security-ai/status
+POST /api/security-ai/judgements
+POST /api/security-ai/yolo-reviews
+POST /api/events/{event_id}/vision-review
+POST /api/events/security-detections/sync
+```
+
+可选环境变量：
+
+```powershell
+$env:SECURITY_DETECTION_DATA_DIRS="D:\CICSIC\server\security-data"
+$env:SECURITY_MODEL_PATH="D:\CICSIC\server\models\yolov8n-pose.pt"
+$env:SECURITY_VIDEO_BASE_URL="http://127.0.0.1:5000"
+$env:VITE_SECURITY_MONITOR_URL="http://127.0.0.1:5000/monitor"
+$env:SECURITY_VLM_BASE_URL="https://dashscope.aliyuncs.com/compatible-mode/v1"
+$env:SECURITY_VLM_API_KEY="<your key>"
+$env:SECURITY_VLM_MODEL="qwen-vl-plus"
+```
+
+也可以在 `server/.env.local` 写入同名配置，服务启动时会自动读取。该文件已被忽略，不会提交到仓库。
+
+复核接口按兼容的 chat completions 形态调用，适配通义千问 Qwen-VL / Qwen3-VL 一类云端或私有化网关。`POST /api/security-ai/yolo-reviews` 会读取数据库里的最新检测记录和证据索引，再做一次画面复核并写回事件；CICSIC 不把浏览器摄像头帧转发给 YOLO。未配置密钥时，后端仍会返回本地检测上下文占位，方便大屏和事件链路继续对接。
+
+接口也支持 YOLO 端主动推送聚集结果和一张证据帧；这条路径不会把浏览器摄像头帧转发给 YOLO。外部检测端可通过 `CICSIC_REVIEW_MAX_ATTEMPTS`、`CICSIC_REVIEW_RETRY_DELAY` 和 `CICSIC_REVIEW_OUTBOX_DIR` 配置异步重试与本地复核待办留存。每次有新检测上报时，上报器会先恢复最多 5 条本地待办；也可在检测循环中调用 `CicsicReviewNotifier.retry_retained()` 批量恢复，并通过 `outbox_status()` 读取待办数量和最近留存时间。派单同时记录在线状态、责任范围、实时距离、在办任务量以及操作位置、状态变化和证据索引。
+
+两套服务本地对接顺序：
+
+```powershell
+cd D:\CICSIC
+npm run server:dev
+npm run dashboard:dev
+
+cd D:\CICSIC
+npm run server:dev
+```
+
+外部检测端如果要接入本仓库，默认把结果推送到 `http://127.0.0.1:8010/api/security-ai/yolo-reviews`。需要关闭时设置 `$env:CICSIC_REVIEW_ENABLED="false"`；需要改地址时设置 `$env:CICSIC_REVIEW_URL="http://你的后端/api/security-ai/yolo-reviews"`。
+
+验证命令：
+
+```powershell
+npm run server:verify:security-video-ai
+npm run server:verify:security-detection
+python scripts/verify_patent_closure.py
+npm run dashboard:build
+```
 
 ## 小程序页面说明
 
@@ -356,7 +424,7 @@ apps/miniprogram/src/pages/detail/detail.scss
 - 小程序端不要保存微信 AppSecret。
 - 本地登录失败时，优先检查后端是否启动，以及微信开发者工具是否关闭合法域名校验。
 - 求助功能不能替代 110 / 120，页面文案应始终保持“报警和急救优先”。
-- 首页定位为夜市智防轻量入口，不应把紧急求助放成首页唯一主入口。
+- 首页定位为烟火哨兵轻量入口，不应把紧急求助放成首页唯一主入口。
 - `server/data/*.db` 是本地运行数据，不提交。
 - `apps/miniprogram/dist-alipay` 是支付宝端构建产物，当前仓库已包含，用于交付预览。
 - 若修改 Taro 源码，建议同时跑微信端和支付宝端构建。
@@ -397,10 +465,10 @@ http://127.0.0.1:8010/docs
 ### 后端
 
 1. 配置 `WECHAT_APPID` 和 `WECHAT_APP_SECRET`。
-2. 配置生产 `DATABASE_URL`，建议使用 PostgreSQL。
+2. 配置 PostgreSQL `DATABASE_URL`。
 3. 配置 CORS 白名单。
 4. 接入日志、异常监控和备份。
-5. 将本地开发态登录兜底限制在非生产环境。
+5. 将开发测试登录限制在非生产环境。
 
 ### Web 后台
 
@@ -411,9 +479,10 @@ http://127.0.0.1:8010/docs
 ## 相关文档
 
 - `server/README.md`：后端接口和微信登录配置。
-- `docs/江滩智防项目实现文档.md`：早期江滩版本实现说明，作为历史参考。
+- `docs/烟火哨兵交付说明.md`：交付范围、现场验收、部署准备和一键验收命令。
+- `docs/烟火哨兵项目实现文档.md`：早期夜市版本实现说明，作为历史参考。
 - `docs/小程序Figma改版实施说明.md`：小程序视觉改版说明。
 
 ## 当前状态
 
-当前仓库已经包含可运行的夜市智防原型链路：微信登录入口、群众端求助与上报、巡防人员任务处置、Web 指挥后台态势展示、FastAPI 事件接口和可切换的真实数据库连接层。后续重点可以放在真实地图数据、真实人员账号、消息通知、WebSocket 实时推送和权限体系。
+当前仓库已经包含可运行的烟火哨兵原型链路：微信登录入口、群众端求助与上报、巡防人员任务处置、Web 指挥后台展示、FastAPI 事件接口和可切换的真实数据库连接层。后续重点可以放在真实地图数据、真实人员账号、消息通知、WebSocket 实时推送和权限体系。

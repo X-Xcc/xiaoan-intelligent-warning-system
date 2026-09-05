@@ -13,7 +13,7 @@ export type Locale =
   | 'ru-RU'
   | 'ar'
 
-export type LocaleOption = {
+type LocaleOption = {
   code: Locale
   nativeName: string
   englishName: string
@@ -55,12 +55,12 @@ const messages: Record<Locale, Partial<Record<MessageKey, string>>> = {
   'zh-CN': {
     language: '语言',
     selectLanguage: '选择语言',
-    'login.kicker': '夜市智防服务',
-    'login.title': '夜市智防',
-    'login.subtitle': '逛夜市前看态势，遇情况一键同步',
-    'login.opening': '网格态势',
-    'login.services': '联动点位',
-    'login.help': '平安求助',
+    'login.kicker': '夜市现场服务',
+    'login.title': '烟火哨兵',
+    'login.subtitle': '逛夜市前看一眼，遇到事也能及时求助',
+    'login.opening': '今日情况',
+    'login.services': '附近点位',
+    'login.help': '马上求助',
     'login.visitor': '进入群众端',
     'login.staff': '巡防人员登录',
     'nav.home': '首页',
@@ -74,8 +74,8 @@ const messages: Record<Locale, Partial<Record<MessageKey, string>>> = {
   'en-US': {
     language: 'Language',
     selectLanguage: 'Select language',
-    'login.kicker': 'Riverside safety service',
-    'login.title': 'Today at Jiangtan',
+    'login.kicker': 'Night market safety service',
+    'login.title': 'Yanhuo Sentinel',
     'login.subtitle': 'Check before you go, enjoy with peace of mind',
     'login.opening': 'Open areas',
     'login.services': 'Nearby services',
@@ -93,8 +93,8 @@ const messages: Record<Locale, Partial<Record<MessageKey, string>>> = {
   'ja-JP': {
     language: '言語',
     selectLanguage: '言語を選択',
-    'login.kicker': '川辺の安全サービス',
-    'login.title': '今日の江灘',
+    'login.kicker': '夜市の安全サービス',
+    'login.title': 'Yanhuo Sentinel',
     'login.subtitle': '出発前に確認して、安心して楽しみましょう',
     'login.opening': '開放エリア',
     'login.services': '近くのサービス',
@@ -112,8 +112,8 @@ const messages: Record<Locale, Partial<Record<MessageKey, string>>> = {
   'ko-KR': {
     language: '언어',
     selectLanguage: '언어 선택',
-    'login.kicker': '강변 안전 서비스',
-    'login.title': '오늘의 장탄',
+    'login.kicker': '야시장 안전 서비스',
+    'login.title': 'Yanhuo Sentinel',
     'login.subtitle': '출발 전에 확인하고 안심하고 즐겨보세요',
     'login.opening': '개방 구역',
     'login.services': '주변 서비스',
@@ -131,8 +131,8 @@ const messages: Record<Locale, Partial<Record<MessageKey, string>>> = {
   'es-ES': {
     language: 'Idioma',
     selectLanguage: 'Seleccionar idioma',
-    'login.kicker': 'Servicio de seguridad ribereño',
-    'login.title': 'Jiangtan de hoy',
+    'login.kicker': 'Servicio de seguridad del mercado nocturno',
+    'login.title': 'Yanhuo Sentinel',
     'login.subtitle': 'Consulta antes de salir y disfruta con tranquilidad',
     'login.opening': 'Zonas abiertas',
     'login.services': 'Servicios cercanos',
@@ -150,8 +150,8 @@ const messages: Record<Locale, Partial<Record<MessageKey, string>>> = {
   'fr-FR': {
     language: 'Langue',
     selectLanguage: 'Choisir la langue',
-    'login.kicker': 'Service de sécurité fluvial',
-    'login.title': 'Jiangtan aujourd’hui',
+    'login.kicker': 'Service de sécurité du marché nocturne',
+    'login.title': 'Yanhuo Sentinel',
     'login.subtitle': 'Informez-vous avant de partir et profitez sereinement',
     'login.opening': 'Zones ouvertes',
     'login.services': 'Services proches',
@@ -169,8 +169,8 @@ const messages: Record<Locale, Partial<Record<MessageKey, string>>> = {
   'de-DE': {
     language: 'Sprache',
     selectLanguage: 'Sprache auswählen',
-    'login.kicker': 'Sicherheitsservice am Fluss',
-    'login.title': 'Jiangtan heute',
+    'login.kicker': 'Sicherheitsservice am Nachtmarkt',
+    'login.title': 'Yanhuo Sentinel',
     'login.subtitle': 'Vor dem Besuch prüfen und entspannt genießen',
     'login.opening': 'Geöffnete Bereiche',
     'login.services': 'Services in der Nähe',
@@ -188,8 +188,8 @@ const messages: Record<Locale, Partial<Record<MessageKey, string>>> = {
   'pt-PT': {
     language: 'Idioma',
     selectLanguage: 'Selecionar idioma',
-    'login.kicker': 'Serviço de segurança ribeirinho',
-    'login.title': 'Jiangtan hoje',
+    'login.kicker': 'Serviço de segurança do mercado noturno',
+    'login.title': 'Yanhuo Sentinel',
     'login.subtitle': 'Consulte antes de sair e desfrute com tranquilidade',
     'login.opening': 'Zonas abertas',
     'login.services': 'Serviços próximos',
@@ -207,8 +207,8 @@ const messages: Record<Locale, Partial<Record<MessageKey, string>>> = {
   'ru-RU': {
     language: 'Язык',
     selectLanguage: 'Выберите язык',
-    'login.kicker': 'Сервис безопасности на набережной',
-    'login.title': 'Цзянтан сегодня',
+    'login.kicker': 'Сервис безопасности ночного рынка',
+    'login.title': 'Yanhuo Sentinel',
     'login.subtitle': 'Проверьте информацию перед прогулкой и отдыхайте спокойно',
     'login.opening': 'Открытые зоны',
     'login.services': 'Сервисы рядом',
@@ -226,8 +226,8 @@ const messages: Record<Locale, Partial<Record<MessageKey, string>>> = {
   ar: {
     language: 'اللغة',
     selectLanguage: 'اختر اللغة',
-    'login.kicker': 'خدمة السلامة على الواجهة النهرية',
-    'login.title': 'جيانغتان اليوم',
+    'login.kicker': 'خدمة السلامة في السوق الليلي',
+    'login.title': 'Yanhuo Sentinel',
     'login.subtitle': 'تحقق قبل الانطلاق واستمتع براحة بال',
     'login.opening': 'المناطق المفتوحة',
     'login.services': 'الخدمات القريبة',
@@ -244,14 +244,14 @@ const messages: Record<Locale, Partial<Record<MessageKey, string>>> = {
   },
 }
 
-const STORAGE_KEY = 'jiangtan-locale'
+const STORAGE_KEY = 'yanhuo-shaobing-locale'
 const listeners = new Set<(locale: Locale) => void>()
 
 const isLocale = (value: unknown): value is Locale => (
   typeof value === 'string' && localeOptions.some((item) => item.code === value)
 )
 
-export const getLocale = (): Locale => {
+const getLocale = (): Locale => {
   const stored = Taro.getStorageSync(STORAGE_KEY)
   return isLocale(stored) ? stored : 'zh-CN'
 }

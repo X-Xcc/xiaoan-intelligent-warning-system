@@ -4,8 +4,8 @@ export default defineAppConfig({
   pages: ['pages/index/index', 'pages/main/main', 'pages/detail/detail'],
   window: {
     backgroundTextStyle: 'dark',
-    navigationBarBackgroundColor: '#f5f7fa',
-    navigationBarTitleText: '夜市智防',
+    navigationBarBackgroundColor: '#f5f7f6',
+    navigationBarTitleText: '烟火哨兵',
     navigationBarTextStyle: 'black',
   },
   permission: {
@@ -14,5 +14,4 @@ export default defineAppConfig({
     },
   },
   requiredPrivateInfos: ['getLocation'],
-  lazyCodeLoading: 'requiredComponents',
 })

@@ -9,7 +9,7 @@ OUT = Path(r"D:\CICSIC\ppt_analysis\selected_certs")
 SELECTED = {
     "01_集群调度管理": "cert-1.png",
     "02_大数据集成运维": "cert-2.png",
-    "03_智能巡检集成": "cert-4.png",
+    "03_自动巡检集成": "cert-4.png",
     "backup_雷达定位测试": "cert-3.png",
 }
 
@@ -56,3 +56,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

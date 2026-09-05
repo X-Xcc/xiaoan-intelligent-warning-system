@@ -1,27 +1,44 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button, Image, Text, View } from '@tarojs/components'
 import Taro from '@tarojs/taro'
-import logoUrl from '@/assets/jiangtan-zhifang-logo.svg'
-import { LanguagePicker } from '@/components/LanguagePicker'
-import { useLocale } from '@/i18n'
 import { loginWithWechat } from '@/utils/api'
+import yanhuoShaobingLogo from '@/assets/yanhuo-shaobing-logo.png'
 import './index.scss'
 
+const ENABLE_DEV_LOGIN = process.env.TARO_APP_ENABLE_DEV_LOGIN === 'true'
+
 export default function LoginEntry() {
-  const { t } = useLocale()
+  const [accepted, setAccepted] = useState(true)
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
 
+  useEffect(() => {
+    if (typeof Taro.setNavigationBarTitle === 'function') {
+      Taro.setNavigationBarTitle({ title: '用户登录' })
+    }
+  }, [])
+
   const openVisitor = async () => {
+    if (!accepted) {
+      Taro.showToast({ title: '请先勾选协议', icon: 'none' })
+      return
+    }
+    if (ENABLE_DEV_LOGIN) {
+      Taro.reLaunch({ url: '/pages/main/main?mode=visitor' })
+      return
+    }
     setLoginError('')
     setLoggingIn(true)
     try {
       await loginWithWechat()
       Taro.redirectTo({ url: '/pages/main/main?mode=visitor' })
     } catch (error) {
-      setLoginError('当前以群众演示模式进入，正式域名配置后会恢复微信登录。')
-      Taro.showToast({ title: '已进入群众演示模式', icon: 'none' })
-      Taro.redirectTo({ url: '/pages/main/main?mode=visitor' })
+      if (ENABLE_DEV_LOGIN) {
+        Taro.redirectTo({ url: '/pages/main/main?mode=visitor' })
+        return
+      }
+      setLoginError('微信登录没完成，请稍后再试。')
+      Taro.showToast({ title: '微信登录没完成', icon: 'none' })
     } finally {
       setLoggingIn(false)
     }
@@ -31,64 +48,63 @@ export default function LoginEntry() {
     Taro.redirectTo({ url: '/pages/main/main?mode=staffLogin' })
   }
 
+  const skipLogin = () => {
+    Taro.reLaunch({ url: '/pages/main/main?mode=visitor' })
+  }
+
   return (
-    <View className='login-shell wechat-auth-shell'>
-      <View className='login-content wechat-auth-content'>
-        <View className='brand-header auth-brand'>
-          <View className='brand-mark'>
-            <Image className='brand-logo' src={logoUrl} mode='aspectFit' />
-          </View>
-          <Text className='login-title'>夜市智防</Text>
-          <Text className='login-subtitle'>使用微信账号登录，查看求助、上报和处置进度</Text>
-        </View>
-
-        <View className='login-value'>
-          <View>
-            <Text>网格态势</Text>
-            <Text>7 个重点网格</Text>
-          </View>
-          <View>
-            <Text>联动点位</Text>
-            <Text>PTU / AED / 服务站</Text>
-          </View>
-          <View>
-            <Text>业务范围</Text>
-            <Text>求助 / 上报 / 进度</Text>
+    <View className='auth-page'>
+      <View className='auth-hero'>
+        <View className='auth-hero-copy auth-brand'>
+          <View className='brand-header'>
+            <View className='brand-mark'>
+              <Image className='brand-logo-image' src={yanhuoShaobingLogo} mode='aspectFit' />
+            </View>
+            <Text className='login-title'>烟火哨兵</Text>
+            <Text className='login-subtitle'>面向夜间商圈的安全治理与联动处置平台</Text>
           </View>
         </View>
-
-        <View className='login-panel auth-panel'>
-          <View className='auth-account-card'>
-            <View className='auth-wechat-avatar'>微</View>
-            <View>
-              <Text>微信账号快捷登录</Text>
-              <Text>仅用于同步你的求助、上报和处置进度。</Text>
-            </View>
+        <View className='auth-hero-pill'>
+          <Text className='auth-hero-pill-left'>···</Text>
+          <Text className='auth-hero-pill-right' />
+        </View>
+        <View className='auth-hero-art'>
+          <View className='auth-art-orbit' />
+          <View className='auth-art-device'>
+            <View className='auth-art-screen' />
+            <View className='auth-art-base' />
           </View>
+        </View>
+      </View>
 
-          <View className='auth-scope-list'>
-            <View>
-              <Text>事件记录</Text>
-              <Text>保存求助、上报和线索登记进度</Text>
-            </View>
-            <View>
-              <Text>身份识别</Text>
-              <Text>通过微信 openid 识别同一位商户或群众</Text>
-            </View>
+      <View className='auth-surface'>
+        <View className='auth-tabs'>
+          <View className='auth-tab active'>
+            <Text className='auth-tab-title'>用户登录</Text>
+            <View className='auth-tab-indicator' />
           </View>
-
-          <View className='login-actions'>
-            <Button className='wechat-login' loading={loggingIn} disabled={loggingIn} onClick={openVisitor}>
-              {!loggingIn && <Text className='wechat-login-mark'>微</Text>}
-              <Text>{loggingIn ? '正在登录' : '微信一键登录'}</Text>
-            </Button>
-            <Button className='staff-login-entry' onClick={openStaff}>{t('login.staff')}</Button>
+          <View className='auth-tab' onClick={openStaff}>
+            <Text className='auth-tab-title'>管理员登录</Text>
+            <View className='auth-tab-indicator' />
           </View>
-          {loginError && <Text className='login-error'>{loginError}</Text>}
         </View>
 
-        <LanguagePicker className='login-language' />
-        <Text className='login-support'>登录即表示同意《隐私说明》，夜市智防中心 20:00-02:00 巡防在线。</Text>
+        <View className='auth-card'>
+          <View className='auth-check-row' onClick={() => setAccepted(!accepted)}>
+            <View className={`auth-checkbox ${accepted ? 'checked' : ''}`}>
+              {accepted && <Text>✓</Text>}
+            </View>
+            <Text>《烟火哨兵用户服务协议》及《隐私政策》</Text>
+          </View>
+
+          <Button className='auth-primary-btn' loading={loggingIn} disabled={loggingIn} onClick={openVisitor}>
+            登录
+          </Button>
+
+          <Text className='auth-skip' onClick={skipLogin}>暂不登录</Text>
+
+          {loginError && <Text className='auth-error'>{loginError}</Text>}
+        </View>
       </View>
     </View>
   )

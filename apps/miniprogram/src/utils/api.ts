@@ -1,15 +1,29 @@
-import Taro from '@tarojs/taro'
-import type { EventStatus, ReportForm, SafetyEvent } from '@/types/events'
+﻿import Taro from '@tarojs/taro'
+import type {
+  EventStatus,
+  EvidenceItem,
+  HelpForm,
+  ReportForm,
+  SafetyEvent,
+  SecurityAnalysisReport,
+  SecurityDutyPlan,
+  SecurityFeed,
+  SecurityIdentityProfile,
+  SecurityNotification,
+  SecurityOpsOverview,
+} from '@/types/events'
 
-const API_BASE_URL = process.env.TARO_APP_API_BASE_URL || 'https://undergraduate-ears-powell-roots.trycloudflare.com/api'
-const AUTH_TOKEN_KEY = 'jiangtan-auth-token'
-const AUTH_USER_KEY = 'jiangtan-auth-user'
+const API_BASE_URL = process.env.TARO_APP_API_BASE_URL || 'http://120.26.137.173/api'
+const REALTIME_URL = API_BASE_URL.replace(/^http/, 'ws').replace(/\/api$/, '/api/events/realtime')
+const AUTH_TOKEN_KEY = 'yanhuo-shaobing-auth-token'
 
 type ApiEnvelope<T> = T & {
   message?: string
 }
 
-export type WechatAuthUser = {
+type RequestOptions = Omit<Taro.request.Option, 'url'>
+
+type WechatAuthUser = {
   openid: string
   unionid?: string | null
   lastLoginAt: string
@@ -22,7 +36,7 @@ export type WechatLoginSession = {
   dev?: boolean
 }
 
-async function request<T>(path: string, options: Taro.request.Option = {}): Promise<T> {
+async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const response = await Taro.request<ApiEnvelope<T>>({
     url: `${API_BASE_URL}${path}`,
     method: options.method || 'GET',
@@ -46,17 +60,13 @@ export async function fetchEvents(): Promise<SafetyEvent[]> {
   return data.items
 }
 
-export function getAuthToken(): string {
+export async function fetchSafetyEvent(id: string): Promise<SafetyEvent> {
+  const data = await request<{ event: SafetyEvent }>(`/events/${encodeURIComponent(id)}`)
+  return data.event
+}
+
+function getAuthToken(): string {
   return Taro.getStorageSync(AUTH_TOKEN_KEY) || ''
-}
-
-export function getAuthUser(): WechatAuthUser | null {
-  return Taro.getStorageSync(AUTH_USER_KEY) || null
-}
-
-export function clearAuthSession() {
-  Taro.removeStorageSync(AUTH_TOKEN_KEY)
-  Taro.removeStorageSync(AUTH_USER_KEY)
 }
 
 export async function loginWithWechat(): Promise<WechatLoginSession> {
@@ -70,7 +80,6 @@ export async function loginWithWechat(): Promise<WechatLoginSession> {
     data: { code: loginResult.code },
   })
   Taro.setStorageSync(AUTH_TOKEN_KEY, session.token)
-  Taro.setStorageSync(AUTH_USER_KEY, session.user)
   return session
 }
 
@@ -80,6 +89,10 @@ export async function createHelpEvent(payload: {
   latitude?: number
   longitude?: number
   contact?: string
+  marketId?: string
+  zoneId?: string
+  riskType?: string
+  evidence?: EvidenceItem[]
 }): Promise<SafetyEvent> {
   const data = await request<{ event: SafetyEvent }>('/events/help', {
     method: 'POST',
@@ -88,31 +101,49 @@ export async function createHelpEvent(payload: {
   return data.event
 }
 
-export async function fetchStaffTasks(staff = '王队'): Promise<SafetyEvent[]> {
+export async function uploadEventEvidence(filePath: string, fileType: 'image' | 'video'): Promise<EvidenceItem> {
+  const uploadOptions: Parameters<typeof Taro.uploadFile>[0] = {
+    url: `${API_BASE_URL}/events/evidence`,
+    filePath,
+    name: 'file',
+  }
+  const token = getAuthToken()
+  if (token) {
+    uploadOptions.header = { authorization: `Bearer ${token}` }
+  }
+  const response = await Taro.uploadFile(uploadOptions)
+  if (response.statusCode < 200 || response.statusCode >= 300) {
+    throw new Error('证据上传失败')
+  }
+  const payload = JSON.parse(response.data as string) as { evidence?: EvidenceItem }
+  return payload.evidence ?? { kind: fileType, url: '' }
+}
+
+export async function fetchStaffTasks(staff: string): Promise<SafetyEvent[]> {
   const data = await request<{ items: SafetyEvent[] }>(`/events/staff-tasks?staff=${encodeURIComponent(staff)}`)
   return data.items
 }
 
 export async function updateStaffLocation(payload: {
-  staff?: string
+  staff: string
   latitude: number
   longitude: number
   accuracy?: number
 }) {
   const data = await request<{ staff: unknown }>('/events/staff-location', {
     method: 'POST',
-    data: { staff: '王队', ...payload },
+    data: payload,
   })
   return data.staff
 }
 
 export async function refreshEventRoute(id: string, payload: {
-  staff?: string
+  staff: string
   latitude?: number
   longitude?: number
   accuracy?: number
-} = {}): Promise<SafetyEvent> {
-  const params = Object.entries({ staff: '王队', ...payload })
+}): Promise<SafetyEvent> {
+  const params = Object.entries(payload)
     .filter(([, value]) => value !== undefined && value !== null)
     .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
     .join('&')
@@ -130,15 +161,16 @@ export async function createReportEvent(form: ReportForm, photoCount: number): P
       contact: form.contact,
       anonymous: form.anonymous,
       photoCount,
+      evidence: [],
     },
   })
   return data.event
 }
 
-export async function createLostClaimEvent(itemName = '粉色手机'): Promise<SafetyEvent> {
+export async function createLostClaimEvent(itemName: string, bay: string): Promise<SafetyEvent> {
   const data = await request<{ event: SafetyEvent }>('/events/lost-claims', {
     method: 'POST',
-    data: { itemName, bay: '三号门夜食街' },
+    data: { itemName, bay },
   })
   return data.event
 }
@@ -157,4 +189,87 @@ export async function supplementSafetyEvent(id: string, text: string): Promise<S
     data: { text },
   })
   return data.event
+}
+
+export async function fetchSecurityOpsOverview(): Promise<SecurityOpsOverview> {
+  return request<SecurityOpsOverview>('/security-ops/overview')
+}
+
+export async function generateSecurityDutyPlans(planDate?: string): Promise<SecurityDutyPlan[]> {
+  const data = await request<{ items: SecurityDutyPlan[] }>('/security-ops/duty-plans/generate', {
+    method: 'POST',
+    data: planDate ? { planDate } : {},
+  })
+  return data.items
+}
+
+export async function submitVoiceIntake(payload: {
+  transcript: string
+  bay: string
+  contact?: string
+  autoAssign?: boolean
+}) {
+  return request<{ intakeId: string; intent: string; confidence: number; label: string; event?: SafetyEvent }>('/security-ops/voice-intakes', {
+    method: 'POST',
+    data: payload,
+  })
+}
+
+export async function compareIdentityArchive(query: string): Promise<SecurityIdentityProfile[]> {
+  const data = await request<{ items: SecurityIdentityProfile[] }>('/security-ai/face-match', {
+    method: 'POST',
+    data: { query },
+  })
+  return data.items
+}
+
+export async function createContainmentPlan(eventId?: string, targetKey?: string) {
+  return request<{ plan: { planId: string; title: string; status: string; assignments?: Array<{ team: string; task: string }> } }>('/security-ops/containment-plans', {
+    method: 'POST',
+    data: { eventId, targetKey },
+  })
+}
+
+export async function createAnalysisReport(period = 'day'): Promise<SecurityAnalysisReport> {
+  const data = await request<{ report: SecurityAnalysisReport }>('/security-ops/analysis/reports', {
+    method: 'POST',
+    data: { period },
+  })
+  return data.report
+}
+
+export async function fetchSecurityNotifications(): Promise<SecurityNotification[]> {
+  const data = await request<{ items: SecurityNotification[] }>('/security-ops/notifications?limit=10')
+  return data.items
+}
+
+export async function fetchSecurityFeeds(): Promise<SecurityFeed[]> {
+  const data = await request<{ items: SecurityFeed[] }>('/security-ops/data-feeds?limit=10')
+  return data.items
+}
+
+export function connectRealtimeEvents(onMessage: (message: { type?: string; eventId?: string; staff?: string }) => void) {
+  let closed = false
+  let socketTask: Taro.SocketTask | null = null
+
+  Taro.connectSocket({ url: REALTIME_URL }).then((task) => {
+    socketTask = task
+    if (closed) {
+      task.close({})
+      return
+    }
+    task.onMessage((event) => {
+      try {
+        onMessage(JSON.parse(String(event.data)))
+      } catch {
+        onMessage({})
+      }
+    })
+    task.onError(() => undefined)
+  }).catch(() => undefined)
+
+  return () => {
+    closed = true
+    socketTask?.close({})
+  }
 }

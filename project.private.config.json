@@ -1,6 +1,6 @@
 {
   "libVersion": "3.17.0",
-  "projectname": "CICSIC",
+  "projectname": "烟火哨兵",
   "setting": {
     "urlCheck": false,
     "coverView": true,
@@ -9,7 +9,7 @@
     "preloadBackgroundData": false,
     "autoAudits": false,
     "showShadowRootInWxmlPanel": true,
-    "compileHotReLoad": true,
+    "compileHotReLoad": false,
     "useApiHook": true,
     "useStaticServer": false,
     "useLanDebug": false,

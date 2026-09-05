@@ -49,9 +49,38 @@ export type EventMeta = {
   contact?: string | null
   reporterLocation?: GeoPoint
   alarmLocation?: GeoPoint
+  context?: {
+    marketId?: string
+    zoneId?: string
+    deviceId?: string
+    deviceType?: string
+    cameraId?: string
+    riskRecordId?: string
+    riskType?: string
+    riskLevel?: RiskLevel
+    riskScore?: number
+    thermalScore?: number
+    behaviorScore?: number
+    crowdScore?: number
+    confidence?: number
+    location?: GeoPoint
+    timestamp?: string
+    evidence?: EvidenceItem[]
+    [key: string]: unknown
+  }
   assignment?: EventAssignment
   route?: SafetyRoute
+  pushId?: string
+  pushStatus?: '待确认' | '已确认'
   [key: string]: unknown
+}
+
+export type EvidenceItem = {
+  kind: 'image' | 'video' | 'link' | string
+  url?: string
+  name?: string
+  mimeType?: string
+  size?: number
 }
 
 export type SafetyEvent = {
@@ -78,4 +107,82 @@ export type ReportForm = {
   description: string
   contact: string
   anonymous: boolean
+}
+
+export type HelpForm = {
+  bay: string
+  description: string
+  contact: string
+  evidence: Array<{ kind: 'image' | 'video'; filePath: string }>
+}
+
+export type SecurityDutyPlan = {
+  planKey: string
+  planDate: string
+  summary: string
+  timeSlot: string
+  area: string
+  staff?: string[]
+  hotspots?: string[]
+}
+
+export type SecurityNotification = {
+  noticeId: string
+  eventId?: string | null
+  channel: string
+  target: string
+  title: string
+  body: string
+  status: string
+  createdAt: string
+}
+
+export type SecurityFeed = {
+  sourceKey: string
+  kind: string
+  name: string
+  status: string
+  enabled: boolean
+  lastSyncAt?: string | null
+}
+
+export type SecurityIdentityProfile = {
+  personKey: string
+  name: string
+  tags?: string[]
+  score?: number
+  lastSeenAt?: string | null
+}
+
+export type SecurityAnalysisReport = {
+  reportId: string
+  title: string
+  summary: {
+    eventCount?: number
+    completionRate?: number
+    avgResponseMinutes?: number
+    notificationCount?: number
+    dutyPlanCount?: number
+    dataFeedCount?: number
+    targetLockCount?: number
+  }
+}
+
+export type SecurityOpsOverview = {
+  roles?: { total?: number; items?: Array<{ openid?: string; role: string; displayName?: string; permissions?: string[] }> }
+  duty?: { total?: number; items?: SecurityDutyPlan[] }
+  voice?: { total?: number }
+  notifications?: { total?: number; items?: SecurityNotification[] }
+  feeds?: { total?: number; items?: SecurityFeed[] }
+  identity?: { profiles?: number; tracks?: number; locks?: number; items?: SecurityIdentityProfile[] }
+  containment?: { items?: Array<{ planId: string; title: string; status: string }> }
+  analysis?: { total?: number; items?: SecurityAnalysisReport[]; avgResponseMinutes?: number | null; completionRate?: number }
+  overviewStats?: {
+    today_events?: number
+    pending_orders?: number
+    online_staff?: number
+    avg_response_minutes?: number | null
+    completion_rate?: number
+    urgent_events?: number
+  }
 }

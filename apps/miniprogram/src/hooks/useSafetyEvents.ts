@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import Taro from '@tarojs/taro'
-import { initialEvents } from '@/data/safety'
 import type { EventKind, EventStatus, ReportForm, SafetyEvent } from '@/types/events'
 import {
   createHelpEvent,
@@ -8,13 +7,14 @@ import {
   createReportEvent,
   fetchEvents,
   supplementSafetyEvent,
+  uploadEventEvidence,
   updateSafetyEventStatus,
 } from '@/utils/api'
 
 export type ProgressFilter = 'all' | EventKind
 
 export function useSafetyEvents() {
-  const [events, setEvents] = useState<SafetyEvent[]>(initialEvents)
+  const [events, setEvents] = useState<SafetyEvent[]>([])
   const [lastHelpId, setLastHelpId] = useState('')
   const [progressFilter, setProgressFilter] = useState<ProgressFilter>('all')
   const [loading, setLoading] = useState(true)
@@ -36,7 +36,7 @@ export function useSafetyEvents() {
       setEvents(await fetchEvents())
     } catch (err) {
       if (!silent) {
-        setError(err instanceof Error ? err.message : '后端服务未连接')
+        setError(err instanceof Error ? err.message : '暂时连不上事件服务')
       }
     } finally {
       if (!silent) {
@@ -56,15 +56,26 @@ export function useSafetyEvents() {
     [events, lastHelpId],
   )
 
-  const createHelp = async () => {
-    let location: { latitude: number; longitude: number } | null = null
+  const createHelp = async (form?: { bay?: string; description?: string; contact?: string; evidence?: Array<{ kind: 'image' | 'video'; filePath: string }> }) => {
+    let location: { latitude: number; longitude: number }
     try {
       const result = await Taro.getLocation({ type: 'gcj02' })
       location = { latitude: result.latitude, longitude: result.longitude }
     } catch {
-      Taro.showToast({ title: '未获取定位，已按默认夜市点位报警', icon: 'none' })
+      Taro.showToast({ title: '先打开定位，才能发出求助', icon: 'none' })
+      throw new Error('location_required')
     }
-    const next = await createHelpEvent({ bay: '主街烧烤区', ...location })
+    const evidence = await Promise.all((form?.evidence || []).slice(0, 3).map((item) => uploadEventEvidence(item.filePath, item.kind)))
+    const next = await createHelpEvent({
+      bay: form?.bay || '主街烧烤区',
+      description: form?.description,
+      contact: form?.contact,
+      marketId: 'NC-NM-001',
+      zoneId: 'NC-NM-001-Z1',
+      riskType: form?.description && /打架|斗殴|纠纷|滋扰|冲突/.test(form.description) ? '打架' : '现场求助',
+      evidence,
+      ...location,
+    })
     replaceEvent(next)
     setLastHelpId(next.id)
     return next
@@ -77,8 +88,8 @@ export function useSafetyEvents() {
     return next
   }
 
-  const createLostClaim = async (itemName = '粉色手机') => {
-    const next = await createLostClaimEvent(itemName)
+  const createLostClaim = async (itemName: string, bay: string) => {
+    const next = await createLostClaimEvent(itemName, bay)
     replaceEvent(next)
     setProgressFilter('lost')
     return next

@@ -1,11 +1,11 @@
 {
   "miniprogramRoot": "dist/",
-  "projectname": "night-market-zhifang",
-  "description": "夜市智防群众服务小程序",
+  "projectname": "烟火哨兵",
+  "description": "烟火哨兵群众服务小程序",
   "appid": "wxdd3f448369e6ca9f",
   "setting": {
     "urlCheck": false,
-    "es6": true,
+    "es6": false,
     "enhance": false,
     "compileHotReLoad": false,
     "postcss": false,
@@ -20,6 +20,8 @@
     "localPlugins": false,
     "disableUseStrict": false,
     "useCompilerPlugins": false,
+    "swc": false,
+    "disableSWC": true,
     "condition": false,
     "babelSetting": {
       "ignore": [],

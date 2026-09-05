@@ -160,7 +160,7 @@ def slide13(slide):
     add_big_phrase(slide, "一键上报:", "线索入池", 0.92, 4.3, 4.2)
     add_box(slide, 0.9, 5.12, 4.4, 0.7, fill=RGBColor(8, 34, 62), line=LINE, transparency=10, radius=True)
     add_text(slide, "从“看见画面”升级为“识别事件”", 1.12, 5.36, 3.9, 0.18, size=13.5, color=CYAN, bold=True, align="center")
-    add_image_panel(slide, STYLE / "map_product_screenshot.png", 5.82, 1.58, 5.55, 3.72, "风险态势图 / 多源点位聚合")
+    add_image_panel(slide, STYLE / "map_product_screenshot.png", 5.82, 1.58, 5.55, 3.72, "风险情况图 / 多源点位聚合")
     add_flow(
         slide,
         [
@@ -173,21 +173,21 @@ def slide13(slide):
         5.62,
         5.65,
     )
-    add_bottom_claim(slide, "让风险看得见：零散视频、设备巡检和人工线索汇聚为可研判事件流")
+    add_bottom_claim(slide, "让风险看得见：零散视频、设备巡检和人工线索汇聚为可分析事件流")
 
 
 def slide14(slide):
     clear_text_shapes(slide)
-    add_title(slide, "核心技术二：AI研判", "AI 辅助、人工复核、轻量部署、合规留痕")
-    add_text(slide, "多源融合模型", 1.15, 1.62, 3.1, 0.36, size=24, color=GOLD, bold=True)
+    add_title(slide, "核心技术二：辅助分析", "辅助分析、人工复核、轻量部署、合规留痕")
+    add_text(slide, "多源融合方法", 1.15, 1.62, 3.1, 0.36, size=24, color=GOLD, bold=True)
     add_text(slide, "视频识别 + 规则评分 + 人工复核", 1.05, 2.16, 4.5, 0.28, size=17, color=WHITE, bold=True)
-    add_text(slide, "秒级研判边界", 1.05, 2.7, 2.3, 0.34, size=23, color=GOLD, bold=True)
-    add_text(slide, "AI只辅助，不替代执法", 2.9, 2.72, 2.5, 0.26, size=17, color=WHITE, bold=True)
-    add_image_panel(slide, STYLE / "confidence_curve_screenshot.png", 0.98, 3.35, 4.15, 2.25, "识别模型验证曲线")
-    add_image_panel(slide, STYLE / "model_chart_screenshot.png", 6.05, 1.58, 5.65, 2.55, "多源融合模型结构")
+    add_text(slide, "秒级分析边界", 1.05, 2.7, 2.3, 0.34, size=23, color=GOLD, bold=True)
+    add_text(slide, "系统只做辅助，不替代执法", 2.9, 2.72, 2.5, 0.26, size=17, color=WHITE, bold=True)
+    add_image_panel(slide, STYLE / "confidence_curve_screenshot.png", 0.98, 3.35, 4.15, 2.25, "识别方法验证曲线")
+    add_image_panel(slide, STYLE / "model_chart_screenshot.png", 6.05, 1.58, 5.65, 2.55, "多源融合方法结构")
     add_box(slide, 6.1, 4.55, 5.55, 1.0, fill=RGBColor(7, 35, 66), line=GOLD, transparency=10, radius=True)
     add_text(slide, "输出：风险分级 / 处置建议 / 审计留痕", 6.36, 4.82, 5.0, 0.28, size=20, color=GOLD, bold=True, align="center")
-    add_bottom_claim(slide, "让线索聚得准：AI 辅助更早发现、更快归并、更准推荐")
+    add_bottom_claim(slide, "让线索聚得准：辅助分析更早发现、更快归并、更准推荐")
 
 
 def slide15(slide):
@@ -205,7 +205,7 @@ def slide15(slide):
         [
             ("报警", "商户提交"),
             ("定位", "入事件池"),
-            ("研判", "分级去重"),
+            ("分析", "分级去重"),
             ("派单", "巡防/无人机"),
             ("复盘", "证据留痕"),
         ],
@@ -214,14 +214,14 @@ def slide15(slide):
         10.45,
         gap=0.1,
     )
-    add_bottom_claim(slide, "让力量调得动、过程留得住：一键报警不是按钮，而是触发完整处置闭环")
+    add_bottom_claim(slide, "让力量调得动、过程留得住：一键报警不是按钮，而是触发完整处置流程")
 
 
 def slide16(slide):
     clear_text_shapes(slide)
-    add_title(slide, "技术壁垒：场景化治理闭环，不止单点识别", "主放三项贴合软著，证明智能巡检、数据运维、集群调度能力")
+    add_title(slide, "技术壁垒：场景化治理流程，不止单点识别", "主放三项贴合软著，证明自动巡检、数据运维、集群调度能力")
     certs = [
-        ("03_智能巡检集成_thumb.png", "智能巡检集成", "空中巡防与异常发现"),
+        ("03_自动巡检集成_thumb.png", "自动巡检集成", "空中巡防与异常发现"),
         ("02_大数据集成运维_thumb.png", "大数据集成运维", "多源数据汇聚与运维"),
         ("01_集群调度管理_thumb.png", "集群调度管理", "多机协同与任务调度"),
     ]
@@ -248,7 +248,7 @@ def slide16(slide):
     )
     add_box(slide, 1.1, 5.42, 11.05, 0.72, fill=RGBColor(5, 33, 61), line=LINE, transparency=10, radius=True)
     add_text(slide, "弱化处理：雷达定位测试仅作为底层可靠性支撑；证书主体不一致的材料不进入技术壁垒页。", 1.38, 5.65, 10.4, 0.18, size=12, color=MUTED, align="center")
-    add_bottom_claim(slide, "壁垒来自“智能巡检 + 数据运维 + 集群调度 + 警务流程适配”的组合能力")
+    add_bottom_claim(slide, "壁垒来自“自动巡检 + 数据运维 + 集群调度 + 警务流程适配”的组合能力")
 
 
 def slide17(slide):
@@ -256,7 +256,7 @@ def slide17(slide):
     add_title(slide, "专家认可：围绕真实场景验证技术路线", "专家材料待签署，当前页保留正式背书位，不虚构姓名与结论")
     roles = [
         ("警务治理专家", "认可重点：夜市商圈突发警情处置流程、证据留痕和复盘价值"),
-        ("无人机/智能装备专家", "认可重点：低空巡检、设备协同和多源感知可行性"),
+        ("无人机/自动装备专家", "认可重点：低空巡检、设备协同和多源感知可行性"),
         ("创新创业/产业专家", "认可重点：样板试点、安保企业合作和区域复制路径"),
     ]
     for i, (role, desc) in enumerate(roles):
@@ -279,7 +279,7 @@ def slide18(slide):
     add_bullets(
         slide,
         [
-            ("功能完整性", "一键报警、事件派单、接单反馈、闭环报告"),
+            ("功能完整性", "一键报警、事件派单、接单反馈、流程报告"),
             ("响应时延", "报警入池、指挥端弹窗、任务推送的时间"),
             ("系统稳定性", "多端登录、连续运行、异常恢复能力"),
             ("留痕完整性", "日志、图片、视频、处置记录、复盘报告"),
@@ -327,9 +327,9 @@ def slide24(slide):
         "把技术语言转化为治理价值，把单点功能组织成完整项目",
         [
             ("需求理解", "从夜市、商圈、巡防、商户联防中提炼真实痛点"),
-            ("技术统筹", "组织大屏、小程序、事件流、设备接入与演示闭环"),
+            ("技术统筹", "组织大屏、小程序、事件流、设备接入与演示流程"),
             ("团队协同", "推动技术、调研、商业、路演材料分工协作"),
-            ("路演表达", "将“AI + 警务 + 低空巡检”讲成评委能理解的价值"),
+            ("路演表达", "将“技术 + 警务 + 低空巡检”讲成评委能理解的价值"),
         ],
         "个人成长不是履历堆叠，而是从会做功能到能统筹项目",
     )
@@ -338,7 +338,7 @@ def slide24(slide):
 def slide25(slide):
     growth_slide(
         slide,
-        "团队协作成长：跨专业分工支撑治理闭环",
+        "团队协作成长：跨专业分工支撑治理流程",
         "警察、信息安全、司法、法律、无人机与数据专业能力共同进入项目",
         [
             ("技术开发组", "负责原型搭建、前后端联动、事件流与演示稳定性"),
@@ -354,8 +354,8 @@ def slide26(slide):
     clear_text_shapes(slide)
     add_title(slide, "团队项目成长：从创意方案到可演示原型", "按照“调研-开发-验证-复制”的节奏推进")
     stages = [
-        ("阶段一", "痛点调研", "梳理夜市突发警情、商户上报、巡防闭环需求"),
-        ("阶段二", "原型开发", "完成大屏、小程序、后端事件流和闭环演示"),
+        ("阶段一", "痛点调研", "梳理夜市突发警情、商户上报、巡防流程需求"),
+        ("阶段二", "原型开发", "完成大屏、小程序、后端事件流和流程演示"),
         ("阶段三", "指导优化", "根据老师和专家意见优化技术证据链"),
         ("阶段四", "试点复制", "争取实训基地、安保企业、夜市运营方合作"),
     ]
@@ -379,7 +379,7 @@ def slide27(slide):
             ("指导老师资源", "持续打磨需求真实性、警务流程和路演表达"),
             ("实训平台资源", "支撑无人机巡检、应急处置、场景演练和原型验证"),
             ("专业课程资源", "信息系统开发、数据分析、司法实务与合规认知"),
-            ("竞赛训练资源", "通过省赛集训完成商业计划、PPT和答辩闭环"),
+            ("竞赛训练资源", "通过省赛集训完成商业计划、PPT和答辩流程"),
         ],
         "学校资源不是背景介绍，而是项目能从创意走向原型的支撑条件",
     )
@@ -392,7 +392,7 @@ def slide28(slide):
         "把职业技能训练、警务场景需求和企业化产品思维连接起来",
         [
             ("场景融通", "面向夜市、商圈、安保、基层治理等真实开放空间"),
-            ("技能融通", "融合无人机应用、系统开发、数据研判和应急处置"),
+            ("技能融通", "融合无人机应用、系统开发、数据分析和应急处置"),
             ("资源融通", "争取学校实训基地、安保企业、运营方和专家指导"),
             ("成果融通", "形成可演示原型、可复制方案和可沉淀课程资源"),
         ],
@@ -423,3 +423,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
