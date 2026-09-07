@@ -1,0 +1,209 @@
+{
+  "synthetic": true,
+  "source": "Generated with user-authorized reference and fictional companion roles",
+  "model": "gpt-image-2",
+  "count": 20,
+  "recurringCompanionCount": 11,
+  "records": [
+    {
+      "recordId": "CR-001",
+      "filename": "contact-01.png",
+      "companionId": "P-2048",
+      "sha256Pixels": "23ceb58c519ed96cd75a49e7882de85e58c647d1369b605ca65bc87911fd62f5",
+      "width": 1536,
+      "height": 1024,
+      "synthetic": true,
+      "model": "gpt-image-2"
+    },
+    {
+      "recordId": "CR-002",
+      "filename": "contact-02.png",
+      "companionId": "P-2048",
+      "sha256Pixels": "919c26ac0e267fa297c1c91d465feb645a3aa2a5221649d04a71e4e72832c8a2",
+      "width": 1536,
+      "height": 1024,
+      "synthetic": true,
+      "model": "gpt-image-2"
+    },
+    {
+      "recordId": "CR-003",
+      "filename": "contact-03.png",
+      "companionId": "P-3011",
+      "sha256Pixels": "7cd40576f33e4603321f677068b44ca2973205d596bcf8a4c87e40a45e49434e",
+      "width": 1536,
+      "height": 1024,
+      "synthetic": true,
+      "model": "gpt-image-2"
+    },
+    {
+      "recordId": "CR-004",
+      "filename": "contact-04.png",
+      "companionId": "P-2048",
+      "sha256Pixels": "a4c16389c1baffa115fba90f4123425208e0e6dd9f93e04191f48f3024420ae1",
+      "width": 1536,
+      "height": 1024,
+      "synthetic": true,
+      "model": "gpt-image-2"
+    },
+    {
+      "recordId": "CR-005",
+      "filename": "contact-05.png",
+      "companionId": "P-2048",
+      "sha256Pixels": "6f74cc7a647ad2a067e78a32e46e0f7865ef69cf191ad2b30e292f7306fec17a",
+      "width": 1536,
+      "height": 1024,
+      "synthetic": true,
+      "model": "gpt-image-2"
+    },
+    {
+      "recordId": "CR-006",
+      "filename": "contact-06.png",
+      "companionId": "P-3012",
+      "sha256Pixels": "47aaf7ced034ec6cfbd844325cc3faedafea9e33a0a9ff9f2a3459ef2f005f0b",
+      "width": 1536,
+      "height": 1024,
+      "synthetic": true,
+      "model": "gpt-image-2"
+    },
+    {
+      "recordId": "CR-007",
+      "filename": "contact-07.png",
+      "companionId": "P-2048",
+      "sha256Pixels": "cebb24cb6bbe27fcb9df81b56fb392b83f9891a07d79e750522e382a7400e878",
+      "width": 1536,
+      "height": 1024,
+      "synthetic": true,
+      "model": "gpt-image-2"
+    },
+    {
+      "recordId": "CR-008",
+      "filename": "contact-08.png",
+      "companionId": "P-3013",
+      "sha256Pixels": "bdd0c00179dfdb4cfe8b3f82cc950374b1a65632ddec177e321c8916be1de316",
+      "width": 1536,
+      "height": 1024,
+      "synthetic": true,
+      "model": "gpt-image-2"
+    },
+    {
+      "recordId": "CR-009",
+      "filename": "contact-09.png",
+      "companionId": "P-2048",
+      "sha256Pixels": "eb4b7f57fdeb6f4205652c1b4cb96b082509afa41001d9201ce36a5f1b781fc6",
+      "width": 1536,
+      "height": 1024,
+      "synthetic": true,
+      "model": "gpt-image-2"
+    },
+    {
+      "recordId": "CR-010",
+      "filename": "contact-10.png",
+      "companionId": "P-3014",
+      "sha256Pixels": "abb5a7d44a7853d1c05674bad76503f900bc557298b4a7e4b0bf8abfef99993f",
+      "width": 1536,
+      "height": 1024,
+      "synthetic": true,
+      "model": "gpt-image-2"
+    },
+    {
+      "recordId": "CR-011",
+      "filename": "contact-11.png",
+      "companionId": "P-2048",
+      "sha256Pixels": "715641ada76471802cfd16505e43eb56980a5c6f7043f317f1d9997c43ec046c",
+      "width": 1536,
+      "height": 1024,
+      "synthetic": true,
+      "model": "gpt-image-2"
+    },
+    {
+      "recordId": "CR-012",
+      "filename": "contact-12.png",
+      "companionId": "P-3015",
+      "sha256Pixels": "7dfd4c5d2ebf845038c5a55c30fe05e41cd90bb9ab8103e85d3561eb07ccb884",
+      "width": 1536,
+      "height": 1024,
+      "synthetic": true,
+      "model": "gpt-image-2"
+    },
+    {
+      "recordId": "CR-013",
+      "filename": "contact-13.png",
+      "companionId": "P-2048",
+      "sha256Pixels": "65753f2fe2d51249ba28c304ca7f0d089127cff6f17d71bc629af0065bba8807",
+      "width": 1248,
+      "height": 832,
+      "synthetic": true,
+      "model": "gpt-image-2"
+    },
+    {
+      "recordId": "CR-014",
+      "filename": "contact-14.png",
+      "companionId": "P-3016",
+      "sha256Pixels": "379996b279c29ed3ccdf2f29d8026a235fb73b9b44f0f3215b57742aa453bf7d",
+      "width": 1536,
+      "height": 1024,
+      "synthetic": true,
+      "model": "gpt-image-2"
+    },
+    {
+      "recordId": "CR-015",
+      "filename": "contact-15.png",
+      "companionId": "P-2048",
+      "sha256Pixels": "78c2509c33577f75f177ef9467069067810fe5cfbf6b4cf395a3c6377a3b6094",
+      "width": 1536,
+      "height": 1024,
+      "synthetic": true,
+      "model": "gpt-image-2"
+    },
+    {
+      "recordId": "CR-016",
+      "filename": "contact-16.png",
+      "companionId": "P-3017",
+      "sha256Pixels": "73edf4f5fe6ac4f6afcd1a76491a22c059c5f8b04f91252ca2074f061dc6ba38",
+      "width": 1536,
+      "height": 1024,
+      "synthetic": true,
+      "model": "gpt-image-2"
+    },
+    {
+      "recordId": "CR-017",
+      "filename": "contact-17.png",
+      "companionId": "P-2048",
+      "sha256Pixels": "855d71788fafddb26b4ebf3488784366bf6bbe0dff93af45292f9d09abbfe3a1",
+      "width": 1536,
+      "height": 1024,
+      "synthetic": true,
+      "model": "gpt-image-2"
+    },
+    {
+      "recordId": "CR-018",
+      "filename": "contact-18.png",
+      "companionId": "P-3018",
+      "sha256Pixels": "d0a1b691eb3cc09cd7620523271cdc762c6f23f8ecf15fc72e1f11294e42d4d3",
+      "width": 1536,
+      "height": 1024,
+      "synthetic": true,
+      "model": "gpt-image-2"
+    },
+    {
+      "recordId": "CR-019",
+      "filename": "contact-19.png",
+      "companionId": "P-2048",
+      "sha256Pixels": "5b3b2469a66e31e84182c64027124735f4cb0aa54bbc6fcbc9b14b5bb1c73c4c",
+      "width": 1536,
+      "height": 1024,
+      "synthetic": true,
+      "model": "gpt-image-2"
+    },
+    {
+      "recordId": "CR-020",
+      "filename": "contact-20.png",
+      "companionId": "P-3019",
+      "sha256Pixels": "68bd8569f6960dc624417e438075197df5df4ab4f3afed91d92b619870d1a967",
+      "width": 1536,
+      "height": 1024,
+      "synthetic": true,
+      "model": "gpt-image-2"
+    }
+  ]
+}

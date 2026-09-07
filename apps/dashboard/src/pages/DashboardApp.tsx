@@ -8,30 +8,39 @@ import {
   Clock3,
   Database,
   FileCheck2,
-  GraduationCap,
   LayoutDashboard,
   Menu,
+  Monitor,
   Radio,
   RefreshCw,
+  Search,
   ShieldCheck,
-  Smartphone,
   UsersRound,
+  Video,
+  MapPinned,
   Workflow,
   X,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Tooltip } from 'antd';
+import { appBasePath, routePath, viewForPath, type PlatformView } from '../lib/presentation';
+import { trainingEntryPath } from '../lib/training-navigation';
 import { AdminConsolePage } from './AdminConsolePage';
 import { PublicSecurityPlatformPage } from './PublicSecurityPlatformPage';
+import { VideoLinkagePage } from './VideoLinkagePage';
+import { NightMarketCommandPage } from './NightMarketCommandPage';
+import { OfficerTrainingPage } from './OfficerTrainingPage';
+import { ContactReviewPage } from './ContactReviewPage';
+import { DutySituationPage } from './DutySituationPage';
+import { XiaoanVoiceControls, useXiaoanVoice } from '../components/XiaoanVoice';
 import {
   AICenterPage,
   CaseHandlingPage,
-  CommandOperationsPage,
   CommunityPolicingPage,
-  MobileDutyPage,
-  TrainingOperationsPage,
+  CommandOperationsPage,
 } from './PoliceDomainPages';
 
-export type PlatformView = 'platform' | 'command' | 'case' | 'community' | 'duty-plan' | 'mobile' | 'ai-center' | 'admin';
+export type { PlatformView } from '../lib/presentation';
 
 export type PlatformOverview = {
   project?: string;
@@ -106,8 +115,10 @@ const systemNavItems: Array<{ view: PlatformView; label: string; shortLabel: str
   { view: 'command', label: '接处警系统', shortLabel: '接处警', icon: Radio, section: '业务工作台' },
   { view: 'case', label: '执法办案系统', shortLabel: '执法办案', icon: FileCheck2, section: '业务工作台' },
   { view: 'community', label: '社区警务系统', shortLabel: '社区警务', icon: Building2, section: '业务工作台' },
-  { view: 'duty-plan', label: '勤务训练系统', shortLabel: '勤务训练', icon: GraduationCap, section: '业务工作台' },
-  { view: 'mobile', label: '移动勤务系统', shortLabel: '移动勤务', icon: Smartphone, section: '业务工作台' },
+  { view: 'duty-situation', label: 'A1 勤务态势大屏', shortLabel: '勤务态势', icon: Monitor, section: '业务工作台' },
+  { view: 'contact-review', label: '接触记录检索', shortLabel: '接触检索', icon: Search, section: '业务工作台' },
+  { view: 'video', label: '视频联动', shortLabel: '视频联动', icon: Video, section: '业务工作台' },
+  { view: 'night-market-command', label: '夜市指挥', shortLabel: '夜市指挥', icon: MapPinned, section: '业务工作台' },
   { view: 'ai-center', label: 'AI能力中心', shortLabel: 'AI 中心', icon: BrainCircuit, section: '平台能力' },
   { view: 'admin', label: '平台治理中心', shortLabel: '平台治理', icon: ShieldCheck, section: '平台能力' },
 ];
@@ -138,7 +149,6 @@ const demoOverview: PlatformOverview = {
     { key: 'case', name: '执法办案系统', shortName: '执法办案', description: '法律依据、取证清单、卷宗审核和类案辅助', capabilities: ['法律助手', '证据校验', '文书生成', '串并分析'], status: '运行中', metric: 37 },
     { key: 'community', name: '社区警务系统', shortName: '社区警务', description: '网格画像、走访任务、隐患闭环和基层治理', capabilities: ['辖区画像', '走访任务', '隐患闭环', '热力研判'], status: '运行中', metric: 24 },
     { key: 'duty-plan', name: '勤务训练系统', shortName: '勤务训练', description: '课程编辑、实战模拟、动作识别和一人一档', capabilities: ['AI课程编辑', 'AI教官', '训练评估', '体能识别'], status: '运行中', metric: 318 },
-    { key: 'mobile', name: '移动勤务系统', shortName: '移动勤务', description: '移动核验、现场指引、任务签收和移动审批', capabilities: ['身份核验', '伴随指引', '移动指令', 'AI眼镜'], status: '运行中', metric: 86 },
   ],
   dataCatalog: {
     domainCount: 6,
@@ -191,16 +201,7 @@ const demoOverview: PlatformOverview = {
 };
 
 function pathView(): PlatformView {
-  const pathname = window.location.pathname;
-  if (pathname === '/' || pathname.startsWith('/platform')) return 'platform';
-  if (pathname.startsWith('/command')) return 'command';
-  if (pathname.startsWith('/case')) return 'case';
-  if (pathname.startsWith('/community')) return 'community';
-  if (pathname.startsWith('/duty-plan')) return 'duty-plan';
-  if (pathname.startsWith('/mobile')) return 'mobile';
-  if (pathname.startsWith('/ai-center')) return 'ai-center';
-  if (pathname.startsWith('/admin')) return 'admin';
-  return 'platform';
+  return viewForPath(window.location.pathname);
 }
 
 function mergeBusinessSystems(runtimeSystems?: PlatformOverview['businessSystems']): PlatformOverview['businessSystems'] {
@@ -228,44 +229,50 @@ function mergeOverview(payload: PlatformOverview): PlatformOverview {
   return {
     ...demoOverview,
     ...payload,
-    stats: { ...demoOverview.stats, ...(payload.stats ?? {}) },
-    events: payload.events?.length ? payload.events : demoOverview.events,
+    stats: payload.stats ?? {},
+    events: payload.events ?? [],
     businessSystems: mergeBusinessSystems(payload.businessSystems),
     dataCatalog: { ...demoOverview.dataCatalog, ...(payload.dataCatalog ?? {}), domains: payload.dataCatalog?.domains?.length ? payload.dataCatalog.domains : demoOverview.dataCatalog?.domains },
     ai_copilot: { ...demoOverview.ai_copilot, ...(payload.ai_copilot ?? {}), agents: payload.ai_copilot?.agents?.length ? payload.ai_copilot.agents : demoOverview.ai_copilot?.agents, skills: payload.ai_copilot?.skills?.length ? payload.ai_copilot.skills : demoOverview.ai_copilot?.skills, mcp_connectors: payload.ai_copilot?.mcp_connectors?.length ? payload.ai_copilot.mcp_connectors : demoOverview.ai_copilot?.mcp_connectors },
     aiCenter: { ...demoOverview.aiCenter, ...(payload.aiCenter ?? {}) },
-    eventChain: payload.eventChain?.length ? payload.eventChain : demoOverview.eventChain,
+    eventChain: payload.eventChain ?? [],
     governance: { ...demoOverview.governance, ...(payload.governance ?? {}) },
   };
 }
 
-function ShellNav({ view, navigate, open, close }: { view: PlatformView; navigate: (next: PlatformView) => void; open: boolean; close: () => void }) {
+function ShellNav({ view, navigate, open, close, online }: { view: PlatformView; navigate: (next: PlatformView) => void; open: boolean; close: () => void; online: boolean }) {
   const sections = ['业务工作台', '平台能力'] as const;
   return <>
     <aside id="platform-control-sidebar" className={`platform-control-sidebar ${open ? 'open' : ''}`} aria-label="平台主导航">
       <button className="platform-control-brand" type="button" onClick={() => navigate('platform')}>
-        <span className="platform-control-brand-mark"><ShieldCheck size={19} /></span>
-        <span><strong>{PRODUCT_NAME}</strong><small>统一警务工作台</small></span>
+        <img className="platform-control-brand-mark" src={`${appBasePath}/public-security-mark.svg`} alt="" />
+        <span><strong>公安大数据与 AI</strong><small>统一警务工作台</small></span>
       </button>
+      <button type="button" className="platform-control-nav-close ui-icon-button" aria-label="关闭导航" onClick={close}><X size={18} /></button>
       <div className="platform-control-context"><span>当前组织</span><strong>市公安局</strong><small>指挥中心 · 综合值守</small></div>
       {sections.map((section) => <div className="platform-control-nav-group" key={section}>
         <span className="platform-control-nav-label">{section}</span>
-        <nav aria-label={section}>{systemNavItems.filter((item) => item.section === section).map((item) => { const Icon = item.icon; return <button key={item.view} type="button" className={`platform-control-nav-item ${view === item.view ? 'active' : ''}`} aria-current={view === item.view ? 'page' : undefined} onClick={() => navigate(item.view)}><span className="platform-control-nav-icon"><Icon size={15} /></span><span>{item.label}</span>{view === item.view ? <span className="platform-control-nav-live" /> : <ChevronRight size={13} />}</button>; })}</nav>
+        <nav aria-label={section}>{systemNavItems.filter((item) => item.section === section).map((item) => { const Icon = item.icon; return <div className="platform-control-nav-entry" key={item.view}><button type="button" className={`platform-control-nav-item ${view === item.view ? 'active' : ''}`} aria-current={view === item.view ? 'page' : undefined} onClick={() => navigate(item.view)}><span className="platform-control-nav-icon"><Icon size={15} /></span><span>{item.label}</span>{view === item.view ? <span className="platform-control-nav-live" /> : <ChevronRight size={13} />}</button></div>; })}</nav>
       </div>)}
-      <div className="platform-control-sidebar-foot"><span className="platform-control-health-dot" /><span>公安内网 · 数据同步正常</span></div>
+      <div className={`platform-control-sidebar-foot ${online ? 'online' : 'offline'}`}><span className="platform-control-health-dot" /><span>{online ? '数据连接正常' : '数据连接未就绪'}</span><ShieldCheck size={14} /></div>
     </aside>
     {open && <button className="platform-control-scrim" type="button" aria-label="关闭导航" onClick={close} />}
   </>;
 }
 
 export function DashboardApp() {
+  const { stop: stopVoice } = useXiaoanVoice();
   const [view, setView] = useState<PlatformView>(pathView);
+  useEffect(() => { stopVoice(); }, [view, stopVoice]);
   const [overview, setOverview] = useState<PlatformOverview>(demoOverview);
   const [apiOnline, setApiOnline] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [statusMessage, setStatusMessage] = useState('正在读取平台运行态');
+  const [lastSync, setLastSync] = useState<Date | null>(null);
   const [clock, setClock] = useState(() => new Date());
+  const menuRef = useRef<HTMLButtonElement>(null);
+  const hasLiveData = useRef(false);
 
   const loadOverview = useCallback(async () => {
     setRefreshing(true);
@@ -275,11 +282,12 @@ export function DashboardApp() {
       const payload = (await response.json()) as PlatformOverview;
       setOverview(mergeOverview(payload));
       setApiOnline(true);
+      hasLiveData.current = true;
+      setLastSync(new Date());
       setStatusMessage('平台运行态已更新，内网数据在线');
     } catch {
       setApiOnline(false);
-      setOverview((current) => mergeOverview(current));
-      setStatusMessage('平台接口暂不可用，当前展示样板运行态');
+      setStatusMessage(hasLiveData.current ? '连接中断，当前显示上次同步数据' : '未连接业务服务，当前为演示数据');
     } finally {
       setRefreshing(false);
     }
@@ -289,7 +297,7 @@ export function DashboardApp() {
     void loadOverview();
     const interval = window.setInterval(() => void loadOverview(), 30000);
     const clockInterval = window.setInterval(() => setClock(new Date()), 1000);
-    const onPopState = () => setView(pathView());
+    const onPopState = () => { setView(pathView()); setMobileNavOpen(false); };
     window.addEventListener('popstate', onPopState);
     return () => {
       window.clearInterval(interval);
@@ -298,19 +306,59 @@ export function DashboardApp() {
     };
   }, [loadOverview]);
 
+  useEffect(() => {
+    const desktop = window.matchMedia('(min-width: 961px)');
+    const closeOnDesktop = () => { if (desktop.matches) setMobileNavOpen(false); };
+    desktop.addEventListener('change', closeOnDesktop);
+    return () => desktop.removeEventListener('change', closeOnDesktop);
+  }, []);
+
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const sidebar = document.getElementById('platform-control-sidebar');
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const focusable = () => Array.from(sidebar?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)') ?? []).filter((element) => element.getClientRects().length);
+    focusable()[0]?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMobileNavOpen(false);
+        menuRef.current?.focus();
+      }
+      if (event.key !== 'Tab') return;
+      const elements = focusable();
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => { document.body.style.overflow = previousOverflow; document.removeEventListener('keydown', onKey); };
+  }, [mobileNavOpen]);
+
   const navigate = useCallback((next: PlatformView) => {
-    const target = next === 'platform' ? '/platform' : `/${next}`;
+    const target = next === 'duty-plan' ? trainingEntryPath() : routePath(next);
     if (window.location.pathname !== target) window.history.pushState({}, '', target);
     setView(next);
     setMobileNavOpen(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
   const currentNav = useMemo(() => systemNavItems.find((item) => item.view === view) ?? systemNavItems[0], [view]);
   const formattedDate = new Intl.DateTimeFormat('zh-CN', { month: '2-digit', day: '2-digit', weekday: 'short' }).format(clock);
   const formattedTime = new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(clock);
 
-  const page = view === 'platform'
+  if (view === 'video') return <VideoLinkagePage onBack={() => navigate('platform')} />;
+  if (view === 'night-market-command') return <NightMarketCommandPage onBack={() => navigate('video')} />;
+  if (view === 'duty-plan') return <OfficerTrainingPage onSituation={() => navigate('duty-situation')} />;
+  if (view === 'duty-situation') return <DutySituationPage onBack={() => navigate('platform')} onTraining={(taskId) => {
+    window.history.pushState({}, '', trainingEntryPath(taskId));
+    setView('duty-plan');
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }} />;
+  const page = view === 'contact-review'
+    ? <ContactReviewPage onBack={() => navigate('platform')} />
+    : view === 'platform'
     ? <PublicSecurityPlatformPage overview={overview} apiOnline={apiOnline} refreshing={refreshing} refresh={loadOverview} navigate={navigate} />
     : view === 'command'
       ? <CommandOperationsPage overview={overview} apiOnline={apiOnline} navigate={navigate} refresh={loadOverview} />
@@ -318,32 +366,30 @@ export function DashboardApp() {
         ? <CaseHandlingPage overview={overview} apiOnline={apiOnline} navigate={navigate} />
         : view === 'community'
           ? <CommunityPolicingPage overview={overview} apiOnline={apiOnline} navigate={navigate} />
-          : view === 'duty-plan'
-            ? <TrainingOperationsPage overview={overview} apiOnline={apiOnline} navigate={navigate} refresh={loadOverview} />
-            : view === 'mobile'
-              ? <MobileDutyPage overview={overview} apiOnline={apiOnline} navigate={navigate} />
-              : view === 'ai-center'
+          : view === 'ai-center'
                 ? <AICenterPage overview={overview} apiOnline={apiOnline} navigate={navigate} />
                 : <AdminConsolePage apiOnline={apiOnline} refresh={loadOverview} navigate={navigate} />;
 
   return <main className="platform-control-shell">
-    <ShellNav view={view} navigate={navigate} open={mobileNavOpen} close={() => setMobileNavOpen(false)} />
+    <a className="skip-link" href="#workspace-content">跳转到工作区</a>
+    <ShellNav view={view} navigate={navigate} open={mobileNavOpen} close={() => { setMobileNavOpen(false); menuRef.current?.focus(); }} online={apiOnline} />
     <div className="platform-control-main">
       <header className="platform-control-topbar">
         <div className="platform-control-topbar-left">
-              <button className="platform-control-menu-button" type="button" aria-label={mobileNavOpen ? '关闭导航' : '打开导航'} aria-expanded={mobileNavOpen} aria-controls="platform-control-sidebar" onClick={() => setMobileNavOpen((value) => !value)}>{mobileNavOpen ? <X size={18} /> : <Menu size={18} />}</button>
-          <div className="platform-control-breadcrumb"><span>{PRODUCT_NAME}</span><ChevronRight size={14} /><strong>{currentNav.label}</strong></div>
+              <button ref={menuRef} className="platform-control-menu-button ui-icon-button" type="button" aria-label={mobileNavOpen ? '关闭导航' : '打开导航'} aria-expanded={mobileNavOpen} aria-controls="platform-control-sidebar" onClick={() => setMobileNavOpen((value) => !value)}>{mobileNavOpen ? <X size={18} /> : <Menu size={18} />}</button>
+          <div className="platform-control-breadcrumb"><span>工作空间</span><ChevronRight size={14} /><strong>{currentNav.label}</strong></div>
         </div>
         <div className="platform-control-topbar-right">
-          <span className="platform-control-org"><Building2 size={14} />市公安局 · 指挥中心</span>
+          <XiaoanVoiceControls />
           <span className="platform-control-clock"><Clock3 size={14} />{formattedDate} {formattedTime}</span>
-              <span className={`platform-control-sync ${apiOnline ? 'online' : 'demo'}`} aria-live="polite"><span />{apiOnline ? '内网数据在线' : '样板运行态'}</span>
-          <button className="platform-control-refresh" type="button" onClick={() => void loadOverview()} disabled={refreshing} aria-label="刷新平台运行态"><RefreshCw size={15} className={refreshing ? 'spin' : undefined} /></button>
+              <span className={`platform-control-sync ${apiOnline ? 'online' : 'demo'}`} aria-live="polite"><span />{apiOnline ? '内网数据在线' : hasLiveData.current ? '离线快照' : '演示数据'}</span>
+          <Tooltip title="刷新平台数据"><button className="platform-control-refresh ui-icon-button" type="button" onClick={() => void loadOverview()} disabled={refreshing} aria-label="刷新平台运行态"><RefreshCw size={16} className={refreshing ? 'spin' : undefined} /></button></Tooltip>
+          <span className="platform-control-user" title="市公安局 · 指挥中心"><span>值</span><b>值班席</b></span>
         </div>
           </header>
-          <p className="platform-control-status-message" aria-live="polite">{statusMessage}</p>
-      <div className="platform-control-content">{page}</div>
-      <footer className="platform-control-footer"><span><ShieldCheck size={13} />AI 输出带依据、置信度、人工确认与审计编号</span><span><Database size={13} />统一事件链 · 主数据目录 · 最小权限</span><span><Activity size={13} />运行态更新时间 {formattedTime}</span></footer>
+          {!apiOnline && <p className="platform-control-status-message" role="status"><AlertTriangle size={15} />{statusMessage}</p>}
+      <div id="workspace-content" tabIndex={-1} className="platform-control-content">{page}</div>
+      <footer className="platform-control-footer"><span><ShieldCheck size={14} />高风险 AI 建议需人工确认</span><span><Database size={14} />操作留痕 · 分级授权</span><span>最近同步 {lastSync ? lastSync.toLocaleTimeString('zh-CN', { hour12: false }) : '尚未连接'}</span></footer>
     </div>
   </main>;
 }

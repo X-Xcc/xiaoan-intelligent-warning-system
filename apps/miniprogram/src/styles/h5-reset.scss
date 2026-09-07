@@ -1,0 +1,25 @@
+/* Taro injects component defaults after application styles on H5. */
+:where(taro-button-core):not(.native-default) {
+  width: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 1.5;
+  border-radius: 0;
+  overflow: visible;
+  cursor: pointer;
+}
+:where(taro-button-core):not(.native-default)::after { display: none; }
+:where(taro-image-core):not(.native-default) { text-align: left; }
+taro-image-core > img.taro-img__mode-aspectfit { left: 50%; transform: translate(-50%, -50%); }
+.mini-app :where(taro-button-core)[disabled] { color: #71859b; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mini-app *, .mini-app *::before, .mini-app *::after { animation: none !important; transition: none !important; }
+}
+.mini-app .mini-secondary[disabled] { color: #446c96; }
+.mini-app .mini-primary[disabled], .mini-app .mini-danger[disabled] { color: #fff; }
+body { margin: 0; background: #edf2f7; }

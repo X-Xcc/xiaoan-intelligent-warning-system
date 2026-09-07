@@ -44,9 +44,20 @@ export type EventAssignment = {
 }
 
 export type EventMeta = {
+  command?: {
+    version: number
+    stage: string
+    sourceMode: 'live' | 'desensitized_demo'
+    handover?: { status: string; handoverId: string; rejectionReason?: string }
+    verification?: { resultStatus: string }
+    evidenceIndex: Array<{ evidenceId: string; name: string; kind: string; description?: string }>
+  }
   latitude?: number
   longitude?: number
   contact?: string | null
+  evidence?: EvidenceItem[]
+  locationSource?: 'gps' | 'manual'
+  manualLocation?: string
   reporterLocation?: GeoPoint
   alarmLocation?: GeoPoint
   context?: {
@@ -63,7 +74,7 @@ export type EventMeta = {
     behaviorScore?: number
     crowdScore?: number
     confidence?: number
-    location?: GeoPoint
+    location?: Partial<GeoPoint>
     timestamp?: string
     evidence?: EvidenceItem[]
     [key: string]: unknown
@@ -76,6 +87,7 @@ export type EventMeta = {
 }
 
 export type EvidenceItem = {
+  uploadId?: string
   kind: 'image' | 'video' | 'link' | string
   url?: string
   name?: string
@@ -109,11 +121,27 @@ export type ReportForm = {
   anonymous: boolean
 }
 
+export type LocalEvidence = {
+  kind: 'image' | 'video'
+  filePath: string
+}
+
+export type CreateHelpInput = {
+  bay?: string
+  description?: string
+  contact?: string
+  latitude?: number
+  longitude?: number
+  evidence?: LocalEvidence[]
+}
+
 export type HelpForm = {
   bay: string
   description: string
   contact: string
-  evidence: Array<{ kind: 'image' | 'video'; filePath: string }>
+  evidence: LocalEvidence[]
+  latitude?: number
+  longitude?: number
 }
 
 export type SecurityDutyPlan = {

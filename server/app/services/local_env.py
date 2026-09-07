@@ -21,7 +21,8 @@ def _parse_env_line(line: str) -> tuple[str, str] | None:
 
 
 def load_local_env() -> None:
-    for path in (ROOT_DIR / ".env.local", SERVER_DIR / ".env.local"):
+    # Prefer local overrides, then load the checked-in server environment when present.
+    for path in (ROOT_DIR / ".env.local", SERVER_DIR / ".env.local", ROOT_DIR / ".env", SERVER_DIR / ".env"):
         if not path.exists():
             continue
         try:

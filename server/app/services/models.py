@@ -28,6 +28,38 @@ class SafetyEvent(Base):
     updatedAtIso: Mapped[str] = mapped_column(String(32), nullable=False)
 
 
+class CommandPrincipal(Base):
+    __tablename__ = "command_principals"
+
+    openid: Mapped[str] = mapped_column(String(128), ForeignKey("wechat_users.openid"), primary_key=True)
+    roles_json: Mapped[list] = mapped_column("roles", JSON, nullable=False, default=list)
+    staffId: Mapped[str | None] = mapped_column(String(64), ForeignKey("patrol_staff.id"), nullable=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+
+class CommandReceipt(Base):
+    __tablename__ = "command_receipts"
+
+    scope: Mapped[str] = mapped_column(String(160), primary_key=True)
+    requestId: Mapped[str] = mapped_column(String(96), primary_key=True)
+    fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    response_json: Mapped[dict] = mapped_column("response", JSON, nullable=False)
+
+
+class CommandUpload(Base):
+    __tablename__ = "command_uploads"
+
+    uploadId: Mapped[str] = mapped_column(String(64), primary_key=True)
+    eventId: Mapped[str] = mapped_column(String(64), ForeignKey("safety_events.id"), nullable=False)
+    uploadedBy: Mapped[str] = mapped_column(String(128), nullable=False)
+    filename: Mapped[str] = mapped_column(String(96), unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    mimeType: Mapped[str] = mapped_column(String(80), nullable=False)
+    size: Mapped[int] = mapped_column(Integer, nullable=False)
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    createdAt: Mapped[str] = mapped_column(String(32), nullable=False)
+
+
 class SecurityDetection(Base):
     __tablename__ = "security_detections"
 
@@ -60,6 +92,70 @@ class EventAuditLog(Base):
     owner: Mapped[str] = mapped_column(String(80), nullable=False)
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
     time: Mapped[str] = mapped_column(String(16), nullable=False)
+    createdAt: Mapped[str] = mapped_column(String(32), nullable=False)
+
+
+class TrainingTask(Base):
+    __tablename__ = "training_tasks"
+
+    taskId: Mapped[str] = mapped_column(String(80), primary_key=True)
+    subject: Mapped[str] = mapped_column(String(120), nullable=False)
+    traineeId: Mapped[str] = mapped_column(String(80), nullable=False)
+    teamName: Mapped[str] = mapped_column(String(120), nullable=False)
+    equipment_json: Mapped[list] = mapped_column("equipment", JSON, nullable=False, default=list)
+    standard_json: Mapped[dict] = mapped_column("standard", JSON, nullable=False, default=dict)
+    basis_json: Mapped[list] = mapped_column("basis", JSON, nullable=False, default=list)
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default="待训练")
+    elapsedSeconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    startedAt: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    completedAt: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    createdAt: Mapped[str] = mapped_column(String(32), nullable=False)
+    updatedAt: Mapped[str] = mapped_column(String(32), nullable=False)
+
+
+class TrainingException(Base):
+    __tablename__ = "training_exceptions"
+
+    exceptionId: Mapped[str] = mapped_column(String(96), primary_key=True)
+    taskId: Mapped[str] = mapped_column(String(80), ForeignKey("training_tasks.taskId"), nullable=False, unique=True)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    reportedBy: Mapped[str] = mapped_column(String(80), nullable=False)
+    auditId: Mapped[str] = mapped_column(String(112), nullable=False, unique=True)
+    createdAt: Mapped[str] = mapped_column(String(32), nullable=False)
+
+
+class TrainingAssessment(Base):
+    __tablename__ = "training_assessments"
+
+    assessmentId: Mapped[str] = mapped_column(String(80), primary_key=True)
+    taskId: Mapped[str] = mapped_column(String(80), ForeignKey("training_tasks.taskId"), nullable=False, unique=True)
+    inputMode: Mapped[str] = mapped_column(String(40), nullable=False)
+    score_json: Mapped[dict] = mapped_column("score", JSON, nullable=False, default=dict)
+    confidence: Mapped[float] = mapped_column(Float, nullable=False)
+    evidence_json: Mapped[list] = mapped_column("evidence", JSON, nullable=False, default=list)
+    evidenceTime: Mapped[str] = mapped_column(String(32), nullable=False)
+    ruleVersion: Mapped[str] = mapped_column(String(64), nullable=False)
+    humanReviewRequired: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    reviewStatus: Mapped[str] = mapped_column(String(24), nullable=False, default="pending")
+    reviewerId: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    reviewComment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    auditId: Mapped[str] = mapped_column(String(96), nullable=False, unique=True)
+    createdAt: Mapped[str] = mapped_column(String(32), nullable=False)
+    reviewedAt: Mapped[str | None] = mapped_column(String(32), nullable=True)
+
+
+class TrainingArchive(Base):
+    __tablename__ = "training_archives"
+
+    recordId: Mapped[str] = mapped_column(String(96), primary_key=True)
+    taskId: Mapped[str] = mapped_column(String(80), ForeignKey("training_tasks.taskId"), nullable=False, unique=True)
+    assessmentId: Mapped[str] = mapped_column(String(80), ForeignKey("training_assessments.assessmentId"), nullable=False, unique=True)
+    traineeId: Mapped[str] = mapped_column(String(80), nullable=False)
+    teamName: Mapped[str] = mapped_column(String(120), nullable=False)
+    result: Mapped[str] = mapped_column(String(24), nullable=False)
+    weakPoints_json: Mapped[list] = mapped_column("weakPoints", JSON, nullable=False, default=list)
+    retrainingRecommendation: Mapped[str] = mapped_column(Text, nullable=False)
+    auditId: Mapped[str] = mapped_column(String(96), nullable=False, unique=True)
     createdAt: Mapped[str] = mapped_column(String(32), nullable=False)
 
 

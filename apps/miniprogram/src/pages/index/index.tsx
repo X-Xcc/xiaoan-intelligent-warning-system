@@ -84,7 +84,7 @@ export default function LoginEntry() {
             <View className='auth-tab-indicator' />
           </View>
           <View className='auth-tab' onClick={openStaff}>
-            <Text className='auth-tab-title'>管理员登录</Text>
+            <Text className='auth-tab-title'>工作人员登录</Text>
             <View className='auth-tab-indicator' />
           </View>
         </View>
@@ -97,7 +97,7 @@ export default function LoginEntry() {
             <Text>《烟火哨兵用户服务协议》及《隐私政策》</Text>
           </View>
 
-          <Button className='auth-primary-btn' loading={loggingIn} disabled={loggingIn} onClick={openVisitor}>
+          <Button className='auth-primary-btn' loading={loggingIn} disabled={loggingIn || undefined} onClick={openVisitor}>
             登录
           </Button>
 

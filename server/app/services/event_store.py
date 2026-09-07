@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 import json
-from math import atan2, cos, radians, sin, sqrt
+from math import atan2, cos, isfinite, radians, sin, sqrt
 from typing import Any
 
 from sqlalchemy import delete, func, or_, select
@@ -380,6 +380,8 @@ def _location(latitude: float, longitude: float, name: str, source: str = "gps")
 
 def _event_location(event: dict[str, Any]) -> dict[str, Any]:
     meta = event.get("meta") or {}
+    if meta.get("locationSource") == "manual":
+        return {"name": meta.get("manualLocation") or event["bay"], "source": "manual"}
     reporter = meta.get("reporterLocation") or meta.get("alarmLocation")
     if isinstance(reporter, dict) and reporter.get("latitude") is not None and reporter.get("longitude") is not None:
         return _location(reporter["latitude"], reporter["longitude"], event["bay"], reporter.get("source", "gps"))
@@ -461,6 +463,8 @@ def _build_route(
     staff_id: str,
     session: Session | None = None,
 ) -> dict[str, Any]:
+    if destination.get("latitude") is None or destination.get("longitude") is None:
+        raise ValueError("Manual location requires verified coordinates before routing")
     distance_meters = _haversine_meters(origin, destination)
     transport = _recommend_transport(distance_meters, staff_id, session)
     mid_lat = (origin["latitude"] + destination["latitude"]) / 2
@@ -525,7 +529,7 @@ def _build_assignment(event: dict[str, Any], staff_id: str | None = None, sessio
         online = bool(row.online) if row is not None else True
         responsibility_matched = _responsibility_matched(event, staff)
         origin = _staff_location(candidate_id, session)
-        route = _build_route(origin, destination, candidate_id, session)
+        route = _build_route(origin, destination, candidate_id, session) if destination.get("latitude") is not None else None
         load = _active_task_load(session, row.name if row else staff["name"])
         candidates.append(
             {
@@ -536,7 +540,7 @@ def _build_assignment(event: dict[str, Any], staff_id: str | None = None, sessio
                 "online": online,
                 "responsibilityMatched": responsibility_matched,
                 "load": load,
-                "score": route["distanceMeters"] + load * 500,
+                "score": (route["distanceMeters"] if route else 0) + load * 500,
             }
         )
     online_candidates = [candidate for candidate in candidates if candidate["online"]]
@@ -684,6 +688,9 @@ def _append_log(
 def _create_alarm_push(session: Session, event: dict[str, Any], channel: str = "command_center") -> dict[str, Any]:
     payload = {
         "eventId": event["id"],
+        "bay": event["bay"],
+        "locationSource": (event.get("meta") or {}).get("locationSource"),
+        "manualLocation": (event.get("meta") or {}).get("manualLocation"),
         "alarmLocation": (event.get("meta") or {}).get("alarmLocation"),
         "reporterLocation": (event.get("meta") or {}).get("reporterLocation"),
         "assignment": (event.get("meta") or {}).get("assignment"),
@@ -778,6 +785,8 @@ def _normalize_assignment_roles(meta: dict[str, Any]) -> bool:
 def _normalize_existing_metadata(session: Session) -> None:
     events = session.scalars(select(SafetyEvent)).all()
     for row in events:
+        if (row.meta_json or {}).get("command"):
+            continue
         if row.source in {"视频提示", "视频预警"}:
             row.source = "视频提示"
         meta = dict(row.meta_json or {})
@@ -809,6 +818,8 @@ def _prune_unlocated_help_events(session: Session) -> None:
     event_ids = []
     for row in rows:
         meta = row.meta_json or {}
+        if meta.get("command"):
+            continue
         location = meta.get("alarmLocation") or meta.get("reporterLocation") or {}
         if isinstance(location, dict) and location.get("source") == "bay_fallback":
             event_ids.append(row.id)
@@ -849,7 +860,7 @@ def init_db() -> None:
             rows = session.scalars(select(SafetyEvent).order_by(SafetyEvent.createdAt.asc())).all()
             for row in rows:
                 event = _event_to_dict(row)
-                if row.kind == "help":
+                if row.kind == "help" and not (row.meta_json or {}).get("command"):
                     _create_alarm_push(session, event)
             session.commit()
 
@@ -1090,7 +1101,7 @@ def list_events(kind: str | None = None) -> list[dict[str, Any]]:
         if kind:
             statement = statement.where(SafetyEvent.kind == kind)
         rows = session.scalars(statement).all()
-        events = [_event_to_dict(row) for row in rows]
+        events = [_event_to_dict(row) for row in rows if not (row.meta_json or {}).get("command")]
         project_events = [event for event in events if _is_night_market_event(event)]
         if project_events:
             events = project_events
@@ -1099,11 +1110,13 @@ def list_events(kind: str | None = None) -> list[dict[str, Any]]:
     return events
 
 
-def get_event(event_id: str) -> dict[str, Any] | None:
+def get_event(event_id: str, include_command: bool = False) -> dict[str, Any] | None:
     init_db()
     with SessionLocal() as session:
         row = session.get(SafetyEvent, event_id)
         if not row:
+            return None
+        if (row.meta_json or {}).get("command") and not include_command:
             return None
         event = _event_to_dict(row)
         event["timeline"] = _event_logs(session, event_id)
@@ -1136,6 +1149,8 @@ def attach_vision_review(event_id: str, review: dict[str, Any], operator: str | 
         current = session.get(SafetyEvent, event_id)
         if not current:
             return None
+        from app.services.command_workflow import assert_legacy_writable
+        assert_legacy_writable(current)
         event_before_review = _event_to_dict(current)
         previous_level = current.level
         reviewed_level = _reviewed_event_level(normalized_review, previous_level)
@@ -1190,17 +1205,22 @@ def create_help_event(
     risk_type: str | None = None,
     evidence: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
+    bay = bay.strip()
+    if not bay:
+        raise ValueError("bay must contain a place or manual address")
+    if (latitude is None) != (longitude is None):
+        raise ValueError("latitude and longitude must be supplied together")
+    if latitude is not None and (
+        not isfinite(latitude) or not isfinite(longitude)
+        or not -90 <= latitude <= 90 or not -180 <= longitude <= 180
+    ):
+        raise ValueError("Invalid location coordinates")
     init_db()
     label = _now_label()
     alarm_location = (
         _location(latitude, longitude, bay, "visitor_gps")
         if latitude is not None and longitude is not None
-        else _location(
-            BAY_COORDS.get(bay, BAY_COORDS["主街烧烤区"])["latitude"],
-            BAY_COORDS.get(bay, BAY_COORDS["主街烧烤区"])["longitude"],
-            bay,
-            "bay_fallback",
-        )
+        else None
     )
     event = {
         "id": _new_id("HELP"),
@@ -1222,8 +1242,11 @@ def create_help_event(
             "longitude": longitude,
             "contact": contact,
             "evidence": evidence or [],
-            "reporterLocation": alarm_location,
-            "alarmLocation": alarm_location,
+            "locationSource": "gps" if alarm_location else "manual",
+            **(
+                {"reporterLocation": alarm_location, "alarmLocation": alarm_location}
+                if alarm_location else {"manualLocation": bay}
+            ),
         },
     }
     from app.services.security_linkage import normalize_event_context
@@ -1239,13 +1262,14 @@ def create_help_event(
         bay=bay,
         title=event["title"],
         description=event["description"],
-        alarm_location=alarm_location,
+        alarm_location=alarm_location or {"name": bay, "source": "manual"},
     )
     with DB_LOCK, SessionLocal() as session:
-        assignment = _build_assignment(event, session=session)
-        event["distance"] = assignment["route"]["distanceLabel"]
-        event["meta"]["assignment"] = {key: value for key, value in assignment.items() if key != "route"}
-        event["meta"]["route"] = assignment["route"]
+        if alarm_location:
+            assignment = _build_assignment(event, session=session)
+            event["distance"] = assignment["route"]["distanceLabel"]
+            event["meta"]["assignment"] = {key: value for key, value in assignment.items() if key != "route"}
+            event["meta"]["route"] = assignment["route"]
         insert_event(session, event)
         _attach_alarm_push(session, event)
         session.commit()
@@ -1386,6 +1410,8 @@ def update_event(
         current = session.get(SafetyEvent, event_id)
         if not current:
             return None
+        from app.services.command_workflow import assert_legacy_writable
+        assert_legacy_writable(current)
         previous_status = current.status
         next_owner = owner or current.owner
         current.status = status
@@ -1441,15 +1467,27 @@ def assign_event(event_id: str, staff: str, operator: str | None = None) -> dict
         current = session.get(SafetyEvent, event_id)
         if not current:
             return None
+        from app.services.command_workflow import assert_legacy_writable
+        assert_legacy_writable(current)
         event = _event_to_dict(current)
         assignment = _build_assignment(event, staff_id, session)
+        route = assignment["route"]
+        dispatch_note = (
+            f"已派给{assignment['staffName']}，推荐{route['modeLabel']}，预计{route['etaLabel']}"
+            if route else f"已派给{assignment['staffName']}，手动地点待核实，暂未生成路线。"
+        )
         meta = dict(current.meta_json or {})
         meta["assignment"] = {key: value for key, value in assignment.items() if key != "route"}
-        meta["route"] = assignment["route"]
-        meta["alarmLocation"] = assignment["route"]["destination"]
+        if route:
+            meta["route"] = route
+            meta["alarmLocation"] = route["destination"]
+        else:
+            meta.pop("route", None)
+            meta.pop("alarmLocation", None)
+            meta["assignment"]["reason"] = "按指挥员指定人员派单，手动地点待核实"
         current.status = "已派单"
         current.owner = assignment["staffName"]
-        current.distance = assignment["route"]["distanceLabel"]
+        current.distance = route["distanceLabel"] if route else "地点待核实"
         current.meta_json = meta
         current.updatedAt = label
         current.updatedAtIso = datetime.now().isoformat(timespec="seconds")
@@ -1461,11 +1499,11 @@ def assign_event(event_id: str, staff: str, operator: str | None = None) -> dict
             current.status,
             current.owner,
             operator or "指挥中心",
-            f"已派给{assignment['staffName']}，推荐{assignment['route']['modeLabel']}，预计{assignment['route']['etaLabel']}",
+            dispatch_note,
             {
                 "previousStatus": previous_status,
                 "nextStatus": current.status,
-                "operationLocation": assignment["route"]["destination"],
+                "operationLocation": route["destination"] if route else _event_location(event),
                 "evidenceIndex": _event_evidence_index(event),
                 "assignment": {
                     "staffId": assignment["staffId"],
@@ -1489,7 +1527,7 @@ def assign_event(event_id: str, staff: str, operator: str | None = None) -> dict
             "popup",
             assignment["staffId"],
             event["title"],
-            f"已派给{assignment['staffName']}，推荐{assignment['route']['modeLabel']}，预计{assignment['route']['etaLabel']}",
+            dispatch_note,
             "已发送",
             {"source": "event_store", "kind": event["kind"]},
         )
@@ -1567,6 +1605,9 @@ def recommend_route(
     staff_id = _staff_key(staff)
     if not staff_id:
         raise ValueError(f"Unsupported staff: {staff}")
+    from app.services.command_workflow import is_command
+    if is_command(event_id):
+        raise ValueError("接处警事件请使用只读路线预览")
     if latitude is not None and longitude is not None:
         update_staff_location(staff_id, latitude, longitude, accuracy)
 
@@ -1602,14 +1643,44 @@ def recommend_route(
     return get_event(event_id)
 
 
-def supplement_event(event_id: str, text: str) -> dict[str, Any] | None:
+def supplement_event(event_id: str, text: str, evidence: list[dict[str, Any]] | None = None) -> dict[str, Any] | None:
     init_db()
     label = _now_label()
     with DB_LOCK, SessionLocal() as session:
         current = session.get(SafetyEvent, event_id)
         if not current:
             return None
-        current.description = f"{current.description} 补充：{text}"
+        from app.services.command_workflow import assert_legacy_writable
+        assert_legacy_writable(current)
+        text = text.strip()
+        meta = dict(current.meta_json or {})
+        context = dict(meta.get("context") or {})
+        combined = [*(meta.get("evidence") or []), *(context.get("evidence") or [])]
+        seen = {item.get("url") for item in combined if isinstance(item, dict) and item.get("url")}
+        added = []
+        for item in evidence or []:
+            if item.get("url") and item["url"] not in seen:
+                added.append(dict(item))
+                seen.add(item["url"])
+        if added:
+            # Reassign JSON values so SQLAlchemy persists both evidence indexes.
+            indexed = []
+            indexed_urls = set()
+            for item in [*combined, *added]:
+                url = item.get("url") if isinstance(item, dict) else None
+                if url and url in indexed_urls:
+                    continue
+                if url:
+                    indexed_urls.add(url)
+                indexed.append(item)
+            meta["evidence"] = indexed
+            context["evidence"] = indexed
+            meta["context"] = context
+            current.meta_json = meta
+        if not text and not added:
+            return _event_to_dict(current) | {"timeline": _event_logs(session, event_id)}
+        if text:
+            current.description = f"{current.description} 补充：{text}"
         current.updatedAt = label
         current.updatedAtIso = datetime.now().isoformat(timespec="seconds")
         _append_log(
@@ -1618,10 +1689,23 @@ def supplement_event(event_id: str, text: str) -> dict[str, Any] | None:
             "补充说明",
             current.status,
             current.owner,
-            "指挥中心",
-            text,
+            "事件补充接口",
+            text or f"新增 {len(added)} 项证据",
+            {
+                "operationLocation": _event_location(_event_to_dict(current)),
+                "evidenceIndex": _event_evidence_index(_event_to_dict(current)),
+                "addedEvidence": added,
+            },
         )
         session.commit()
+    if added:
+        try:
+            from app.services.security_linkage import link_event_risk
+
+            link_event_risk(event_id)
+        except Exception:
+            # Derived risk refresh must not invalidate committed evidence.
+            pass
     return get_event(event_id)
 
 

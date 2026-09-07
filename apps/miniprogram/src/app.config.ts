@@ -4,7 +4,7 @@ export default defineAppConfig({
   pages: ['pages/index/index', 'pages/main/main', 'pages/detail/detail'],
   window: {
     backgroundTextStyle: 'dark',
-    navigationBarBackgroundColor: '#f5f7f6',
+    navigationBarBackgroundColor: '#cbe5ff',
     navigationBarTitleText: '烟火哨兵',
     navigationBarTextStyle: 'black',
   },

@@ -8,6 +8,8 @@ import urllib.request
 import base64
 import hashlib
 import mimetypes
+import shutil
+import subprocess
 from datetime import datetime
 from typing import Any
 
@@ -126,6 +128,55 @@ def _normalize_judgement(parsed: dict[str, Any], payload: dict[str, Any], usage:
     }
 
 
+def _post_vlm_request(body: bytes) -> dict[str, Any]:
+    """Call the compatible endpoint, using curl only when urllib hits a TLS transport failure."""
+    url = f"{configured_vlm_base_url()}/chat/completions"
+    timeout = float(os.getenv("SECURITY_VLM_TIMEOUT", "30"))
+    request = urllib.request.Request(
+        url,
+        data=body,
+        headers={"Authorization": f"Bearer {_api_key()}", "Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except (OSError, urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError) as urllib_error:
+        curl = shutil.which("curl")
+        if not curl:
+            raise SecurityAiUnavailable(str(urllib_error)) from urllib_error
+        try:
+            completed = subprocess.run(
+                [
+                    curl, "--silent", "--show-error", "--max-time", str(max(1, int(timeout))),
+                    "--write-out", "\n__CICSIC_HTTP_STATUS__%{http_code}",
+                    "-H", f"Authorization: Bearer {_api_key()}",
+                    "-H", "Content-Type: application/json",
+                    "--data-binary", "@-", url,
+                ],
+                input=body,
+                capture_output=True,
+                check=False,
+                timeout=timeout + 5,
+            )
+        except (OSError, subprocess.SubprocessError) as curl_error:
+            raise SecurityAiUnavailable(str(urllib_error)) from curl_error
+        output = completed.stdout.decode("utf-8", errors="replace")
+        marker = "\n__CICSIC_HTTP_STATUS__"
+        response_text, _, status_text = output.rpartition(marker)
+        try:
+            status = int(status_text.strip())
+        except ValueError as exc:
+            detail = completed.stderr.decode("utf-8", errors="replace").strip() or str(urllib_error)
+            raise SecurityAiUnavailable(detail) from exc
+        if status < 200 or status >= 300:
+            raise SecurityAiUnavailable(f"HTTP {status}: {response_text[:500]}")
+        try:
+            return json.loads(response_text)
+        except json.JSONDecodeError as exc:
+            raise SecurityAiUnavailable(f"返回内容无法解析: {exc}") from exc
+
+
 def _local_judgement(payload: dict[str, Any]) -> dict[str, Any]:
     detection = payload.get("detection") or {}
     actions = detection.get("actions") or []
@@ -167,17 +218,7 @@ def judge_scene(payload: dict[str, Any]) -> dict[str, Any]:
         },
     ]
     body = json.dumps({"model": configured_vlm_model(), "messages": messages, "temperature": 0.1}, ensure_ascii=False).encode("utf-8")
-    request = urllib.request.Request(
-        f"{configured_vlm_base_url()}/chat/completions",
-        data=body,
-        headers={"Authorization": f"Bearer {_api_key()}", "Content-Type": "application/json"},
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=float(os.getenv("SECURITY_VLM_TIMEOUT", "30"))) as response:
-            upstream = json.loads(response.read().decode("utf-8"))
-    except (OSError, urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError) as exc:
-        raise SecurityAiUnavailable(str(exc)) from exc
+    upstream = _post_vlm_request(body)
 
     parsed = _parse_json_content(_extract_content(upstream))
     return _normalize_judgement(parsed, payload, upstream.get("usage") if isinstance(upstream, dict) else None)

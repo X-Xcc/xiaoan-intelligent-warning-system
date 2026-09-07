@@ -1,15 +1,18 @@
 import os
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
+from urllib.parse import urlsplit
 from uuid import uuid4
 
 from app.api.dependencies import enforce_public_write_rate_limit
 from app.services import event_store
 from app.services import system_control
 from app.services.realtime import realtime_hub
+from app.services import command_workflow
+from app.api.routes.command import optional_actor
 
 
 router = APIRouter(prefix="/events", tags=["events"])
@@ -21,13 +24,26 @@ EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
 class HelpIn(BaseModel):
     bay: str = Field(min_length=1)
     description: str | None = None
-    latitude: float
-    longitude: float
+    latitude: float | None = Field(default=None, ge=-90, le=90, allow_inf_nan=False)
+    longitude: float | None = Field(default=None, ge=-180, le=180, allow_inf_nan=False)
     contact: str | None = None
     marketId: str | None = None
     zoneId: str | None = None
     riskType: str | None = None
     evidence: list[dict[str, object]] = Field(default_factory=list)
+
+    @field_validator("bay")
+    @classmethod
+    def valid_bay(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("bay must contain a place or manual address")
+        return value.strip()
+
+    @model_validator(mode="after")
+    def complete_coordinates(self):
+        if (self.latitude is None) != (self.longitude is None):
+            raise ValueError("latitude and longitude must be supplied together")
+        return self
 
 
 class ReportIn(BaseModel):
@@ -53,6 +69,8 @@ class EventStatusIn(BaseModel):
     owner: str | None = None
     result: str | None = None
     operator: str | None = None
+    requestId: str | None = None
+    expectedVersion: int | None = None
 
 
 class AssignIn(BaseModel):
@@ -68,7 +86,23 @@ class StaffLocationIn(BaseModel):
 
 
 class SupplementIn(BaseModel):
-    text: str = Field(min_length=1)
+    text: str = ""
+    evidence: list[dict[str, object]] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def nonempty_supplement(self):
+        self.text = self.text.strip()
+        if not self.text and not self.evidence:
+            raise ValueError("text or evidence is required")
+        for item in self.evidence:
+            url = item.get("url")
+            if not isinstance(url, str) or not url.strip() or any(char.isspace() for char in url) or "\\" in url:
+                raise ValueError("evidence must have a valid URL")
+            parsed = urlsplit(url)
+            if not ((parsed.scheme in {"http", "https"} and parsed.hostname)
+                    or (not parsed.scheme and url.startswith("/") and not url.startswith("//"))):
+                raise ValueError("evidence URL must use HTTP, HTTPS or a backend-relative path")
+        return self
 
 
 class VisionReviewIn(BaseModel):
@@ -77,8 +111,9 @@ class VisionReviewIn(BaseModel):
 
 
 @router.get("")
-def list_events(kind: str | None = None):
-    return {"items": event_store.list_events(kind)}
+def list_events(kind: str | None = None, actor=Depends(optional_actor)):
+    controlled = [item for item in command_workflow.list_events(actor) if not kind or item["kind"] == kind]
+    return {"items": [*event_store.list_events(kind), *controlled]}
 
 
 @router.get("/overview")
@@ -105,10 +140,17 @@ def staff_list():
 @router.post("/evidence")
 async def upload_evidence(
     file: UploadFile = File(...),
+    eventId: str | None = Form(default=None),
+    actor=Depends(optional_actor),
     _: None = Depends(enforce_public_write_rate_limit),
 ):
-    content = await file.read()
+    if eventId:
+        if actor is None:
+            raise HTTPException(401, "请登录获授权的处警账号")
+        content = await file.read(20 * 1024 * 1024 + 1)
+        return {"evidence": command_workflow.upload_evidence(eventId, actor, file.filename, file.content_type, content)}
     limit_mb = system_control.get_platform_settings()["evidenceUploadLimitMb"]
+    content = await file.read(limit_mb * 1024 * 1024 + 1)
     if len(content) > limit_mb * 1024 * 1024:
         raise HTTPException(status_code=413, detail="文件过大")
     suffix = Path(file.filename or "").suffix or ".bin"
@@ -126,11 +168,12 @@ async def upload_evidence(
 
 
 @router.get("/evidence/{filename}")
-def get_evidence(filename: str):
+def get_evidence(filename: str, actor=Depends(optional_actor)):
+    protected_mime = command_workflow.authorize_file(filename, actor) if filename.startswith("cmd-") else None
     target = (EVIDENCE_DIR / filename).resolve()
     if EVIDENCE_DIR not in target.parents or not target.exists():
         raise HTTPException(status_code=404, detail="证据文件不存在")
-    return FileResponse(target)
+    return FileResponse(target, media_type=protected_mime, headers={"Cache-Control": "private, no-store"} if protected_mime else None)
 
 
 @router.post("/staff-location")
@@ -143,12 +186,18 @@ def update_staff_location(payload: StaffLocationIn):
 
 
 @router.get("/staff-tasks")
-def staff_tasks(staff: str):
+def staff_tasks(staff: str, actor=Depends(optional_actor)):
     try:
         items = event_store.list_staff_tasks(staff)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    return {"items": items}
+    controlled = []
+    if actor and actor.staff_id and staff in {actor.staff_id, *[
+        entry["name"] for entry in event_store.list_staff() if entry["id"] == actor.staff_id
+    ]}:
+        controlled = [item for item in command_workflow.list_events(actor)
+                      if item["status"] != "已提交" and item["meta"].get("assignment", {}).get("staffId") == actor.staff_id]
+    return {"items": [*items, *controlled]}
 
 
 @router.post("/security-detections/sync")
@@ -161,7 +210,10 @@ async def sync_security_detections():
 
 @router.post("/{event_id}/vision-review")
 async def attach_vision_review(event_id: str, payload: VisionReviewIn):
-    event = event_store.attach_vision_review(event_id, payload.judgement, payload.operator)
+    try:
+        event = event_store.attach_vision_review(event_id, payload.judgement, payload.operator)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
     if not event:
         raise HTTPException(status_code=404, detail="事件不存在")
     await realtime_hub.publish({"type": "vision_review.attached", "eventId": event_id, "target": "command_center"})
@@ -169,10 +221,12 @@ async def attach_vision_review(event_id: str, payload: VisionReviewIn):
 
 
 @router.get("/{event_id}")
-def event_detail(event_id: str):
-    event = event_store.get_event(event_id)
+def event_detail(event_id: str, actor=Depends(optional_actor)):
+    event = event_store.get_event(event_id, include_command=True)
     if not event:
         raise HTTPException(status_code=404, detail="事件不存在")
+    if event.get("meta", {}).get("command") and not command_workflow.can_read(actor, event):
+        raise HTTPException(404, "事件不存在或不可访问")
     return {"event": event}
 
 
@@ -216,11 +270,15 @@ def create_lost_claim(payload: LostClaimIn, _: None = Depends(enforce_public_wri
 
 
 @router.patch("/{event_id}/status")
-def update_status(event_id: str, payload: EventStatusIn):
+def update_status(event_id: str, payload: EventStatusIn, actor=Depends(optional_actor)):
+    if payload.requestId is not None:
+        if actor is None:
+            raise HTTPException(401, "请登录获授权的处警账号")
+        return command_workflow.execute(event_id, "status", payload.model_dump(exclude_none=True), actor)
     try:
         event = event_store.update_event(event_id, payload.status, payload.owner, payload.result, payload.operator)
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     if not event:
         raise HTTPException(status_code=404, detail="事件不存在")
     return {"event": event}
@@ -231,7 +289,7 @@ async def assign_event(event_id: str, payload: AssignIn):
     try:
         event = event_store.assign_event(event_id, payload.staff, payload.operator)
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     if not event:
         raise HTTPException(status_code=404, detail="事件不存在")
     await realtime_hub.publish({"type": "event.assigned", "eventId": event_id, "staff": event["owner"]})
@@ -249,7 +307,7 @@ def route_event(
     try:
         event = event_store.recommend_route(event_id, staff, latitude, longitude, accuracy)
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     if not event:
         raise HTTPException(status_code=404, detail="事件不存在")
     return {"event": event, "route": (event.get("meta") or {}).get("route")}
@@ -257,7 +315,10 @@ def route_event(
 
 @router.patch("/{event_id}/supplement")
 def supplement_event(event_id: str, payload: SupplementIn):
-    event = event_store.supplement_event(event_id, payload.text)
+    try:
+        event = event_store.supplement_event(event_id, payload.text, payload.evidence)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
     if not event:
         raise HTTPException(status_code=404, detail="事件不存在")
     return {"event": event}

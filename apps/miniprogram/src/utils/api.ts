@@ -1,8 +1,8 @@
-﻿import Taro from '@tarojs/taro'
+import Taro from '@tarojs/taro'
 import type {
   EventStatus,
   EvidenceItem,
-  HelpForm,
+  LocalEvidence,
   ReportForm,
   SafetyEvent,
   SecurityAnalysisReport,
@@ -12,21 +12,27 @@ import type {
   SecurityNotification,
   SecurityOpsOverview,
 } from '@/types/events'
+import { getErrorMessage, resetGuestReceiptSession } from '@/utils/event-state'
 
-const API_BASE_URL = process.env.TARO_APP_API_BASE_URL || 'http://120.26.137.173/api'
+const CONFIGURED_API_BASE = (process.env.TARO_APP_API_BASE_URL || 'http://120.26.137.173/api').replace(/\/+$/, '')
+const H5_ORIGIN = process.env.TARO_ENV === 'h5' && typeof window !== 'undefined'
+  ? window.location?.origin || ''
+  : ''
+const API_BASE_URL = CONFIGURED_API_BASE.startsWith('/') && H5_ORIGIN
+  ? `${H5_ORIGIN}${CONFIGURED_API_BASE}`
+  : CONFIGURED_API_BASE
 const REALTIME_URL = API_BASE_URL.replace(/^http/, 'ws').replace(/\/api$/, '/api/events/realtime')
 const AUTH_TOKEN_KEY = 'yanhuo-shaobing-auth-token'
 
-type ApiEnvelope<T> = T & {
-  message?: string
-}
+export type RequestOptions = Omit<Taro.request.Option, 'url'>
 
-type RequestOptions = Omit<Taro.request.Option, 'url'>
-
-type WechatAuthUser = {
+export type WechatAuthUser = {
   openid: string
   unionid?: string | null
   lastLoginAt: string
+  role?: string
+  displayName?: string
+  permissions?: string[]
 }
 
 export type WechatLoginSession = {
@@ -36,45 +42,101 @@ export type WechatLoginSession = {
   dev?: boolean
 }
 
-async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const response = await Taro.request<ApiEnvelope<T>>({
+function withDeadline<T>(task: PromiseLike<T> & { abort?: () => void }, timeout: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error('请求超时，请检查回执后再重试'))
+      try { task.abort?.() } catch { /* The deadline still settles the request. */ }
+    }, timeout)
+    Promise.resolve(task).then(resolve, (error) => reject(new Error(getErrorMessage(error))))
+      .finally(() => clearTimeout(timer))
+  })
+}
+
+export async function requestApi<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const timeout = Math.min(15000, Math.max(1, Number(options.timeout) || 15000))
+  const token = getAuthToken()
+  const response = await withDeadline(Taro.request<T>({
+    ...options,
     url: `${API_BASE_URL}${path}`,
     method: options.method || 'GET',
-    data: options.data,
+    timeout,
     header: {
       'content-type': 'application/json',
-      ...(getAuthToken() ? { authorization: `Bearer ${getAuthToken()}` } : {}),
+      ...(token ? { authorization: `Bearer ${token}` } : {}),
       ...options.header,
     },
-  })
-
+  }), timeout)
   if (response.statusCode < 200 || response.statusCode >= 300) {
-    throw new Error(typeof response.data === 'string' ? response.data : `接口请求失败：${response.statusCode}`)
+    throw Object.assign(new Error(getErrorMessage(response.data, `接口请求失败：${response.statusCode}`)), { statusCode: response.statusCode })
   }
-
   return response.data as T
+}
+
+const request = requestApi
+
+export function resolveEvidenceUrl(url: string): string {
+  const value = url.trim()
+  if (!value || /[\s\\]/.test(value)) throw new Error('证据没有有效的 URL 地址')
+  if (/^https?:\/\/(?:\[[a-f\d:.]+\]|[a-z\d](?:[a-z\d.-]*[a-z\d])?)(?::\d{1,5})?(?:[/?#]|$)/i.test(value)) return value
+  if (/^[a-z][a-z\d+.-]*:/i.test(value) || value.startsWith('//') || /^[?#]/.test(value)) {
+    throw new Error('证据 URL 地址必须使用 HTTP 或 HTTPS')
+  }
+  const origin = API_BASE_URL.match(/^https?:\/\/[^/]+/i)?.[0]
+  if (!origin) throw new Error('后端地址配置无效')
+  return value.startsWith('/') ? `${origin}${value}` : `${API_BASE_URL}/${value.replace(/^\.\//, '')}`
+}
+
+function normalizeSafetyEvent(event: SafetyEvent): SafetyEvent {
+  if (!event?.id) throw new Error('接口没有返回有效的事件回执')
+  const normalize = (items: EvidenceItem[]) => items.map((item) => {
+    if (!item.url) return item
+    try { return { ...item, url: resolveEvidenceUrl(item.url) } } catch { return { ...item, url: undefined } }
+  })
+  if (!event.meta) return event
+  return {
+    ...event,
+    meta: {
+      ...event.meta,
+      ...(event.meta.evidence ? { evidence: normalize(event.meta.evidence) } : {}),
+      ...(event.meta.context ? { context: {
+        ...event.meta.context,
+        ...(event.meta.context.evidence ? { evidence: normalize(event.meta.context.evidence) } : {}),
+      } } : {}),
+    },
+  }
 }
 
 export async function fetchEvents(): Promise<SafetyEvent[]> {
   const data = await request<{ items: SafetyEvent[] }>('/events')
-  return data.items
+  return data.items.map(normalizeSafetyEvent)
 }
 
 export async function fetchSafetyEvent(id: string): Promise<SafetyEvent> {
   const data = await request<{ event: SafetyEvent }>(`/events/${encodeURIComponent(id)}`)
-  return data.event
+  return normalizeSafetyEvent(data.event)
 }
 
-function getAuthToken(): string {
-  return Taro.getStorageSync(AUTH_TOKEN_KEY) || ''
+export function getAuthToken(): string {
+  const token = Taro.getStorageSync(AUTH_TOKEN_KEY)
+  return typeof token === 'string' ? token : ''
+}
+
+export function clearAuthSession(): void {
+  Taro.removeStorageSync(`command-staff-drafts:${getAuthToken()}`)
+  pendingCommandWrites.clear()
+  Taro.removeStorageSync(AUTH_TOKEN_KEY)
+  resetGuestReceiptSession()
+}
+
+export async function getCurrentUser(): Promise<WechatAuthUser> {
+  const data = await request<{ user: WechatAuthUser }>('/auth/me')
+  return data.user
 }
 
 export async function loginWithWechat(): Promise<WechatLoginSession> {
   const loginResult = await Taro.login({ timeout: 8000 })
-  if (!loginResult.code) {
-    throw new Error('微信登录没有返回 code')
-  }
-
+  if (!loginResult.code) throw new Error('微信登录没有返回 code')
   const session = await request<WechatLoginSession>('/auth/wechat-login', {
     method: 'POST',
     data: { code: loginResult.code },
@@ -98,30 +160,37 @@ export async function createHelpEvent(payload: {
     method: 'POST',
     data: payload,
   })
-  return data.event
+  return normalizeSafetyEvent(data.event)
 }
 
-export async function uploadEventEvidence(filePath: string, fileType: 'image' | 'video'): Promise<EvidenceItem> {
+export async function uploadEventEvidence(filePath: string, fileType: 'image' | 'video', eventId?: string): Promise<EvidenceItem> {
+  if (!filePath.trim()) throw new Error('请选择真实的证据文件')
   const uploadOptions: Parameters<typeof Taro.uploadFile>[0] = {
     url: `${API_BASE_URL}/events/evidence`,
     filePath,
     name: 'file',
+    timeout: 30000,
+    ...(eventId ? { formData: { eventId } } : {}),
   }
   const token = getAuthToken()
-  if (token) {
-    uploadOptions.header = { authorization: `Bearer ${token}` }
+  if (token) uploadOptions.header = { authorization: `Bearer ${token}` }
+  const response = await withDeadline(Taro.uploadFile(uploadOptions), 30000)
+  let payload: { evidence?: EvidenceItem }
+  try {
+    payload = typeof response.data === 'string' ? JSON.parse(response.data) : response.data
+  } catch {
+    throw new Error('证据上传返回了无效数据')
   }
-  const response = await Taro.uploadFile(uploadOptions)
   if (response.statusCode < 200 || response.statusCode >= 300) {
-    throw new Error('证据上传失败')
+    throw new Error(getErrorMessage(payload, `证据上传失败：${response.statusCode}`))
   }
-  const payload = JSON.parse(response.data as string) as { evidence?: EvidenceItem }
-  return payload.evidence ?? { kind: fileType, url: '' }
+  if (typeof payload?.evidence?.url !== 'string') throw new Error('证据上传没有返回有效的 URL 地址')
+  return { ...payload.evidence, kind: payload.evidence.kind || fileType, url: resolveEvidenceUrl(payload.evidence.url) }
 }
 
 export async function fetchStaffTasks(staff: string): Promise<SafetyEvent[]> {
   const data = await request<{ items: SafetyEvent[] }>(`/events/staff-tasks?staff=${encodeURIComponent(staff)}`)
-  return data.items
+  return data.items.map(normalizeSafetyEvent)
 }
 
 export async function updateStaffLocation(payload: {
@@ -147,11 +216,23 @@ export async function refreshEventRoute(id: string, payload: {
     .filter(([, value]) => value !== undefined && value !== null)
     .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
     .join('&')
-  const data = await request<{ event: SafetyEvent }>(`/events/${id}/route?${params}`)
-  return data.event
+  const data = await request<{ event: SafetyEvent }>(`/events/${encodeURIComponent(id)}/route?${params}`)
+  return normalizeSafetyEvent(data.event)
 }
 
-export async function createReportEvent(form: ReportForm, photoCount: number): Promise<SafetyEvent> {
+export async function createReportEvent(form: ReportForm, files: number | LocalEvidence[]): Promise<SafetyEvent> {
+  const token = getAuthToken()
+  const assertSession = () => {
+    if (getAuthToken() !== token) throw new Error('登录会话已变更，请在当前账号重新确认上报')
+  }
+  const evidence: EvidenceItem[] = []
+  if (Array.isArray(files)) {
+    for (const item of files) {
+      assertSession()
+      evidence.push(await uploadEventEvidence(item.filePath, item.kind))
+    }
+  }
+  assertSession()
   const data = await request<{ event: SafetyEvent }>('/events/reports', {
     method: 'POST',
     data: {
@@ -160,11 +241,11 @@ export async function createReportEvent(form: ReportForm, photoCount: number): P
       description: form.description,
       contact: form.contact,
       anonymous: form.anonymous,
-      photoCount,
-      evidence: [],
+      photoCount: evidence.filter((item) => item.kind === 'image').length,
+      evidence,
     },
   })
-  return data.event
+  return normalizeSafetyEvent(data.event)
 }
 
 export async function createLostClaimEvent(itemName: string, bay: string): Promise<SafetyEvent> {
@@ -172,23 +253,61 @@ export async function createLostClaimEvent(itemName: string, bay: string): Promi
     method: 'POST',
     data: { itemName, bay },
   })
-  return data.event
+  return normalizeSafetyEvent(data.event)
 }
 
-export async function updateSafetyEventStatus(id: string, status: EventStatus, owner?: string, result?: string): Promise<SafetyEvent> {
-  const data = await request<{ event: SafetyEvent }>(`/events/${id}/status`, {
+export async function updateSafetyEventStatus(id: string, status: EventStatus, owner?: string, result?: string, commandVersion?: number): Promise<SafetyEvent> {
+  if (commandVersion !== undefined) return submitCommandTaskAction(id, commandVersion, 'status', { status, result })
+  const data = await request<{ event: SafetyEvent }>(`/events/${encodeURIComponent(id)}/status`, {
     method: 'PATCH',
     data: { status, owner, result },
   })
-  return data.event
+  return normalizeSafetyEvent(data.event)
 }
 
-export async function supplementSafetyEvent(id: string, text: string): Promise<SafetyEvent> {
-  const data = await request<{ event: SafetyEvent }>(`/events/${id}/supplement`, {
+const pendingCommandWrites = new Map<string, { payload: Record<string, unknown>; fingerprint: string }>()
+export async function submitCommandTaskAction(id: string, version: number, action: string, fields: Record<string, unknown>): Promise<SafetyEvent> {
+  const token = getAuthToken()
+  if (!token) throw new Error('请登录获授权的处警账号')
+  const key = `${token}:${id}:${action}`
+  const fingerprint = JSON.stringify(fields)
+  const previous = pendingCommandWrites.get(key)
+  if (previous && previous.fingerprint !== fingerprint) {
+    throw new Error('前一请求结果尚未核对，请先刷新并核对原回执')
+  }
+  const payload = previous?.payload ?? { ...fields, expectedVersion: version, requestId: `mini-${Date.now()}-${Math.random().toString(36).slice(2)}` }
+  pendingCommandWrites.set(key, { payload, fingerprint })
+  try {
+    const response = await request<{ event: SafetyEvent }>(`/command/events/${encodeURIComponent(id)}/${action}`, { method: 'POST', data: payload })
+    pendingCommandWrites.delete(key)
+    return normalizeSafetyEvent(response.event)
+  } catch (cause) {
+    if (cause && typeof cause === 'object' && 'statusCode' in cause
+      && typeof cause.statusCode === 'number' && cause.statusCode < 500) {
+      pendingCommandWrites.delete(key)
+      throw cause
+    }
+    try {
+      const receipt = await request<{ event: SafetyEvent }>(`/command/events/${encodeURIComponent(id)}/receipts/${payload.requestId}`)
+      pendingCommandWrites.delete(key)
+      return normalizeSafetyEvent(receipt.event)
+    } catch {
+      // Keep the original id for an uncertain retry; never replay automatically.
+      throw cause
+    }
+  }
+}
+
+export async function supplementSafetyEvent(id: string, text: string, evidence: EvidenceItem[] = []): Promise<SafetyEvent> {
+  const data = await request<{ event: SafetyEvent }>(`/events/${encodeURIComponent(id)}/supplement`, {
     method: 'PATCH',
-    data: { text },
+    data: { text, evidence },
   })
-  return data.event
+  return normalizeSafetyEvent(data.event)
+}
+
+export async function supplementEvidence(id: string, evidence: EvidenceItem[], text = ''): Promise<SafetyEvent> {
+  return supplementSafetyEvent(id, text, evidence)
 }
 
 export async function fetchSecurityOpsOverview(): Promise<SecurityOpsOverview> {
@@ -251,8 +370,8 @@ export async function fetchSecurityFeeds(): Promise<SecurityFeed[]> {
 export function connectRealtimeEvents(onMessage: (message: { type?: string; eventId?: string; staff?: string }) => void) {
   let closed = false
   let socketTask: Taro.SocketTask | null = null
-
-  Taro.connectSocket({ url: REALTIME_URL }).then((task) => {
+  const token = getAuthToken()
+  Taro.connectSocket({ url: token ? `${REALTIME_URL}?token=${encodeURIComponent(token)}` : REALTIME_URL }).then((task) => {
     socketTask = task
     if (closed) {
       task.close({})
@@ -267,7 +386,6 @@ export function connectRealtimeEvents(onMessage: (message: { type?: string; even
     })
     task.onError(() => undefined)
   }).catch(() => undefined)
-
   return () => {
     closed = true
     socketTask?.close({})

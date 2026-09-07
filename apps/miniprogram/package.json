@@ -14,6 +14,10 @@
     "build:weapp:release": "taro build --type weapp --env production",
     "build:alipay": "taro build --type alipay --env development",
     "build:alipay:release": "taro build --type alipay --env production",
+    "build:h5": "taro build --type h5 --env development",
+    "dev:h5": "taro build --type h5 --env development --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test tests/*.test.cjs",
     "verify:tabbar": "node scripts/verify-tabbar-style.mjs",
     "dev:weapp": "npm run build:weapp -- --watch",
     "dev:alipay": "npm run build:alipay -- --watch"

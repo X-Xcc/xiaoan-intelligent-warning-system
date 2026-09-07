@@ -15,6 +15,8 @@ from app.api.routes.security_ops import router as security_ops_router
 from app.api.routes.security_video import router as security_video_router
 from app.api.routes.platform import router as platform_router
 from app.api.routes.ai_center import router as ai_center_router
+from app.api.routes.training import router as training_router
+from app.api.routes.command import router as command_router
 from app.services.auth_store import init_auth_db
 from app.services.admin_store import ensure_market_defaults
 from app.services.event_store import init_db
@@ -53,6 +55,8 @@ app.include_router(security_ai_router, prefix="/api")
 app.include_router(security_ops_router, prefix="/api")
 app.include_router(platform_router, prefix="/api")
 app.include_router(ai_center_router, prefix="/api")
+app.include_router(training_router, prefix="/api")
+app.include_router(command_router, prefix="/api")
 
 
 @app.on_event("startup")

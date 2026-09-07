@@ -396,6 +396,8 @@ def link_event_risk(event_id: str) -> dict[str, Any] | None:
         target = session.get(SafetyEvent, event_id)
         if target is None:
             return None
+        if (target.meta_json or {}).get("command"):
+            return None
         target_context = _event_context(target)
         risk_type = _risk_type(str(target_context.get("riskType") or target.title))
         occurred_at = _parse_timestamp(target_context.get("timestamp") or target.createdAt)
@@ -403,6 +405,8 @@ def link_event_risk(event_id: str) -> dict[str, Any] | None:
         window_end = occurred_at + timedelta(minutes=RISK_WINDOW_MINUTES)
         candidates = []
         for row in session.scalars(select(SafetyEvent)).all():
+            if (row.meta_json or {}).get("command"):
+                continue
             context = _event_context(row)
             if _risk_type(str(context.get("riskType") or row.title)) != risk_type:
                 continue
