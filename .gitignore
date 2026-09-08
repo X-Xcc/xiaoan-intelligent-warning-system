@@ -69,3 +69,9 @@ tmp/
 *_text.txt
 source_extract.txt
 *.pyc
+docs/
+scripts/*
+!scripts/dev_server.py
+_review2_slide-*.jpg
+project.private.config.json
+.docx-requirements.txt
