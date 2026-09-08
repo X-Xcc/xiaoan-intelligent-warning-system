@@ -1,13 +1,13 @@
 {
   "miniprogramRoot": "apps/miniprogram/dist",
-  "projectname": "jiangtan-zhifang",
-  "description": "jiangtan-zhifang workspace",
+  "projectname": "烟火哨兵",
+  "description": "烟火哨兵群众服务小程序",
   "setting": {
-    "es6": true,
-    "postcss": true,
-    "minified": true,
+    "es6": false,
+    "postcss": false,
+    "minified": false,
     "uglifyFileName": false,
-    "enhance": true,
+    "enhance": false,
     "packNpmRelationList": [],
     "babelSetting": {
       "ignore": [],

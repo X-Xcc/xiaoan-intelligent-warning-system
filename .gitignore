@@ -8,6 +8,7 @@ __pycache__/
 .venv/
 venv/
 server/.venv/
+server/.venv-runtime/
 
 # Node
 node_modules/
@@ -31,6 +32,46 @@ apps/**/.swc/
 
 # Logs
 *.log
+server/logs/
 
 # Local runtime data
 server/data/*.db
+server/security-data/
+server/.pgdata/
+server/.secrets/
+
+# Local Codex/browser state and verification artifacts
+.codex/
+.codex-*/
+.codex-screenshots/
+.verify/
+.superpowers/
+.playwright-mcp/
+_artifact_work/
+_artifact_work/lo_*/
+
+# Local generated reports, renders, exports, and scratch files
+deliverables/
+output/
+outputs/
+lo_profile*/
+render_*/
+report_render*/
+report_word_render/
+source_render/
+ppt_analysis/
+tmp/
+*.docx
+*.pdf
+*.jpg
+*.jpeg
+*.html
+*_text.txt
+source_extract.txt
+*.pyc
+docs/
+scripts/*
+!scripts/dev_server.py
+_review2_slide-*.jpg
+project.private.config.json
+.docx-requirements.txt

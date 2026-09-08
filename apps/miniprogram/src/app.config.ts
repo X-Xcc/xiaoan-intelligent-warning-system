@@ -1,16 +1,17 @@
-﻿export default defineAppConfig({
+const defineAppConfig = (config: any) => config
+
+export default defineAppConfig({
   pages: ['pages/index/index', 'pages/main/main', 'pages/detail/detail'],
   window: {
-    backgroundTextStyle: 'light',
-    navigationBarBackgroundColor: '#0b8f7d',
-    navigationBarTitleText: '今日江滩',
-    navigationBarTextStyle: 'white'
+    backgroundTextStyle: 'dark',
+    navigationBarBackgroundColor: '#cbe5ff',
+    navigationBarTitleText: '烟火哨兵',
+    navigationBarTextStyle: 'black',
   },
   permission: {
     'scope.userLocation': {
-      desc: '用于在地图上展示当前位置和附近服务点'
-    }
+      desc: '用于在地图上展示当前位置和附近联动点',
+    },
   },
   requiredPrivateInfos: ['getLocation'],
-  lazyCodeLoading: 'requiredComponents'
 })

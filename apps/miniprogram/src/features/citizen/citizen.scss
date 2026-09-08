@@ -1,0 +1,37 @@
+.citizen-market-switch { display: flex; align-items: center; gap: 8px; font-size: 24px; color: #365f84; margin-top: 18px; min-height: 64px; width: auto; max-width: 100%; }
+.citizen-service-caption { font-size: 23px; color: #47837a; }
+.citizen-help-entry { display: flex; align-items: center; gap: 22px; padding: 30px 28px; background: #eef6ff; border: 1px solid #d5e7ff; border-radius: 16px; min-height: 165px; width: 100%; text-align: left; }
+.citizen-help-symbol { width: 94px; height: 94px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #fff; flex-shrink: 0; }
+.citizen-help-copy { flex: 1; min-width: 0; }
+.citizen-help-copy > text:first-child { display: block; font-size: 37px; font-weight: 750; color: #2b527c; }
+.citizen-help-copy > text:last-child { display: block; margin-top: 8px; color: #5e83ab; font-size: 23px; line-height: 1.5; }
+.citizen-help-arrow { width: 53px; height: 53px; background: #0d7ff9; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.citizen-services { display: flex; gap: 8px; padding: 38px 0; border-bottom: 1px solid #e7edf5; }
+.citizen-service { flex: 1; min-width: 0; display: flex; align-items: center; flex-direction: column; gap: 16px; color: #4e6b89; font-size: 24px; }
+.citizen-service-icon { width: 82px; height: 82px; border-radius: 22px; background: #edf6ff; display: flex; align-items: center; justify-content: center; }
+.citizen-service-icon.amber { background: #fff6e9; }
+.citizen-service-icon.green { background: #eaf8f2; }
+.citizen-map { width: 100%; height: 320px; border-radius: 16px; overflow: hidden; }
+.citizen-location-panel { display: flex; align-items: center; gap: 24px; width: 100%; text-align: left; min-height: 235px; padding: 28px; background: #edf5fd; border-radius: 16px; border: 1px solid #dcebf8; }
+.citizen-location-panel > view { flex: 1; min-width: 0; }
+.citizen-location-panel text:first-child { display: block; font-size: 32px; font-weight: 650; line-height: 1.6; }
+.citizen-location-panel text:last-child { display: block; margin-top: 12px; color: #7791ab; font-size: 24px; line-height: 1.7; }
+.citizen-map-footer { display: flex; align-items: center; justify-content: space-between; gap: 20px; font-size: 25px; margin-top: 14px; color: #607c98; }
+.citizen-map-footer > button { display: flex; align-items: center; gap: 8px; min-height: 76px; color: #0b70d6; }
+.citizen-picker { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.citizen-photos { display: flex; flex-wrap: wrap; gap: 20px; }
+.citizen-photo, .citizen-add-photo { width: 170px; height: 170px; border-radius: 12px; position: relative; overflow: hidden; background: #f0f6fc; }
+.citizen-photo > image { width: 100%; height: 100%; }
+.citizen-photo > button { position: absolute; top: 0; right: 0; width: 54px; height: 54px; background: #304b72b3; display: flex; align-items: center; justify-content: center; border-radius: 0 0 0 12px; }
+.citizen-add-photo { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; border: 1px dashed #c9dae9; color: #7690aa; font-size: 24px; }
+.citizen-refresh { justify-content: flex-end; gap: 10px; }
+.citizen-profile { display: flex; align-items: center; gap: 25px; border-bottom: 1px solid #e7edf5; padding: 8px 0 32px; }
+.citizen-avatar { width: 114px; height: 114px; border-radius: 50%; background: #e8f3ff; display: flex; align-items: center; justify-content: center; }
+.citizen-profile text:first-child { display: block; font-size: 36px; font-weight: 700; }
+.citizen-profile text:last-child { display: block; margin-top: 12px; font-size: 25px; color: #7490a9; }
+.citizen-menu-row { display: flex; align-items: center; gap: 20px; min-height: 108px; border-bottom: 1px solid #e9eff5; text-align: left; width: 100%; padding: 18px 0; font-size: 28px; }
+.citizen-menu-row > text { flex: 1; }
+.citizen-market-row { display: flex; align-items: center; gap: 20px; min-height: 130px; border-bottom: 1px solid #e7edf5; padding: 22px 0; width: 100%; text-align: left; }
+.citizen-market-row > view { flex: 1; min-width: 0; }
+.citizen-market-row text:first-child { display: block; font-size: 30px; font-weight: 600; }
+.citizen-market-row text:last-child { display: block; color: #7690a8; font-size: 24px; line-height: 1.7; margin-top: 10px; }

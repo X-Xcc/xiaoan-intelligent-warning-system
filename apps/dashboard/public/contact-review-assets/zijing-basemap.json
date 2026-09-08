@@ -1,0 +1,75 @@
+{
+  "title": "南昌市紫荆夜市地图底图",
+  "kind": "cartographic-map-not-site-photograph",
+  "acquiredAt": "2026-09-08T15:49:53.949Z",
+  "attribution": "© OpenStreetMap contributors",
+  "attributionUrl": "https://www.openstreetmap.org/copyright",
+  "placeSource": "https://www.openstreetmap.org/way/1411664103",
+  "placeQuery": "https://nominatim.openstreetmap.org/search?q=%E7%B4%AB%E8%8D%86%E5%A4%9C%E5%B8%82&format=json&polygon_geojson=1",
+  "width": 1536,
+  "height": 1024,
+  "zoom": 18,
+  "startX": 215413,
+  "startY": 109208,
+  "cols": 6,
+  "rows": 4,
+  "bounds": {
+    "west": 115.82473754882812,
+    "east": 115.83297729492188,
+    "north": 28.738763971370286,
+    "south": 28.73394733840369
+  },
+  "placeOutline": [
+    [
+      115.8281314,
+      28.7377396
+    ],
+    [
+      115.8289737,
+      28.7345896
+    ],
+    [
+      115.8294203,
+      28.7346207
+    ],
+    [
+      115.8293436,
+      28.7350257
+    ],
+    [
+      115.8288434,
+      28.7378421
+    ],
+    [
+      115.8281314,
+      28.7377396
+    ]
+  ],
+  "sources": [
+    "https://tile.openstreetmap.org/18/215413/109208.png",
+    "https://tile.openstreetmap.org/18/215414/109208.png",
+    "https://tile.openstreetmap.org/18/215415/109208.png",
+    "https://tile.openstreetmap.org/18/215416/109208.png",
+    "https://tile.openstreetmap.org/18/215417/109208.png",
+    "https://tile.openstreetmap.org/18/215418/109208.png",
+    "https://tile.openstreetmap.org/18/215413/109209.png",
+    "https://tile.openstreetmap.org/18/215414/109209.png",
+    "https://tile.openstreetmap.org/18/215415/109209.png",
+    "https://tile.openstreetmap.org/18/215416/109209.png",
+    "https://tile.openstreetmap.org/18/215417/109209.png",
+    "https://tile.openstreetmap.org/18/215418/109209.png",
+    "https://tile.openstreetmap.org/18/215413/109210.png",
+    "https://tile.openstreetmap.org/18/215414/109210.png",
+    "https://tile.openstreetmap.org/18/215415/109210.png",
+    "https://tile.openstreetmap.org/18/215416/109210.png",
+    "https://tile.openstreetmap.org/18/215417/109210.png",
+    "https://tile.openstreetmap.org/18/215418/109210.png",
+    "https://tile.openstreetmap.org/18/215413/109211.png",
+    "https://tile.openstreetmap.org/18/215414/109211.png",
+    "https://tile.openstreetmap.org/18/215415/109211.png",
+    "https://tile.openstreetmap.org/18/215416/109211.png",
+    "https://tile.openstreetmap.org/18/215417/109211.png",
+    "https://tile.openstreetmap.org/18/215418/109211.png"
+  ],
+  "note": "Geographic reference, not a site photograph. Camera positions and scene associations are illustrative."
+}

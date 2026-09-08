@@ -1,0 +1,1288 @@
+.nightmarket-page {
+  --ops-bg: #14181e;
+  --ops-surface: #1d222a;
+  --ops-raised: #272e38;
+  --ops-border: #3a414c;
+  --ops-text: #edf0f5;
+  --ops-muted: #adb6c4;
+  --ops-blue: #75a6ff;
+  --ops-green: #70cba3;
+  --ops-amber: #e9bd72;
+  --ops-red: #f18d91;
+  min-height: 100dvh;
+  color: var(--ops-text);
+  background: var(--ops-bg);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: 0;
+  color-scheme: dark;
+}
+
+.nightmarket-page * {
+  box-sizing: border-box;
+  letter-spacing: 0;
+}
+
+.nightmarket-page button,
+.nightmarket-page select {
+  font: inherit;
+}
+
+.nightmarket-page button {
+  cursor: pointer;
+}
+
+.nightmarket-page button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.nightmarket-page :is(button, select):focus-visible {
+  outline: 2px solid var(--ops-blue);
+  outline-offset: 3px;
+}
+
+.nightmarket-page :is(h1, h2, h3, p) {
+  overflow-wrap: anywhere;
+}
+
+.nightmarket-page .topbar-wrap {
+  position: relative;
+  width: 100%;
+  margin: 0;
+  padding: 0 28px;
+  border-bottom: 1px solid var(--ops-border);
+  background: var(--ops-surface);
+}
+
+.nightmarket-page .glass-nav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  min-height: 72px;
+  max-width: 1984px;
+  margin: 0 auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.nightmarket-page .brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  color: var(--ops-text);
+  background: transparent;
+  text-align: left;
+}
+
+.nightmarket-page .brand-mark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  color: var(--ops-blue);
+  background: #2a3545;
+}
+
+.nightmarket-page .brand-lockup strong {
+  font-size: 18px;
+  font-weight: 650;
+}
+
+.nightmarket-page .brand-lockup small {
+  display: none;
+}
+
+.nightmarket-page .desktop-nav {
+  display: flex;
+  align-items: stretch;
+  align-self: stretch;
+  gap: 6px;
+}
+
+.nightmarket-page .desktop-nav button {
+  position: relative;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 0;
+  color: var(--ops-muted);
+  background: transparent;
+}
+
+.nightmarket-page .desktop-nav button:hover {
+  color: var(--ops-text);
+}
+
+.nightmarket-page .desktop-nav button.active {
+  color: var(--ops-blue);
+}
+
+.nightmarket-page .desktop-nav button.active::after {
+  content: "";
+  position: absolute;
+  right: 18px;
+  bottom: 0;
+  left: 18px;
+  height: 2px;
+  background: var(--ops-blue);
+}
+
+.nightmarket-page .nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.nightmarket-page .sync-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ops-muted);
+  font-size: 12px;
+}
+
+.nightmarket-page .sync-chip.online {
+  color: var(--ops-green);
+}
+
+.nightmarket-page .sync-chip.offline {
+  color: var(--ops-amber);
+}
+
+.nightmarket-page .icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--ops-border);
+  border-radius: 6px;
+  color: var(--ops-text);
+  background: transparent;
+}
+
+.nightmarket-page .mobile-menu,
+.nightmarket-page .mobile-nav-panel {
+  display: none;
+}
+
+.nightmarket-page .page-frame {
+  width: 100%;
+  max-width: 2040px;
+  margin: 0 auto;
+  padding: 28px;
+}
+
+.nightmarket-page .workspace-page {
+  padding: 0;
+}
+
+.nightmarket-page .workspace-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.nightmarket-page .section-kicker,
+.nightmarket-page .panel-kicker {
+  color: var(--ops-muted);
+  font-size: 12px;
+}
+
+.nightmarket-page .workspace-heading h1 {
+  margin: 6px 0 0;
+  color: var(--ops-text);
+  font-size: 24px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.nightmarket-page .workspace-heading p {
+  margin: 10px 0 0;
+  color: var(--ops-muted);
+  font-size: 14px;
+}
+
+.nightmarket-page .heading-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.nightmarket-page .quiet-button,
+.nightmarket-page .nav-to-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--ops-border);
+  border-radius: 6px;
+  color: var(--ops-text);
+  background: var(--ops-surface);
+}
+
+.nightmarket-page .quiet-button:hover,
+.nightmarket-page .nav-to-button:hover {
+  background: var(--ops-raised);
+}
+
+.nightmarket-page .live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ops-muted);
+  font-size: 12px;
+}
+
+.nightmarket-page .live-pill > span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ops-green);
+}
+
+.nightmarket-page .live-pill.warning > span {
+  background: var(--ops-amber);
+}
+
+.nightmarket-page .metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 28px;
+  padding: 20px 0;
+  border-top: 1px solid var(--ops-border);
+  border-bottom: 1px solid var(--ops-border);
+}
+
+.nightmarket-page .metric-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 16px;
+  min-width: 0;
+  padding: 0 24px;
+  border: 0;
+  border-right: 1px solid var(--ops-border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.nightmarket-page .metric-card:first-child {
+  padding-left: 0;
+}
+
+.nightmarket-page .metric-card:last-child {
+  padding-right: 0;
+  border-right: 0;
+}
+
+.nightmarket-page .metric-icon {
+  display: grid;
+  place-items: center;
+  grid-column: 2;
+  grid-row: 1 / 3;
+  align-self: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--ops-border);
+  border-radius: 6px;
+  color: var(--ops-blue);
+}
+
+.nightmarket-page .metric-card.danger .metric-icon {
+  color: var(--ops-red);
+}
+
+.nightmarket-page .metric-card.orange .metric-icon {
+  color: var(--ops-amber);
+}
+
+.nightmarket-page .metric-card.green .metric-icon {
+  color: var(--ops-green);
+}
+
+.nightmarket-page .metric-label {
+  grid-column: 1;
+  grid-row: 1;
+  color: var(--ops-muted);
+  font-size: 12px;
+}
+
+.nightmarket-page .metric-card > strong {
+  grid-column: 1;
+  grid-row: 2;
+  margin: 0;
+  color: var(--ops-text);
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+}
+
+.nightmarket-page .metric-card > small {
+  grid-column: 1 / -1;
+  color: var(--ops-muted);
+  font-size: 12px;
+}
+
+.nightmarket-page .demo-proof-panel {
+  margin: 0 0 28px;
+  padding: 22px 24px 18px;
+  border: 1px solid #34465f;
+  border-radius: 6px;
+  background: #192231;
+}
+
+.nightmarket-page .demo-proof-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.nightmarket-page .demo-proof-heading h2 {
+  margin: 5px 0 0;
+  color: var(--ops-text);
+  font-size: 19px;
+  font-weight: 650;
+}
+
+.nightmarket-page .demo-proof-heading p {
+  margin: 7px 0 0;
+  color: var(--ops-muted);
+  font-size: 12px;
+}
+
+.nightmarket-page .demo-run-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  gap: 7px;
+  min-height: 38px;
+  padding: 8px 13px;
+  border: 1px solid #6e9bdc;
+  border-radius: 4px;
+  color: #111b2a;
+  background: #80afff;
+  font-weight: 650;
+}
+
+.nightmarket-page .demo-run-button:hover {
+  background: #9bc2ff;
+}
+
+.nightmarket-page .demo-proof-track {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0;
+  margin-top: 22px;
+}
+
+.nightmarket-page .demo-proof-step {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  min-width: 0;
+  padding: 0 14px;
+  border-left: 1px solid #34465f;
+}
+
+.nightmarket-page .demo-proof-step:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.nightmarket-page .demo-proof-number {
+  display: grid;
+  place-items: center;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #53657e;
+  border-radius: 50%;
+  color: var(--ops-muted);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.nightmarket-page .demo-proof-step > div {
+  min-width: 0;
+}
+
+.nightmarket-page .demo-proof-step strong,
+.nightmarket-page .demo-proof-step small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.nightmarket-page .demo-proof-step strong {
+  color: var(--ops-muted);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.nightmarket-page .demo-proof-step small {
+  margin-top: 5px;
+  color: #7f8da1;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.nightmarket-page .demo-proof-step.active .demo-proof-number,
+.nightmarket-page .demo-proof-step.done .demo-proof-number {
+  border-color: #6e9bdc;
+  color: #a9c9ff;
+  background: #263c5c;
+}
+
+.nightmarket-page .demo-proof-step.active strong,
+.nightmarket-page .demo-proof-step.done strong {
+  color: var(--ops-text);
+}
+
+.nightmarket-page .demo-proof-step.done small {
+  color: #91b4ed;
+}
+
+.nightmarket-page .demo-proof-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid #34465f;
+  color: var(--ops-muted);
+  font-size: 11px;
+}
+
+.nightmarket-page .demo-proof-footer span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nightmarket-page .demo-proof-footer svg {
+  color: var(--ops-green);
+}
+
+.nightmarket-page .command-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.88fr) minmax(360px, 1.6fr) minmax(290px, 0.94fr);
+  align-items: start;
+}
+
+.nightmarket-page .glass-panel {
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.nightmarket-page .queue-panel {
+  padding-right: 24px;
+}
+
+.nightmarket-page .map-panel {
+  padding: 0 24px;
+  border-right: 1px solid var(--ops-border);
+  border-left: 1px solid var(--ops-border);
+}
+
+.nightmarket-page .detail-panel {
+  padding-left: 24px;
+}
+
+.nightmarket-page .panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  color: var(--ops-muted);
+}
+
+.nightmarket-page .panel-heading h2 {
+  margin: 4px 0 0;
+  color: var(--ops-text);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.nightmarket-page .queue-filter,
+.nightmarket-page .market-select {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  margin: 20px 0 16px;
+  color: var(--ops-muted);
+  font-size: 12px;
+}
+
+.nightmarket-page .queue-filter > span,
+.nightmarket-page .market-select > span {
+  flex-shrink: 0;
+}
+
+.nightmarket-page .queue-filter select,
+.nightmarket-page .market-select select {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  padding: 7px 8px;
+  border: 1px solid var(--ops-border);
+  border-radius: 4px;
+  color: var(--ops-text);
+  background: var(--ops-surface);
+  font-size: 14px;
+}
+
+.nightmarket-page .event-list {
+  display: grid;
+  gap: 0;
+}
+
+.nightmarket-page .event-list-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 4px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  width: 100%;
+  min-height: 132px;
+  padding: 16px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--ops-border);
+  border-radius: 0;
+  color: var(--ops-text);
+  background: transparent;
+  text-align: left;
+}
+
+.nightmarket-page .event-list-item:hover {
+  background: var(--ops-surface);
+}
+
+.nightmarket-page .event-list-item.selected {
+  background: #222c3a;
+}
+
+.nightmarket-page .event-risk-bar {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  align-self: stretch;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--ops-blue);
+}
+
+.nightmarket-page .event-risk-bar.danger {
+  background: var(--ops-red);
+}
+
+.nightmarket-page .event-risk-bar.warn {
+  background: var(--ops-amber);
+}
+
+.nightmarket-page .event-risk-bar.safe {
+  background: var(--ops-green);
+}
+
+.nightmarket-page .event-list-main {
+  min-width: 0;
+}
+
+.nightmarket-page .event-list-main strong {
+  display: block;
+  color: var(--ops-text);
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.nightmarket-page .event-list-main small {
+  display: block;
+  margin-top: 6px;
+  color: var(--ops-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.nightmarket-page .status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: 6px;
+  min-height: 24px;
+  padding: 2px 7px;
+  border: 1px solid #3e526b;
+  border-radius: 4px;
+  color: #a7c9ff;
+  background: #233040;
+  font-size: 12px;
+}
+
+.nightmarket-page .event-list-item > .status-badge {
+  grid-column: 2;
+}
+
+.nightmarket-page .status-badge.danger {
+  border-color: #684044;
+  color: var(--ops-red);
+  background: #39262b;
+}
+
+.nightmarket-page .status-badge.warn {
+  border-color: #665337;
+  color: var(--ops-amber);
+  background: #302a21;
+}
+
+.nightmarket-page .status-badge.safe {
+  border-color: #375d50;
+  color: var(--ops-green);
+  background: #20312b;
+}
+
+.nightmarket-page .map-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ops-muted);
+  font-size: 12px;
+}
+
+.nightmarket-page .map-stage {
+  position: relative;
+  min-width: 0;
+  height: 540px;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--ops-border);
+  border-radius: 4px;
+  background: #1a2028;
+}
+
+.nightmarket-page .amap-shell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  color: var(--ops-text);
+  background: #1a2028;
+}
+
+.nightmarket-page .amap-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.nightmarket-page .amap-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px 24px 128px;
+  color: var(--ops-muted);
+  font-size: 14px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.nightmarket-page .amap-placeholder::before {
+  content: "+";
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid #56616f;
+  border-radius: 50%;
+  color: #8795a8;
+  font-size: 24px;
+}
+
+.nightmarket-page .amap-selected {
+  position: absolute;
+  right: 12px;
+  bottom: 28px;
+  left: 12px;
+  z-index: 2;
+  padding: 12px;
+  border: 1px solid #556172;
+  border-radius: 4px;
+  color: var(--ops-text);
+  background: rgb(29 34 42 / 96%);
+  overflow-wrap: anywhere;
+}
+
+.nightmarket-page .amap-selected strong {
+  display: block;
+  color: var(--ops-text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.nightmarket-page .amap-selected span {
+  display: block;
+  margin-top: 5px;
+  color: var(--ops-muted);
+  font-size: 12px;
+}
+
+.nightmarket-page .map-action-row {
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.nightmarket-page .map-footnote {
+  color: var(--ops-muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.nightmarket-page .detail-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 32px;
+}
+
+.nightmarket-page .mono-id {
+  color: var(--ops-muted);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.nightmarket-page .detail-panel h2 {
+  margin: 16px 0 0;
+  color: var(--ops-text);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.nightmarket-page .detail-subtitle {
+  margin: 8px 0 0;
+  color: var(--ops-muted);
+  font-size: 12px;
+}
+
+.nightmarket-page .detail-progress {
+  height: 4px;
+  margin-top: 24px;
+  border-radius: 2px;
+  background: var(--ops-border);
+  overflow: hidden;
+}
+
+.nightmarket-page .detail-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--ops-blue);
+}
+
+.nightmarket-page .progress-label {
+  margin: 10px 0 0;
+  color: var(--ops-muted);
+  font-size: 12px;
+}
+
+.nightmarket-page .property-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--ops-border);
+}
+
+.nightmarket-page .property {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.nightmarket-page .property > span {
+  display: block;
+  color: var(--ops-muted);
+  font-size: 12px;
+}
+
+.nightmarket-page .property > strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--ops-text);
+  font-size: 14px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.nightmarket-page .dispatch-card {
+  margin-top: 20px;
+  padding: 0 0 20px;
+  border-bottom: 1px solid var(--ops-border);
+}
+
+.nightmarket-page .dispatch-card > span {
+  display: block;
+  color: var(--ops-muted);
+  font-size: 12px;
+}
+
+.nightmarket-page .dispatch-card strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--ops-text);
+  font-size: 14px;
+}
+
+.nightmarket-page .dispatch-card p {
+  margin: 6px 0 0;
+  color: var(--ops-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.nightmarket-page .field-label {
+  display: block;
+  margin: 20px 0 10px;
+  color: var(--ops-muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.nightmarket-page .dispatch-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.nightmarket-page .dispatch-actions button,
+.nightmarket-page .status-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--ops-border);
+  border-radius: 4px;
+  color: var(--ops-text);
+  background: var(--ops-surface);
+  font-size: 14px;
+}
+
+.nightmarket-page .dispatch-actions button:hover,
+.nightmarket-page .status-actions button:hover {
+  background: var(--ops-raised);
+}
+
+.nightmarket-page .dispatch-actions button.active {
+  border-color: #546c8e;
+  color: #bad2ff;
+  background: #253246;
+}
+
+.nightmarket-page .detail-description {
+  margin-top: 20px;
+  padding-left: 12px;
+  border-left: 2px solid #586d8e;
+  color: var(--ops-muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.nightmarket-page .status-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.nightmarket-page .status-actions .primary-small {
+  grid-column: 1 / -1;
+  border-color: var(--ops-blue);
+  color: #121a27;
+  background: var(--ops-blue);
+  font-weight: 600;
+}
+
+.nightmarket-page .status-actions .primary-small:hover {
+  background: #96bcff;
+}
+
+.nightmarket-page .nav-to-button {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.nightmarket-page .empty-state {
+  display: grid;
+  place-items: center;
+  min-height: 180px;
+  padding: 24px;
+  color: var(--ops-muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+.nightmarket-page .toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(520px, calc(100% - 48px));
+  min-height: 48px;
+  padding: 12px 16px;
+  border: 1px solid #486858;
+  border-radius: 6px;
+  color: #b9ead0;
+  background: #23352d;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 22%);
+  font-size: 14px;
+}
+
+.nightmarket-page .toast > svg {
+  flex-shrink: 0;
+}
+
+.nightmarket-page .toast.error {
+  border-color: #775155;
+  color: #f5b9bb;
+  background: #3d2b30;
+}
+
+.nightmarket-page .spin {
+  animation: nightmarket-spin 1s linear infinite;
+}
+
+@keyframes nightmarket-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 1439px) {
+  .nightmarket-page .command-grid {
+    grid-template-columns: minmax(250px, 0.82fr) minmax(0, 1.5fr);
+  }
+
+  .nightmarket-page .map-panel {
+    padding-right: 0;
+    border-right: 0;
+  }
+
+  .nightmarket-page .detail-panel {
+    grid-column: 1 / -1;
+    margin-top: 28px;
+    padding: 24px 0 0;
+    border-top: 1px solid var(--ops-border);
+  }
+
+  .nightmarket-page .detail-panel .property-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .nightmarket-page .status-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    max-width: 580px;
+  }
+
+  .nightmarket-page .status-actions .primary-small {
+    grid-column: auto;
+  }
+
+  .nightmarket-page .nav-to-button {
+    width: auto;
+  }
+}
+
+@media (max-width: 1023px) {
+  .nightmarket-page .demo-proof-track {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px 0;
+  }
+
+  .nightmarket-page .demo-proof-step:nth-child(3) {
+    padding-left: 0;
+    border-left: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .nightmarket-page .demo-proof-panel {
+    padding: 18px 16px 15px;
+  }
+
+  .nightmarket-page .demo-proof-heading {
+    flex-direction: column;
+  }
+
+  .nightmarket-page .demo-run-button {
+    width: 100%;
+  }
+
+  .nightmarket-page .demo-proof-track {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .nightmarket-page .demo-proof-step,
+  .nightmarket-page .demo-proof-step:nth-child(3) {
+    padding: 0;
+    border-left: 0;
+  }
+
+  .nightmarket-page .demo-proof-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 1023px) {
+  .nightmarket-page .page-frame,
+  .nightmarket-page .topbar-wrap {
+    padding-inline: 20px;
+  }
+
+  .nightmarket-page .metric-card {
+    padding-inline: 16px;
+  }
+
+  .nightmarket-page .metric-icon {
+    display: none;
+  }
+
+  .nightmarket-page .workspace-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .nightmarket-page .map-stage {
+    height: 480px;
+  }
+}
+
+@media (max-width: 767px) {
+  .nightmarket-page .desktop-nav {
+    display: none;
+  }
+
+  .nightmarket-page .mobile-menu {
+    display: inline-grid;
+  }
+
+  .nightmarket-page .mobile-nav-panel {
+    position: absolute;
+    top: 80px;
+    right: 20px;
+    z-index: 30;
+    display: grid;
+    width: min(240px, calc(100% - 40px));
+    padding: 8px;
+    border: 1px solid var(--ops-border);
+    border-radius: 6px;
+    background: var(--ops-raised);
+  }
+
+  .nightmarket-page .mobile-nav-panel button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 4px;
+    color: var(--ops-text);
+    background: transparent;
+  }
+
+  .nightmarket-page .mobile-nav-panel button.active {
+    color: #bad2ff;
+    background: #354257;
+  }
+
+  .nightmarket-page .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px 0;
+  }
+
+  .nightmarket-page .metric-card {
+    padding-inline: 20px;
+  }
+
+  .nightmarket-page .metric-card:nth-child(odd) {
+    padding-left: 0;
+  }
+
+  .nightmarket-page .metric-card:nth-child(even) {
+    padding-right: 0;
+    border-right: 0;
+  }
+
+  .nightmarket-page .metric-card:nth-child(n + 3) {
+    padding-top: 20px;
+    border-top: 1px solid var(--ops-border);
+  }
+
+  .nightmarket-page .metric-icon {
+    display: grid;
+  }
+
+  .nightmarket-page .command-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .nightmarket-page .queue-panel,
+  .nightmarket-page .map-panel,
+  .nightmarket-page .detail-panel {
+    grid-column: auto;
+    margin: 0;
+    padding: 24px 0;
+    border: 0;
+    border-bottom: 1px solid var(--ops-border);
+  }
+
+  .nightmarket-page .queue-panel {
+    padding-top: 0;
+  }
+
+  .nightmarket-page .detail-panel {
+    border-bottom: 0;
+  }
+
+  .nightmarket-page .event-list-item {
+    grid-template-columns: 4px minmax(0, 1fr) auto;
+    min-height: 100px;
+  }
+
+  .nightmarket-page .event-risk-bar {
+    grid-row: 1;
+  }
+
+  .nightmarket-page .event-list-item > .status-badge {
+    grid-column: 3;
+  }
+
+  .nightmarket-page .map-stage {
+    height: 420px;
+  }
+
+  .nightmarket-page .detail-panel .property-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .nightmarket-page .queue-filter select,
+  .nightmarket-page .market-select select,
+  .nightmarket-page .quiet-button,
+  .nightmarket-page .dispatch-actions button,
+  .nightmarket-page .status-actions button,
+  .nightmarket-page .nav-to-button {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 479px) {
+  .nightmarket-page .page-frame {
+    padding: 24px 16px;
+  }
+
+  .nightmarket-page .topbar-wrap {
+    padding-inline: 16px;
+  }
+
+  .nightmarket-page .glass-nav {
+    gap: 12px;
+  }
+
+  .nightmarket-page .brand-mark {
+    display: none;
+  }
+
+  .nightmarket-page .brand-lockup strong {
+    font-size: 16px;
+  }
+
+  .nightmarket-page .sync-chip {
+    font-size: 12px;
+  }
+
+  .nightmarket-page .metric-icon {
+    display: none;
+  }
+
+  .nightmarket-page .metric-card {
+    padding-inline: 16px;
+  }
+
+  .nightmarket-page .event-list-item {
+    grid-template-columns: 4px minmax(0, 1fr);
+  }
+
+  .nightmarket-page .event-risk-bar {
+    grid-row: 1 / 3;
+  }
+
+  .nightmarket-page .event-list-item > .status-badge {
+    grid-column: 2;
+  }
+
+  .nightmarket-page .map-stage {
+    height: 380px;
+  }
+
+  .nightmarket-page .status-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .nightmarket-page .status-actions .primary-small {
+    grid-column: 1 / -1;
+  }
+
+  .nightmarket-page .toast {
+    right: 16px;
+    bottom: 16px;
+    left: 16px;
+    max-width: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nightmarket-page .spin {
+    animation: none;
+  }
+}

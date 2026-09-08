@@ -1,14 +1,24 @@
 {
-  "name": "jiangtan-zhifang",
+  "name": "yanhuo-shaobing",
   "version": "0.1.0",
   "private": true,
-  "description": "江滩智防项目工作区",
+  "description": "烟火哨兵项目工作区",
   "workspaces": [
     "apps/dashboard",
     "apps/miniprogram"
   ],
   "scripts": {
-    "server:dev": ".\\server\\.venv\\Scripts\\python.exe -m uvicorn app.main:app --reload --app-dir server --host 127.0.0.1 --port 8010",
+    "server:dev": ".\\server\\.venv-runtime\\Scripts\\python.exe .\\scripts\\dev_server.py",
+    "server:verify:event-flow": ".\\server\\.venv-runtime\\Scripts\\python.exe .\\scripts\\verify_event_flow.py",
+    "server:verify:security-detection": ".\\server\\.venv-runtime\\Scripts\\python.exe .\\scripts\\verify_security_detection_integration.py",
+    "server:verify:security-video-ai": ".\\server\\.venv-runtime\\Scripts\\python.exe .\\scripts\\verify_security_video_ai_routes.py",
+    "server:verify:security-ops": ".\\server\\.venv-runtime\\Scripts\\python.exe .\\scripts\\verify_security_ops.py",
+    "server:verify:multi-market-linkage": ".\\server\\.venv-runtime\\Scripts\\python.exe .\\scripts\\verify_multi_market_linkage.py",
+    "server:verify:admin-console": ".\\server\\.venv-runtime\\Scripts\\python.exe .\\scripts\\verify_admin_console_api.py",
+    "server:verify:yolo-bridge-copy": ".\\server\\.venv-runtime\\Scripts\\python.exe .\\scripts\\verify_yolo_bridge_copy.py",
+    "verify:delivery": "py -3 scripts\\verify_delivery.py",
+    "verify:simplification": "py -3 scripts\\verify_simplification.py",
+    "dashboard:verify:camera": "python .\\scripts\\verify_dashboard_camera_integration.py",
     "dashboard:dev": "npm --workspace apps/dashboard run dev",
     "dashboard:build": "npm --workspace apps/dashboard run build",
     "miniprogram:dev:weapp": "npm --workspace apps/miniprogram run dev:weapp",

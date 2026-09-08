@@ -1,16 +1,39 @@
 {
-  "miniprogramRoot": "dist",
-  "projectname": "jiangtan-zhifang",
-  "description": "江滩智防游客服务小程序",
+  "miniprogramRoot": "dist/",
+  "projectname": "烟火哨兵",
+  "description": "烟火哨兵群众服务小程序",
   "appid": "wxdd3f448369e6ca9f",
   "setting": {
-    "urlCheck": true,
-    "es6": true,
+    "urlCheck": false,
+    "es6": false,
     "enhance": false,
     "compileHotReLoad": false,
     "postcss": false,
     "minified": true,
-    "minifyWXML": true
+    "minifyWXML": true,
+    "compileWorklet": false,
+    "uglifyFileName": false,
+    "uploadWithSourceMap": true,
+    "packNpmManually": false,
+    "packNpmRelationList": [],
+    "minifyWXSS": true,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "useCompilerPlugins": false,
+    "swc": false,
+    "disableSWC": true,
+    "condition": false,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    }
   },
-  "compileType": "miniprogram"
+  "compileType": "miniprogram",
+  "simulatorPluginLibVersion": {},
+  "packOptions": {
+    "ignore": [],
+    "include": []
+  },
+  "editorSetting": {}
 }

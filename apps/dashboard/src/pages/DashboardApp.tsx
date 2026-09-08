@@ -1,674 +1,396 @@
-﻿import { useMemo, useState } from 'react';
 import {
   Activity,
   AlertTriangle,
-  ArrowRight,
-  Bell,
+  BrainCircuit,
+  Building2,
   CheckCircle2,
-  ChevronDown,
-  ClipboardCheck,
+  ChevronRight,
   Clock3,
-  Cpu,
   Database,
   FileCheck2,
-  Gauge,
-  HardDrive,
   LayoutDashboard,
-  LifeBuoy,
-  LockKeyhole,
-  MapPin,
-  Megaphone,
-  MonitorCheck,
-  PackageCheck,
+  Menu,
+  Monitor,
   Radio,
-  RotateCcw,
+  RefreshCw,
   Search,
-  Settings,
   ShieldCheck,
-  Smartphone,
-  UserCog,
-  Users,
+  UsersRound,
   Video,
-  Wrench,
-  Zap,
+  MapPinned,
+  Workflow,
+  X,
 } from 'lucide-react';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Tooltip } from 'antd';
+import { appBasePath, routePath, viewForPath, type PlatformView } from '../lib/presentation';
+import { trainingEntryPath } from '../lib/training-navigation';
+import { AdminConsolePage } from './AdminConsolePage';
+import { PublicSecurityPlatformPage } from './PublicSecurityPlatformPage';
+import { VideoLinkagePage } from './VideoLinkagePage';
+import { NightMarketCommandPage } from './NightMarketCommandPage';
+import { OfficerTrainingPage } from './OfficerTrainingPage';
+import { ContactReviewPage } from './ContactReviewPage';
+import { DutySituationPage } from './DutySituationPage';
+import { XiaoanVoiceControls, useXiaoanVoice } from '../components/XiaoanVoice';
+import {
+  AICenterPage,
+  CaseHandlingPage,
+  CommunityPolicingPage,
+  CommandOperationsPage,
+} from './PoliceDomainPages';
 
-type Severity = '紧急' | '高' | '中' | '低';
-type Status = '待派单' | '处理中' | '待复核' | '已闭环';
-type Incident = {
-  id: string;
-  severity: Severity;
-  title: string;
-  area: string;
-  source: string;
-  status: Status;
-  owner: string;
-  sla: string;
-  time: string;
-};
-type ModuleKey = 'events' | 'staff' | 'devices' | 'assets' | 'plans' | 'system';
-type BackendStatus = '已提交' | '已派单' | '已接收' | '已到达' | '处理中' | '已完成';
-type BackendEvent = {
-  id: string;
-  kind: 'help' | 'report' | 'lost';
-  title: string;
-  bay: string;
-  level: '高风险' | '中风险' | '低风险';
-  source: string;
-  status: BackendStatus;
-  owner: string;
-  distance: string;
-  time: string;
-  updatedAt: string;
-};
-type EventsOverview = {
+export type { PlatformView } from '../lib/presentation';
+
+export type PlatformOverview = {
+  project?: string;
+  subtitle?: string;
+  updatedAt?: string;
+  organization?: { name?: string; unit?: string; role?: string };
   stats: {
-    today_events: number;
-    pending_orders: number;
-    online_staff: number;
-    avg_response_minutes: number;
-    completion_rate: number;
-    urgent_events: number;
+    today_events?: number;
+    pending_orders?: number;
+    online_staff?: number;
+    avg_response_minutes?: number | null;
+    completion_rate?: number;
+    urgent_events?: number;
+    open_cases?: number;
+    community_tasks?: number;
+    training_records?: number;
   };
-  events: BackendEvent[];
+  events?: Array<{
+    id?: string;
+    title?: string;
+    area?: string;
+    bay?: string;
+    time?: string;
+    status?: string;
+    level?: string;
+    owner?: string;
+  }>;
+  linkage?: { stats?: { activeRisks?: number; onlineDevices?: number; droneTasks?: number } };
+  security_model?: { configured?: boolean; model?: { exists?: boolean; sizeMb?: number } };
+  ai_copilot?: {
+    agents?: Array<{ name: string; status: string; currentTask: string; latency: string }>;
+    mcp_connectors?: Array<{ name: string; status: string; scope: string; lastSync: string }>;
+    skills?: Array<{ name: string; status: string; trigger: string; confidence: number }>;
+  };
+  dataCatalog?: {
+    domainCount?: number;
+    objectCount?: number;
+    syncStatus?: string;
+    domains?: Array<{ key?: string; label?: string; description?: string; objects?: string[]; status?: string }>;
+  };
+  businessSystems?: Array<{
+    key?: string;
+    name?: string;
+    shortName?: string;
+    description?: string;
+    capabilities?: string[];
+    status?: string;
+    metric?: number;
+  }>;
+  workspaces?: Record<string, Record<string, unknown>>;
+  aiCenter?: {
+    model?: { name?: string; status?: string; providers?: string[] };
+    capabilities?: Array<{ name?: string; scope?: string; status?: string }>;
+    recommendations?: Array<{ title?: string; detail?: string; priority?: string }>;
+    agents?: Array<{ name: string; status: string; currentTask: string; latency: string }>;
+    skills?: Array<{ name: string; status: string; trigger: string; confidence: number }>;
+    mcpConnectors?: Array<{ name: string; status: string; scope: string; lastSync: string }>;
+  };
+  eventChain?: Array<{ label?: string; count?: number; status?: string }>;
+  governance?: Record<string, string>;
 };
 
-type ManagementRow = {
-  name: string;
-  owner: string;
-  status: string;
-  metric: string;
-  tag: string;
-};
+const PRODUCT_NAME = '公安大数据与 AI 平台';
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.DEV ? 'http://127.0.0.1:8010/api' : `${window.location.origin}/api`)).replace(/\/$/, '');
+const BUSINESS_ROUTE_ALIASES = {
+  alarm: 'command',
+  training: 'duty-plan',
+} as const;
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8010/api';
-
-async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers: { 'content-type': 'application/json', ...options.headers },
-  });
-  if (!response.ok) throw new Error(`接口请求失败：${response.status}`);
-  return response.json() as Promise<T>;
-}
-
-function dashboardSeverity(event: BackendEvent): Severity {
-  if (event.kind === 'help' && event.level === '高风险') return '紧急';
-  if (event.level === '高风险') return '高';
-  if (event.level === '中风险') return '中';
-  return '低';
-}
-
-function dashboardStatus(status: BackendStatus): Status {
-  if (status === '已完成') return '已闭环';
-  if (status === '已提交' || status === '已派单') return '待派单';
-  return '处理中';
-}
-
-function toIncident(event: BackendEvent): Incident {
-  return {
-    id: event.id,
-    severity: dashboardSeverity(event),
-    title: event.title,
-    area: event.bay,
-    source: event.source,
-    status: dashboardStatus(event.status),
-    owner: event.owner,
-    sla: event.status === '已完成' ? '完成' : event.kind === 'help' ? '03:00' : '12:00',
-    time: event.time,
-  };
-}
-
-async function fetchOverview(): Promise<EventsOverview> {
-  return apiRequest<EventsOverview>('/events/overview');
-}
-
-async function createBackendHelp(): Promise<BackendEvent> {
-  const data = await apiRequest<{ event: BackendEvent }>('/events/help', {
-    method: 'POST',
-    body: JSON.stringify({ bay: '摩天湾', description: '后台人工登记现场求助，请巡防人员核实。' }),
-  });
-  return data.event;
-}
-
-async function updateBackendEvent(id: string, status: BackendStatus, owner?: string, result?: string): Promise<BackendEvent> {
-  const data = await apiRequest<{ event: BackendEvent }>(`/events/${id}/status`, {
-    method: 'PATCH',
-    body: JSON.stringify({ status, owner, result }),
-  });
-  return data.event;
-}
-
-const modules: Array<{ key: ModuleKey; label: string; count: number; icon: typeof LayoutDashboard }> = [
-  { key: 'events', label: '事件工单', count: 128, icon: ClipboardCheck },
-  { key: 'staff', label: '人员排班', count: 36, icon: Users },
-  { key: 'devices', label: '设备台账', count: 214, icon: Video },
-  { key: 'assets', label: '物资仓储', count: 89, icon: PackageCheck },
-  { key: 'plans', label: '预案审批', count: 17, icon: FileCheck2 },
-  { key: 'system', label: '系统配置', count: 42, icon: Settings },
+const systemNavItems: Array<{ view: PlatformView; label: string; shortLabel: string; icon: typeof Activity; section: '业务工作台' | '平台能力' }> = [
+  { view: 'platform', label: '平台总览', shortLabel: '总览', icon: LayoutDashboard, section: '业务工作台' },
+  { view: 'command', label: '接处警系统', shortLabel: '接处警', icon: Radio, section: '业务工作台' },
+  { view: 'case', label: '执法办案系统', shortLabel: '执法办案', icon: FileCheck2, section: '业务工作台' },
+  { view: 'community', label: '社区警务系统', shortLabel: '社区警务', icon: Building2, section: '业务工作台' },
+  { view: 'duty-situation', label: 'A1 勤务态势大屏', shortLabel: '勤务态势', icon: Monitor, section: '业务工作台' },
+  { view: 'contact-review', label: '接触记录检索', shortLabel: '接触检索', icon: Search, section: '业务工作台' },
+  { view: 'video', label: '视频联动', shortLabel: '视频联动', icon: Video, section: '业务工作台' },
+  { view: 'night-market-command', label: '夜市指挥', shortLabel: '夜市指挥', icon: MapPinned, section: '业务工作台' },
+  { view: 'ai-center', label: 'AI能力中心', shortLabel: 'AI 中心', icon: BrainCircuit, section: '平台能力' },
+  { view: 'admin', label: '平台治理中心', shortLabel: '平台治理', icon: ShieldCheck, section: '平台能力' },
 ];
 
-const managementData: Record<ModuleKey, ManagementRow[]> = {
+const demoOverview: PlatformOverview = {
+  project: PRODUCT_NAME,
+  subtitle: '统一警务数据与智能应用底座',
+  organization: { name: '市公安局', unit: '指挥中心 · 综合值守', role: '平台管理员' },
+  stats: {
+    today_events: 128,
+    pending_orders: 12,
+    online_staff: 86,
+    avg_response_minutes: 3.6,
+    completion_rate: 91,
+    urgent_events: 4,
+    open_cases: 37,
+    community_tasks: 24,
+    training_records: 318,
+  },
   events: [
-    { name: '禁泳区智能告警策略', owner: '安全运营组', status: '启用中', metric: '误报率 4.2%', tag: 'AI 规则' },
-    { name: '游客协同求助派单流程', owner: '指挥中心', status: '启用中', metric: '平均 2.4 分钟', tag: '自动派单' },
-    { name: '险情复核抽检任务', owner: '质控专员', status: '待优化', metric: '抽检 32 单', tag: '闭环质检' },
+    { id: 'demo-001', title: '纠纷警情：现场有人受伤', area: '东湖分局 · 站前网格', bay: '东湖分局 · 站前网格', time: '09:42', status: '待人工确认', level: '高风险', owner: '指挥席 02' },
+    { id: 'demo-002', title: '群众求助：家属失联', area: '西湖分局 · 朝阳洲网格', bay: '西湖分局 · 朝阳洲网格', time: '09:38', status: '已派警', level: '中风险', owner: '巡逻组 A' },
+    { id: 'demo-003', title: '反诈劝阻：疑似转账风险', area: '青山湖分局 · 湖坊派出所', bay: '青山湖分局 · 湖坊派出所', time: '09:31', status: '处理中', level: '中风险', owner: '社区民警 17' },
+    { id: 'demo-004', title: '邻里求助：噪声扰民', area: '红谷滩分局 · 凤凰洲网格', bay: '红谷滩分局 · 凤凰洲网格', time: '09:18', status: '已完成', level: '低风险', owner: '网格警务队' },
   ],
-  staff: [
-    { name: '周末高峰巡防班', owner: '王队', status: '已发布', metric: '12 人在线', tag: '三班两倒' },
-    { name: '救生员资质复核', owner: '人事安全', status: '进行中', metric: '28/36 完成', tag: '证照管理' },
-    { name: '临时支援人员池', owner: '应急办', status: '可调度', metric: '9 人待命', tag: '应急资源' },
+  businessSystems: [
+    { key: 'command', name: '接处警系统', shortName: '接处警', description: '接警、询问、分类分级、派警和处置回传', capabilities: ['语音转写', '警单摘要', '分级派警', '警情画像'], status: '运行中', metric: 128 },
+    { key: 'case', name: '执法办案系统', shortName: '执法办案', description: '法律依据、取证清单、卷宗审核和类案辅助', capabilities: ['法律助手', '证据校验', '文书生成', '串并分析'], status: '运行中', metric: 37 },
+    { key: 'community', name: '社区警务系统', shortName: '社区警务', description: '网格画像、走访任务、隐患闭环和基层治理', capabilities: ['辖区画像', '走访任务', '隐患闭环', '热力研判'], status: '运行中', metric: 24 },
+    { key: 'duty-plan', name: '勤务训练系统', shortName: '勤务训练', description: '课程编辑、实战模拟、动作识别和一人一档', capabilities: ['AI课程编辑', 'AI教官', '训练评估', '体能识别'], status: '运行中', metric: 318 },
   ],
-  devices: [
-    { name: 'AI 摄像头集群', owner: '物联运维', status: '在线', metric: '198/214 在线', tag: '边缘识别' },
-    { name: '水位雷达监测', owner: '水务接口', status: '在线', metric: '延迟 28ms', tag: '实时监测' },
-    { name: '广播音柱联动', owner: '安防运维', status: '部分离线', metric: '2 台待修', tag: '应急广播' },
+  dataCatalog: {
+    domainCount: 6,
+    objectCount: 21,
+    syncStatus: '已同步',
+    domains: [
+      { key: 'org', label: '组织与警力', description: '机构、岗位、在岗状态', objects: ['机构', '民警', '岗位'], status: '健康' },
+      { key: 'alarm', label: '警情与指令', description: '接报、分级、派警、处置回传', objects: ['警情', '指令', '处置结果'], status: '健康' },
+      { key: 'case', label: '案件与证据', description: '案件、卷宗、证据链', objects: ['案件', '证据', '文书'], status: '健康' },
+      { key: 'person', label: '人员与车辆', description: '身份核验、车辆和轨迹', objects: ['人员', '车辆', '轨迹'], status: '健康' },
+      { key: 'community', label: '社区与地址', description: '网格、重点人地事物', objects: ['网格', '地址', '走访任务'], status: '关注' },
+      { key: 'training', label: '训练与健康', description: '课程、成绩、训练档案', objects: ['课程', '成绩', '健康指标'], status: '健康' },
+    ],
+  },
+  ai_copilot: {
+    agents: [
+      { name: '接处警协同 Agent', status: 'running', currentTask: '警情摘要与分级建议', latency: '240ms' },
+      { name: '执法办案助手 Agent', status: 'active', currentTask: '法条与证据规则检索', latency: '310ms' },
+      { name: '勤务训练教官 Agent', status: 'active', currentTask: '训练评分与短板画像', latency: '280ms' },
+      { name: '移动勤务伴随 Agent', status: 'running', currentTask: '现场指引与身份核验提示', latency: '180ms' },
+    ],
+    skills: [
+      { name: '警情结构化抽取', status: 'active', trigger: '接警语音进入', confidence: 96 },
+      { name: '证据规则校验', status: 'active', trigger: '案件提交前', confidence: 92 },
+      { name: '训练短板画像', status: 'active', trigger: '训练结束后', confidence: 88 },
+    ],
+    mcp_connectors: [
+      { name: '公安主数据目录 MCP', status: '在线', scope: '组织 / 人员 / 地点 / 车辆', lastSync: '刚刚' },
+      { name: '法律与类案知识库 MCP', status: '在线', scope: '法条 / 判例 / 制度', lastSync: '2 分钟前' },
+      { name: '统一事件链 MCP', status: '在线', scope: '警情 / 案件 / 训练 / 移动', lastSync: '刚刚' },
+    ],
+  },
+  aiCenter: {
+    model: { name: '国产大模型（内网部署）', status: '运行中', providers: ['DeepSeek', 'Qwen3'] },
+    recommendations: [
+      { title: '优先确认高风险警情', detail: '1 条高风险警情等待指挥席确认分级和派警建议。', priority: '高' },
+      { title: '补齐社区重点地址画像', detail: '站前网格有 3 条重复警情关联线索待走访核查。', priority: '中' },
+    ],
+  },
+  eventChain: [
+    { label: '接警', count: 128, status: '已接入' },
+    { label: '分类分级', count: 128, status: '已接入' },
+    { label: '派警', count: 12, status: '待处置' },
+    { label: '移动签收', count: 8, status: '进行中' },
+    { label: '案件办理', count: 37, status: '已接入' },
+    { label: '社区闭环', count: 24, status: '待复核' },
+    { label: '训练复盘', count: 318, status: '已接入' },
   ],
-  assets: [
-    { name: '救生圈与救援绳', owner: '物资管理员', status: '充足', metric: '89 套', tag: '救援物资' },
-    { name: '移动围栏库存', owner: '后勤保障', status: '需补货', metric: '低于阈值 12%', tag: '临控物资' },
-    { name: '应急照明电池', owner: '工程班组', status: '巡检中', metric: '寿命 82%', tag: '保障设备' },
-  ],
-  plans: [
-    { name: '暴雨涨水临时封控预案', owner: '应急办', status: '审批中', metric: '2 人待审', tag: '防汛' },
-    { name: '暑期夜游高峰保障方案', owner: '运营中心', status: '已生效', metric: '覆盖 7 湾区', tag: '客流保障' },
-    { name: '跨部门联合演练计划', owner: '公安联动', status: '待提交', metric: '草稿版本', tag: '联合处置' },
-  ],
-  system: [
-    { name: '数据大屏 API 网关', owner: '平台运维', status: '健康', metric: 'P95 188ms', tag: '接口治理' },
-    { name: '账号与权限矩阵', owner: '系统管理员', status: '需复核', metric: '5 个高权账号', tag: '权限安全' },
-    { name: '日志留存与审计', owner: '安全审计', status: '合规', metric: '保留 180 天', tag: '审计追踪' },
-  ],
+  governance: { identity: '统一身份与最小权限', audit: '关键操作 100% 留痕', humanReview: 'AI建议必须人工确认', security: '公安内网部署，数据分级授权' },
 };
 
-const commandQueue = [
-  { title: '三号湾区求助待确认', detail: '建议派发最近救生员李敏，预计 2 分钟到达', tone: 'danger' },
-  { title: '广播联动已触发', detail: '二号湾区自动播放禁泳提示 3 次', tone: 'info' },
-  { title: '巡防路线重排', detail: '根据客流热区，将 A 组前置到三号湾区', tone: 'success' },
-];
+function pathView(): PlatformView {
+  return viewForPath(window.location.pathname);
+}
 
-const auditLogs = [
-  '15:30 管理员 xx 登录后台控制台',
-  '15:27 指挥中心发布临时管控通知',
-  '15:22 设备运维关闭摄像头 C-019 误报单',
-  '15:18 系统自动同步水位数据成功',
-];
+function mergeBusinessSystems(runtimeSystems?: PlatformOverview['businessSystems']): PlatformOverview['businessSystems'] {
+  if (!runtimeSystems?.length) return demoOverview.businessSystems;
 
-const bayHealth = [88, 73, 96, 81, 64, 92, 77];
+  return demoOverview.businessSystems?.map((fallback) => {
+    const runtime = runtimeSystems.find((item) => {
+      const route = BUSINESS_ROUTE_ALIASES[item.key as keyof typeof BUSINESS_ROUTE_ALIASES] ?? item.key;
+      return route === fallback.key;
+    });
+
+    return {
+      ...fallback,
+      key: fallback.key,
+      name: runtime?.name ?? fallback.name,
+      description: runtime?.description ?? fallback.description,
+      status: runtime?.status ?? fallback.status,
+      metric: runtime?.metric ?? fallback.metric,
+      capabilities: runtime?.capabilities?.length ? runtime.capabilities : fallback.capabilities,
+    };
+  });
+}
+
+function mergeOverview(payload: PlatformOverview): PlatformOverview {
+  return {
+    ...demoOverview,
+    ...payload,
+    stats: payload.stats ?? {},
+    events: payload.events ?? [],
+    businessSystems: mergeBusinessSystems(payload.businessSystems),
+    dataCatalog: { ...demoOverview.dataCatalog, ...(payload.dataCatalog ?? {}), domains: payload.dataCatalog?.domains?.length ? payload.dataCatalog.domains : demoOverview.dataCatalog?.domains },
+    ai_copilot: { ...demoOverview.ai_copilot, ...(payload.ai_copilot ?? {}), agents: payload.ai_copilot?.agents?.length ? payload.ai_copilot.agents : demoOverview.ai_copilot?.agents, skills: payload.ai_copilot?.skills?.length ? payload.ai_copilot.skills : demoOverview.ai_copilot?.skills, mcp_connectors: payload.ai_copilot?.mcp_connectors?.length ? payload.ai_copilot.mcp_connectors : demoOverview.ai_copilot?.mcp_connectors },
+    aiCenter: { ...demoOverview.aiCenter, ...(payload.aiCenter ?? {}) },
+    eventChain: payload.eventChain ?? [],
+    governance: { ...demoOverview.governance, ...(payload.governance ?? {}) },
+  };
+}
+
+function ShellNav({ view, navigate, open, close, online }: { view: PlatformView; navigate: (next: PlatformView) => void; open: boolean; close: () => void; online: boolean }) {
+  const sections = ['业务工作台', '平台能力'] as const;
+  return <>
+    <aside id="platform-control-sidebar" className={`platform-control-sidebar ${open ? 'open' : ''}`} aria-label="平台主导航">
+      <button className="platform-control-brand" type="button" onClick={() => navigate('platform')}>
+        <img className="platform-control-brand-mark" src={`${appBasePath}/public-security-mark.svg`} alt="" />
+        <span><strong>公安大数据与 AI</strong><small>统一警务工作台</small></span>
+      </button>
+      <button type="button" className="platform-control-nav-close ui-icon-button" aria-label="关闭导航" onClick={close}><X size={18} /></button>
+      <div className="platform-control-context"><span>当前组织</span><strong>市公安局</strong><small>指挥中心 · 综合值守</small></div>
+      {sections.map((section) => <div className="platform-control-nav-group" key={section}>
+        <span className="platform-control-nav-label">{section}</span>
+        <nav aria-label={section}>{systemNavItems.filter((item) => item.section === section).map((item) => { const Icon = item.icon; return <div className="platform-control-nav-entry" key={item.view}><button type="button" className={`platform-control-nav-item ${view === item.view ? 'active' : ''}`} aria-current={view === item.view ? 'page' : undefined} onClick={() => navigate(item.view)}><span className="platform-control-nav-icon"><Icon size={15} /></span><span>{item.label}</span>{view === item.view ? <span className="platform-control-nav-live" /> : <ChevronRight size={13} />}</button></div>; })}</nav>
+      </div>)}
+      <div className={`platform-control-sidebar-foot ${online ? 'online' : 'offline'}`}><span className="platform-control-health-dot" /><span>{online ? '数据连接正常' : '数据连接未就绪'}</span><ShieldCheck size={14} /></div>
+    </aside>
+    {open && <button className="platform-control-scrim" type="button" aria-label="关闭导航" onClick={close} />}
+  </>;
+}
 
 export function DashboardApp() {
-  const path = window.location.pathname.replace(/\/$/, '') || '/';
-  return path === '/admin' ? <AdminConsole /> : <CommandCenter />;
-}
+  const { stop: stopVoice } = useXiaoanVoice();
+  const [view, setView] = useState<PlatformView>(pathView);
+  useEffect(() => { stopVoice(); }, [view, stopVoice]);
+  const [overview, setOverview] = useState<PlatformOverview>(demoOverview);
+  const [apiOnline, setApiOnline] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('正在读取平台运行态');
+  const [lastSync, setLastSync] = useState<Date | null>(null);
+  const [clock, setClock] = useState(() => new Date());
+  const menuRef = useRef<HTMLButtonElement>(null);
+  const hasLiveData = useRef(false);
 
-function CommandCenter() {
-  const [overview, setOverview] = useState<EventsOverview | null>(null);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    fetchOverview()
-      .then((data) => {
-        setOverview(data);
-        setError('');
-      })
-      .catch((err: Error) => setError(err.message));
+  const loadOverview = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const response = await fetch(`${API_BASE}/platform/overview`);
+      if (!response.ok) throw new Error(`平台接口返回 ${response.status}`);
+      const payload = (await response.json()) as PlatformOverview;
+      setOverview(mergeOverview(payload));
+      setApiOnline(true);
+      hasLiveData.current = true;
+      setLastSync(new Date());
+      setStatusMessage('平台运行态已更新，内网数据在线');
+    } catch {
+      setApiOnline(false);
+      setStatusMessage(hasLiveData.current ? '连接中断，当前显示上次同步数据' : '未连接业务服务，当前为演示数据');
+    } finally {
+      setRefreshing(false);
+    }
   }, []);
 
-  const backendStats = overview?.stats;
-  const stats = [
-    { label: '今日险情', value: String(backendStats?.today_events ?? 0), unit: '起', trend: '后端实时', icon: AlertTriangle },
-    { label: '待处置任务', value: String(backendStats?.pending_orders ?? 0), unit: '单', trend: '高风险优先', icon: Radio },
-    { label: '在线巡防', value: String(backendStats?.online_staff ?? 0), unit: '人', trend: '3组在线', icon: Users },
-    { label: '平均响应', value: String(backendStats?.avg_response_minutes ?? 0), unit: '分钟', trend: '服务端统计', icon: Clock3 },
-    { label: '处置完成率', value: String(backendStats?.completion_rate ?? 0), unit: '%', trend: '实时闭环', icon: ShieldCheck },
-    { label: '当前客流', value: '较高', unit: '', trend: '重点关注', icon: Activity },
-  ];
-
-  const alerts = overview?.events.filter((event) => event.status !== '已完成').slice(0, 5) ?? [];
-
-  return (
-    <main className="dashboard-shell">
-      <header className="topbar">
-        <div className="brand">
-          <img src="/jiangtan-zhifang-logo.svg" alt="江滩智防" />
-          <div>
-            <h1>江滩智防</h1>
-            <p>两滩七湾安全指挥舱</p>
-          </div>
-        </div>
-        <div className="system-status">
-          <span className="live-dot" /> 系统运行中
-          <span>15:30</span>
-          <span>晴 35℃</span>
-          <span>水位正常</span>
-          <span className="risk-chip">当前风险：中</span>
-          <a className="command-admin-link" href="/admin"><Settings size={16} />进入管理端<ArrowRight size={15} /></a>
-        </div>
-      </header>
-
-      <section className="dashboard-grid">
-        <aside className="panel stats-panel">
-          <h2>实时态势</h2>
-          {error && <p className="eyebrow">后端未连接：{error}</p>}
-          <div className="stat-list">
-            {stats.map((item) => {
-              const Icon = item.icon;
-              return (
-                <article className="stat-card" key={item.label}>
-                  <Icon size={20} />
-                  <div>
-                    <p>{item.label}</p>
-                    <strong>{item.value}<span>{item.unit}</span></strong>
-                    <small>{item.trend}</small>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </aside>
-
-        <section className="map-stage">
-          <ConceptMap />
-        </section>
-
-        <aside className="panel alert-panel">
-          <div className="panel-heading">
-            <h2>实时险情</h2>
-            <button type="button">演示模式</button>
-          </div>
-          <div className="alert-list">
-            {alerts.map((alert) => (
-              <article className={`alert-card ${alert.level === '高风险' ? 'danger' : 'warning'}`} key={`${alert.bay}-${alert.title}`}>
-                <div>
-                  <span>{alert.level}</span>
-                  <strong>{alert.title}</strong>
-                </div>
-                <p>{alert.bay} · {alert.source}</p>
-                <small>状态：{alert.status}</small>
-              </article>
-            ))}
-            {alerts.length === 0 && <article className="work-card"><strong>暂无实时险情</strong><p>{error ? '请先启动后端 API 服务' : '当前事件库没有待处置事件'}</p></article>}
-          </div>
-          <h2 className="subheading">待处置任务</h2>
-          <article className="work-card">
-            <strong>{alerts[0]?.id ?? '暂无任务'}</strong>
-            <p>{alerts[0] ? `${alerts[0].owner} · ${alerts[0].status} · ${alerts[0].updatedAt}` : '等待后端事件同步'}</p>
-          </article>
-        </aside>
-      </section>
-
-      <footer className="chart-row">
-        <div className="chart-card">风险趋势折线图</div>
-        <div className="chart-card">风险类型占比</div>
-        <div className="chart-card">湾区风险排行</div>
-      </footer>
-    </main>
-  );
-}
-
-function ConceptMap() {
-  const bays = [
-    { id: 1, x: 17, y: 68, status: 'normal' },
-    { id: 2, x: 30, y: 49, status: 'danger' },
-    { id: 3, x: 45, y: 38, status: 'danger' },
-    { id: 4, x: 58, y: 46, status: 'normal' },
-    { id: 5, x: 70, y: 60, status: 'warning' },
-    { id: 6, x: 82, y: 51, status: 'handled' },
-    { id: 7, x: 91, y: 35, status: 'normal' },
-  ];
-
-  return (
-    <div className="concept-map">
-      <div className="map-title">概念化两滩七湾态势图</div>
-      <svg viewBox="0 0 100 100" role="img" aria-label="两滩七湾概念地图">
-        <path className="river-glow" d="M7 73 C 22 52, 30 42, 45 39 S 68 56, 93 31" />
-        <path className="river-line" d="M7 73 C 22 52, 30 42, 45 39 S 68 56, 93 31" />
-        {bays.map((bay) => (
-          <g key={bay.id}>
-            <circle className={`bay-pulse ${bay.status}`} cx={bay.x} cy={bay.y} r="5" />
-            <circle className={`bay-dot ${bay.status}`} cx={bay.x} cy={bay.y} r="2.3" />
-            <text x={bay.x + 2.8} y={bay.y - 3}>{bay.id}号湾区</text>
-          </g>
-        ))}
-        <circle className="staff-dot" cx="41" cy="51" r="1.8" />
-        <circle className="staff-dot" cx="64" cy="52" r="1.8" />
-      </svg>
-    </div>
-  );
-}
-function AdminConsole() {
-  const [activeModule, setActiveModule] = useState<ModuleKey>('events');
-  const [incidents, setIncidents] = useState<Incident[]>([]);
-  const [backendEvents, setBackendEvents] = useState<BackendEvent[]>([]);
-  const [priority, setPriority] = useState<'全部' | Severity>('全部');
-  const [syncError, setSyncError] = useState('');
-
-  const loadIncidents = async () => {
-    try {
-      const data = await fetchOverview();
-      setBackendEvents(data.events);
-      setIncidents(data.events.map(toIncident));
-      setSyncError('');
-    } catch (error) {
-      setSyncError(error instanceof Error ? error.message : '后端服务未连接');
-    }
-  };
+  useEffect(() => {
+    void loadOverview();
+    const interval = window.setInterval(() => void loadOverview(), 30000);
+    const clockInterval = window.setInterval(() => setClock(new Date()), 1000);
+    const onPopState = () => { setView(pathView()); setMobileNavOpen(false); };
+    window.addEventListener('popstate', onPopState);
+    return () => {
+      window.clearInterval(interval);
+      window.clearInterval(clockInterval);
+      window.removeEventListener('popstate', onPopState);
+    };
+  }, [loadOverview]);
 
   useEffect(() => {
-    loadIncidents();
+    const desktop = window.matchMedia('(min-width: 961px)');
+    const closeOnDesktop = () => { if (desktop.matches) setMobileNavOpen(false); };
+    desktop.addEventListener('change', closeOnDesktop);
+    return () => desktop.removeEventListener('change', closeOnDesktop);
   }, []);
 
-  const visibleIncidents = priority === '全部' ? incidents : incidents.filter((item) => item.severity === priority);
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const sidebar = document.getElementById('platform-control-sidebar');
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const focusable = () => Array.from(sidebar?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)') ?? []).filter((element) => element.getClientRects().length);
+    focusable()[0]?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMobileNavOpen(false);
+        menuRef.current?.focus();
+      }
+      if (event.key !== 'Tab') return;
+      const elements = focusable();
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => { document.body.style.overflow = previousOverflow; document.removeEventListener('keydown', onKey); };
+  }, [mobileNavOpen]);
 
-  const overview = useMemo(() => {
-    const open = incidents.filter((item) => item.status !== '已闭环').length;
-    const urgent = incidents.filter((item) => item.severity === '紧急' || item.severity === '高').length;
-    const closed = incidents.filter((item) => item.status === '已闭环').length;
-    return [
-      { label: '今日工单', value: '142', note: `未闭环 ${open} 单`, icon: ClipboardCheck, tone: 'blue' },
-      { label: '高危预警', value: String(urgent), note: '优先级自动置顶', icon: AlertTriangle, tone: 'red' },
-      { label: '在线设备', value: '198', note: '92.5% 在线率', icon: MonitorCheck, tone: 'green' },
-      { label: '闭环率', value: `${Math.round((closed / incidents.length) * 100)}%`, note: '目标 95%', icon: ShieldCheck, tone: 'purple' },
-    ];
-  }, [incidents]);
+  const navigate = useCallback((next: PlatformView) => {
+    const target = next === 'duty-plan' ? trainingEntryPath() : routePath(next);
+    if (window.location.pathname !== target) window.history.pushState({}, '', target);
+    setView(next);
+    setMobileNavOpen(false);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
 
-  const createHelpEvent = async () => {
-    try {
-      const next = await createBackendHelp();
-      setBackendEvents((current) => [next, ...current]);
-      setIncidents((current) => [toIncident(next), ...current]);
-      setActiveModule('events');
-      setPriority('全部');
-      setSyncError('');
-    } catch (error) {
-      setSyncError(error instanceof Error ? error.message : '登记失败');
-    }
-  };
 
-  const dispatchFirst = async () => {
-    const target = backendEvents.find((item) => item.status !== '已完成');
-    if (!target) return;
-    try {
-      const updated = await updateBackendEvent(target.id, '处理中', '李敏');
-      setBackendEvents((current) => current.map((item) => item.id === updated.id ? updated : item));
-      setIncidents((current) => current.map((item) => item.id === updated.id ? toIncident(updated) : item));
-      setSyncError('');
-    } catch (error) {
-      setSyncError(error instanceof Error ? error.message : '派单失败');
-    }
-  };
+  const currentNav = useMemo(() => systemNavItems.find((item) => item.view === view) ?? systemNavItems[0], [view]);
+  const formattedDate = new Intl.DateTimeFormat('zh-CN', { month: '2-digit', day: '2-digit', weekday: 'short' }).format(clock);
+  const formattedTime = new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(clock);
 
-  const closeFirst = async () => {
-    const target = backendEvents.find((item) => item.status !== '已完成');
-    if (!target) return;
-    try {
-      const updated = await updateBackendEvent(target.id, '已完成', target.owner === '待分配' ? '李敏' : target.owner, '后台确认现场处置完成。');
-      setBackendEvents((current) => current.map((item) => item.id === updated.id ? updated : item));
-      setIncidents((current) => current.map((item) => item.id === updated.id ? toIncident(updated) : item));
-      setSyncError('');
-    } catch (error) {
-      setSyncError(error instanceof Error ? error.message : '闭环失败');
-    }
-  };
+  if (view === 'video') return <VideoLinkagePage onBack={() => navigate('platform')} />;
+  if (view === 'night-market-command') return <NightMarketCommandPage onBack={() => navigate('video')} />;
+  if (view === 'duty-plan') return <OfficerTrainingPage onSituation={() => navigate('duty-situation')} />;
+  if (view === 'duty-situation') return <DutySituationPage onBack={() => navigate('platform')} onTraining={(taskId) => {
+    window.history.pushState({}, '', trainingEntryPath(taskId));
+    setView('duty-plan');
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }} />;
+  const page = view === 'contact-review'
+    ? <ContactReviewPage onBack={() => navigate('platform')} />
+    : view === 'platform'
+    ? <PublicSecurityPlatformPage overview={overview} apiOnline={apiOnline} refreshing={refreshing} refresh={loadOverview} navigate={navigate} />
+    : view === 'command'
+      ? <CommandOperationsPage overview={overview} apiOnline={apiOnline} navigate={navigate} refresh={loadOverview} />
+      : view === 'case'
+        ? <CaseHandlingPage overview={overview} apiOnline={apiOnline} navigate={navigate} />
+        : view === 'community'
+          ? <CommunityPolicingPage overview={overview} apiOnline={apiOnline} navigate={navigate} />
+          : view === 'ai-center'
+                ? <AICenterPage overview={overview} apiOnline={apiOnline} navigate={navigate} />
+                : <AdminConsolePage apiOnline={apiOnline} refresh={loadOverview} navigate={navigate} />;
 
-  const refreshData = () => {
-    loadIncidents();
-    setActiveModule('events');
-    setPriority('全部');
-  };
-
-  const activeRows = managementData[activeModule];
-  const activeLabel = modules.find((item) => item.key === activeModule)?.label ?? '事件工单';
-
-  return (
-    <main className="admin-shell">
-      <aside className="sidebar" aria-label="后台导航">
-        <div className="brand-block">
-          <img src="/jiangtan-zhifang-logo.svg" alt="江滩智防" />
-          <div>
-            <strong>江滩智防</strong>
-            <span>Enterprise Admin</span>
-          </div>
+  return <main className="platform-control-shell">
+    <a className="skip-link" href="#workspace-content">跳转到工作区</a>
+    <ShellNav view={view} navigate={navigate} open={mobileNavOpen} close={() => { setMobileNavOpen(false); menuRef.current?.focus(); }} online={apiOnline} />
+    <div className="platform-control-main">
+      <header className="platform-control-topbar">
+        <div className="platform-control-topbar-left">
+              <button ref={menuRef} className="platform-control-menu-button ui-icon-button" type="button" aria-label={mobileNavOpen ? '关闭导航' : '打开导航'} aria-expanded={mobileNavOpen} aria-controls="platform-control-sidebar" onClick={() => setMobileNavOpen((value) => !value)}>{mobileNavOpen ? <X size={18} /> : <Menu size={18} />}</button>
+          <div className="platform-control-breadcrumb"><span>工作空间</span><ChevronRight size={14} /><strong>{currentNav.label}</strong></div>
         </div>
-
-        <nav className="nav-section">
-          <p>业务中心</p>
-          <button className="nav-item is-active" type="button"><LayoutDashboard size={18} />总览驾驶舱</button>
-          {modules.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button className={`nav-item ${activeModule === item.key ? 'is-selected' : ''}`} key={item.key} type="button" onClick={() => setActiveModule(item.key)}>
-                <Icon size={18} />
-                <span>{item.label}</span>
-                <small>{item.count}</small>
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="sidebar-status">
-          <div><Database size={17} /> 数据中台</div>
-          <strong>99.98%</strong>
-          <span>服务可用性 · 最近 30 天</span>
+        <div className="platform-control-topbar-right">
+          <XiaoanVoiceControls />
+          <span className="platform-control-clock"><Clock3 size={14} />{formattedDate} {formattedTime}</span>
+              <span className={`platform-control-sync ${apiOnline ? 'online' : 'demo'}`} aria-live="polite"><span />{apiOnline ? '内网数据在线' : hasLiveData.current ? '离线快照' : '演示数据'}</span>
+          <Tooltip title="刷新平台数据"><button className="platform-control-refresh ui-icon-button" type="button" onClick={() => void loadOverview()} disabled={refreshing} aria-label="刷新平台运行态"><RefreshCw size={16} className={refreshing ? 'spin' : undefined} /></button></Tooltip>
+          <span className="platform-control-user" title="市公安局 · 指挥中心"><span>值</span><b>值班席</b></span>
         </div>
-      </aside>
-
-      <section className="workspace">
-        <header className="admin-topbar">
-          <div>
-            <p className="eyebrow">两滩七湾安全治理后台</p>
-            <h1>运营管理控制台</h1>
-          </div>
-          <div className="top-actions">
-            <label className="search-box">
-              <Search size={17} />
-              <input placeholder="搜索工单、设备、人员、预案" />
-            </label>
-            <button className="icon-button" type="button" aria-label="通知"><Bell size={18} /><i /></button>
-            <button className="user-menu" type="button"><UserCog size={18} />xx 管理员<ChevronDown size={15} /></button>
-          </div>
-        </header>
-
-        <section className="hero-band">
-          <div className="operation-summary">
-            <div>
-              <p className="eyebrow">实时运营态势</p>
-              <h2>一套后台统一管理事件、人员、设备、物资和预案</h2>
-            </div>
-            <div className="summary-actions">
-              <button className="primary-button" type="button" onClick={createHelpEvent}><Zap size={16} />登记现场求助</button>
-              <button type="button" onClick={dispatchFirst}><Radio size={16} />一键派单</button>
-              <button type="button" onClick={closeFirst}><CheckCircle2 size={16} />闭环首单</button>
-              <button type="button" onClick={refreshData}><RotateCcw size={16} />刷新数据</button>
-            </div>
-          </div>
-          {syncError && <p className="eyebrow">后端未连接：{syncError}</p>}
-          <div className="kpi-grid">
-            {overview.map((item) => {
-              const Icon = item.icon;
-              return (
-                <article className={`kpi-card ${item.tone}`} key={item.label}>
-                  <Icon size={20} />
-                  <p>{item.label}</p>
-                  <strong>{item.value}</strong>
-                  <span>{item.note}</span>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="content-grid">
-          <div className="main-column">
-            <section className="module-panel">
-              <div className="section-heading">
-                <div>
-                  <p className="eyebrow">Management</p>
-                  <h2>{activeLabel}</h2>
-                </div>
-                <div className="segmented">
-                  {(['全部', '紧急', '高', '中', '低'] as const).map((item) => (
-                    <button className={priority === item ? 'selected' : ''} type="button" key={item} onClick={() => setPriority(item)}>{item}</button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="module-tabs">
-                {modules.map((item) => {
-                  const Icon = item.icon;
-                  return <button className={activeModule === item.key ? 'selected' : ''} type="button" key={item.key} onClick={() => setActiveModule(item.key)}><Icon size={16} />{item.label}</button>;
-                })}
-              </div>
-
-              {activeModule === 'events' ? <IncidentTable incidents={visibleIncidents} /> : <ManagementTable rows={activeRows} />}
-            </section>
-
-            <section className="module-panel bay-panel">
-              <div className="section-heading">
-                <div>
-                  <p className="eyebrow">GIS & IoT</p>
-                  <h2>湾区健康度与设备联动</h2>
-                </div>
-                <span className="sync-pill"><Activity size={15} />5 秒前同步</span>
-              </div>
-              <div className="bay-grid">
-                {bayHealth.map((value, index) => (
-                  <article className="bay-tile" key={index}>
-                    <div><MapPin size={16} />{index + 1}号湾区</div>
-                    <strong>{value}</strong>
-                    <span style={{ width: `${value}%` }} />
-                  </article>
-                ))}
-              </div>
-            </section>
-          </div>
-
-          <aside className="right-column">
-            <section className="module-panel command-panel">
-              <div className="section-heading compact">
-                <div>
-                  <p className="eyebrow">Command</p>
-                  <h2>指挥协同</h2>
-                </div>
-                <LifeBuoy size={20} />
-              </div>
-              {commandQueue.map((item) => <article className={`command-card ${item.tone}`} key={item.title}><strong>{item.title}</strong><p>{item.detail}</p></article>)}
-            </section>
-
-            <section className="module-panel ops-panel">
-              <div className="section-heading compact">
-                <div>
-                  <p className="eyebrow">Ops</p>
-                  <h2>系统运行</h2>
-                </div>
-                <Gauge size={20} />
-              </div>
-              <div className="ops-list">
-                <MetricLine icon={Cpu} label="AI 边缘算力" value="71%" />
-                <MetricLine icon={HardDrive} label="日志存储" value="62%" />
-                <MetricLine icon={Smartphone} label="小程序接口" value="128ms" />
-                <MetricLine icon={LockKeyhole} label="权限风险" value="5 项" />
-              </div>
-            </section>
-
-            <section className="module-panel audit-panel">
-              <div className="section-heading compact">
-                <div>
-                  <p className="eyebrow">Audit</p>
-                  <h2>审计动态</h2>
-                </div>
-                <Megaphone size={20} />
-              </div>
-              <ol>
-                {auditLogs.map((log) => <li key={log}>{log}</li>)}
-              </ol>
-            </section>
-          </aside>
-        </section>
-      </section>
-    </main>
-  );
-}
-
-function IncidentTable({ incidents }: { incidents: Incident[] }) {
-  return (
-    <div className="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>工单编号</th>
-            <th>事件</th>
-            <th>位置</th>
-            <th>来源</th>
-            <th>负责人</th>
-            <th>SLA</th>
-            <th>状态</th>
-          </tr>
-        </thead>
-        <tbody>
-          {incidents.map((item) => (
-            <tr key={item.id}>
-              <td><span className="mono">{item.id}</span><small>{item.time}</small></td>
-              <td><b>{item.title}</b><em className={`severity ${severityClass(item.severity)}`}>{item.severity}</em></td>
-              <td>{item.area}</td>
-              <td>{item.source}</td>
-              <td>{item.owner}</td>
-              <td>{item.sla}</td>
-              <td><span className={`status ${statusClass(item.status)}`}>{item.status}</span></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+          </header>
+          {!apiOnline && <p className="platform-control-status-message" role="status"><AlertTriangle size={15} />{statusMessage}</p>}
+      <div id="workspace-content" tabIndex={-1} className="platform-control-content">{page}</div>
+      <footer className="platform-control-footer"><span><ShieldCheck size={14} />高风险 AI 建议需人工确认</span><span><Database size={14} />操作留痕 · 分级授权</span><span>最近同步 {lastSync ? lastSync.toLocaleTimeString('zh-CN', { hour12: false }) : '尚未连接'}</span></footer>
     </div>
-  );
+  </main>;
 }
-
-function ManagementTable({ rows }: { rows: ManagementRow[] }) {
-  return (
-    <div className="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>管理对象</th>
-            <th>责任部门</th>
-            <th>状态</th>
-            <th>核心指标</th>
-            <th>标签</th>
-            <th>操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((item) => (
-            <tr key={item.name}>
-              <td><b>{item.name}</b></td>
-              <td>{item.owner}</td>
-              <td><span className="status processing">{item.status}</span></td>
-              <td>{item.metric}</td>
-              <td><em className="tag">{item.tag}</em></td>
-              <td><button className="table-action" type="button"><Wrench size={14} />管理</button></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function MetricLine({ icon: Icon, label, value }: { icon: typeof Cpu; label: string; value: string }) {
-  return <div className="metric-line"><span><Icon size={16} />{label}</span><strong>{value}</strong></div>;
-}
-
-function severityClass(severity: Severity) {
-  return severity === '紧急' ? 'critical' : severity === '高' ? 'high' : severity === '中' ? 'middle' : 'low';
-}
-
-function statusClass(status: Status) {
-  return status === '已闭环' ? 'done' : status === '处理中' ? 'processing' : status === '待复核' ? 'review' : 'pending';
-}
-
-
-
-
-
-

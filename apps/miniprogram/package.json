@@ -1,8 +1,8 @@
 {
-  "name": "@jiangtan-zhifang/miniprogram",
+  "name": "@yanhuo-shaobing/miniprogram",
   "version": "0.1.0",
   "private": true,
-  "description": "江滩智防跨端小程序",
+  "description": "烟火哨兵跨端小程序",
   "templateInfo": {
     "name": "default",
     "typescript": true,
@@ -10,14 +10,21 @@
     "framework": "React"
   },
   "scripts": {
-    "build:weapp": "taro build --type weapp",
-    "build:alipay": "taro build --type alipay",
+    "build:weapp": "taro build --type weapp --env development",
+    "build:weapp:release": "taro build --type weapp --env production",
+    "build:alipay": "taro build --type alipay --env development",
+    "build:alipay:release": "taro build --type alipay --env production",
+    "build:h5": "taro build --type h5 --env development",
+    "dev:h5": "taro build --type h5 --env development --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test tests/*.test.cjs",
+    "verify:tabbar": "node scripts/verify-tabbar-style.mjs",
     "dev:weapp": "npm run build:weapp -- --watch",
     "dev:alipay": "npm run build:alipay -- --watch"
   },
   "browserslist": [
-    "defaults and fully supports es6-module",
-    "maintained node versions"
+    "iOS >= 10",
+    "Android >= 5"
   ],
   "dependencies": {
     "@babel/runtime": "^7.24.4",
@@ -35,11 +42,11 @@
   },
   "devDependencies": {
     "@babel/core": "^7.24.4",
-    "@babel/plugin-transform-class-properties": "7.25.9",
     "@babel/preset-react": "^7.24.1",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.5",
     "@tarojs/cli": "4.2.1",
     "@tarojs/plugin-generator": "4.2.1",
+    "@tarojs/plugin-platform-h5": "^4.2.1",
     "@tarojs/taro-loader": "4.2.1",
     "@tarojs/webpack5-runner": "4.2.1",
     "@types/node": "^18",
