@@ -52,10 +52,11 @@ git clone https://github.com/X-Xcc/jiangtan-zhifang.git
 cd jiangtan-zhifang
 ```
 
-如果需要当前部署分支：
+默认分支 `main` 就是可部署版本。确认当前版本：
 
 ```powershell
-git checkout codex/checkpoint-rollback-20260826
+git branch --show-current
+git log -1 --oneline
 ```
 
 ## 安装依赖
@@ -72,6 +73,12 @@ Windows Python 依赖：
 python -m venv server\.venv
 server\.venv\Scripts\python.exe -m pip install --upgrade pip
 server\.venv\Scripts\python.exe -m pip install -r server\requirements.txt
+```
+
+启动前激活虚拟环境：
+
+```powershell
+server\.venv\Scripts\Activate.ps1
 ```
 
 Linux Python 依赖：
@@ -140,10 +147,10 @@ CREATE DATABASE yanhuo_shaobing OWNER cicsic;
 
 ## 启动后端
 
-Windows：
+Windows（已激活 `server\.venv`）：
 
 ```powershell
-server\.venv\Scripts\python.exe scripts\dev_server.py
+python scripts\dev_server.py
 ```
 
 或：
@@ -152,10 +159,10 @@ server\.venv\Scripts\python.exe scripts\dev_server.py
 npm run server:dev
 ```
 
-Linux：
+Linux（已激活 `server/.venv`）：
 
 ```bash
-server/.venv/bin/python scripts/dev_server.py
+python scripts/dev_server.py
 ```
 
 默认地址：
@@ -243,7 +250,16 @@ deploy/production/public-security-web-api.service
 deploy/production/public-security-web-nginx.conf
 ```
 
-典型流程：
+### 1. 安装系统依赖
+
+Ubuntu/Debian 示例：
+
+```bash
+sudo apt update
+sudo apt install -y git curl build-essential python3 python3-venv postgresql nginx
+```
+
+### 2. 获取代码并安装依赖
 
 ```bash
 git clone https://github.com/X-Xcc/jiangtan-zhifang.git /opt/cicsic
@@ -254,14 +270,78 @@ server/.venv/bin/pip install -r server/requirements.txt
 npm run dashboard:build
 ```
 
+### 3. 配置数据库和服务环境
+
+```bash
+sudo -u postgres createuser --pwprompt cicsic
+sudo -u postgres createdb --owner=cicsic yanhuo_shaobing
+sudo install -o root -g cicsic -m 640 deploy/production/cicsic-api.env.example /etc/cicsic-api.env
+sudo nano /etc/cicsic-api.env
+```
+
+至少填写真实值：
+
+```text
+APP_ENV=production
+DATABASE_URL=postgresql://cicsic:密码@127.0.0.1:5432/yanhuo_shaobing
+CICSIC_ADMIN_TOKEN=至少16位的随机Token
+DB_ADMIN_USER=管理员账号
+DB_ADMIN_PASSWORD=至少16位的随机密码
+```
+
+### 4. 安装 API systemd 服务
+
+部署模板默认假设项目位于 `/opt/cicsic`、Python 环境位于 `/opt/cicsic/server/.venv`。如果路径不同，先编辑模板：
+
+```bash
+sudo cp deploy/production/cicsic-api.service /etc/systemd/system/cicsic-api.service
+sudo sed -i 's#WorkingDirectory=/opt/cicsic/project/server#WorkingDirectory=/opt/cicsic/server#' /etc/systemd/system/cicsic-api.service
+sudo sed -i 's#ExecStart=/opt/cicsic/venv/bin/uvicorn#ExecStart=/opt/cicsic/server/.venv/bin/uvicorn#' /etc/systemd/system/cicsic-api.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now cicsic-api
+sudo systemctl status cicsic-api
+```
+
+### 5. 配置 Nginx
+
+将构建产物发布到 Nginx 静态目录：
+
+```bash
+sudo mkdir -p /var/www/cicsic
+sudo cp -r apps/dashboard/dist/. /var/www/cicsic/
+```
+
+编辑 `deploy/production/public-security-web-nginx.conf`：
+
+- `root` 改为 `/var/www/cicsic`
+- `proxy_pass` 指向 `http://127.0.0.1:8010/api/`
+- `server_name` 改为你的域名
+
+然后启用：
+
+```bash
+sudo cp deploy/production/public-security-web-nginx.conf /etc/nginx/sites-available/cicsic
+sudo ln -sf /etc/nginx/sites-available/cicsic /etc/nginx/sites-enabled/cicsic
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+### 6. HTTPS 和验收
+
+生产小程序要求 HTTPS。可使用 Certbot 或已有证书配置 Nginx：
+
+```bash
+curl http://127.0.0.1:8010/api/health
+curl -I https://你的域名/
+sudo journalctl -u cicsic-api -n 100 --no-pager
+```
+
 然后：
 
 1. 将生产变量写入 `/etc/cicsic-api.env`，并限制文件权限。
-2. 修改 systemd 模板中的项目路径和 Python 路径。
-3. 修改 Nginx 模板中的域名、静态目录和 API 代理路径。
-4. 启用并重启 API、Web 服务。
-5. 检查 `/api/health`、Web 首页和 `/docs`。
-6. 配置 HTTPS、防火墙、数据库备份和日志轮转。
+2. 确认 API、Nginx、PostgreSQL 均设置为开机启动。
+3. 检查 `/api/health`、Web 首页和 `/docs`。
+4. 配置 HTTPS、防火墙、数据库备份和日志轮转。
 
 生产环境不要使用 `CICSIC_ADMIN_AUTH_ENABLED=false`，必须配置高熵 `CICSIC_ADMIN_TOKEN`。
 
@@ -309,6 +389,25 @@ POST /api/events/security-detections/sync
 ```
 
 未配置云端复核密钥时，本地演示和检测数据链路仍可运行。
+
+## 部署完整性说明
+
+从 `main` 克隆后，仓库已经包含：
+
+- Web 源码和生产构建所需的依赖锁文件。
+- Taro 小程序源码、图标和页面资源。
+- FastAPI 后端源码、数据库模型、迁移初始化逻辑和检测模型。
+- WebAssembly、姿态模型、演示图片和语音等运行时资源。
+- PostgreSQL、systemd、Nginx 和环境变量模板。
+- Go2 桥接源码和测试。
+
+仓库不包含、也不应包含：
+
+- `node_modules`、Python 虚拟环境和编译输出。
+- PostgreSQL 数据目录、日志、缓存和本机路径配置。
+- 微信 AppSecret、数据库密码、管理员 Token、AI API Key。
+
+因此，其他电脑需要重新安装依赖并注入环境变量，但不需要从原电脑复制隐藏文件。Web 后台和后端可以从干净 clone 独立构建和启动；小程序还需要微信开发者工具、真实 AppID 和平台域名配置。
 
 ## 常用命令
 
