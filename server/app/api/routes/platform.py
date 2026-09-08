@@ -71,7 +71,7 @@ def _clean_text(value: Any, fallback: str) -> str:
     if not text:
         return fallback
     # 旧数据可能来自历史演示库，平台接口统一使用公安业务称谓。
-    return text.replace("夜市", "重点区域").replace("商圈", "重点区域").replace("烟火哨兵", "公安平台")
+    return text.replace("夜市", "重点区域").replace("商圈", "重点区域").replace("小安智能预警系统", "公安平台")
 
 
 def _runtime_snapshot() -> dict[str, Any]:

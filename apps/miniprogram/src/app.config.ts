@@ -5,7 +5,7 @@ export default defineAppConfig({
   window: {
     backgroundTextStyle: 'dark',
     navigationBarBackgroundColor: '#cbe5ff',
-    navigationBarTitleText: '烟火哨兵',
+    navigationBarTitleText: '小安智能预警系统',
     navigationBarTextStyle: 'black',
   },
   permission: {

@@ -1,5 +1,5 @@
 const definePageConfig = (config: any) => config
 
 export default definePageConfig({
-  navigationBarTitleText: '烟火哨兵',
+  navigationBarTitleText: '小安智能预警系统',
 })

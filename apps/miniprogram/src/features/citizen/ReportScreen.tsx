@@ -42,7 +42,7 @@ export function ReportScreen({ createReport, onProgress }: {
     }
   }
   return <View>
-    <PageHeader title='隐患上报' subtitle='烟火哨兵 · 现场记录' />
+    <PageHeader title='隐患上报' subtitle='小安智能预警系统 · 现场记录' />
     <View className='mini-surface'>
       {receipt ? <View><EmptyState title='上报已提交' description={`编号 ${receipt.id} · 等待平台确认`} />
         <Button className='mini-primary mini-block' onClick={onProgress}>查看进度</Button>

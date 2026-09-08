@@ -17,7 +17,7 @@ export default defineConfig<'webpack5'>(async (merge) => {
     ? 'true' : 'false'
 
   const baseConfig: UserConfigExport<'webpack5'> = {
-    projectName: 'yanhuo-shaobing-miniprogram',
+    projectName: 'xiaoan-warning-system-miniprogram',
     date: '2026-08-02',
     designWidth: 750,
     deviceRatio: {

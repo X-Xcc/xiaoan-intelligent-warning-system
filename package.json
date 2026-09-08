@@ -1,8 +1,8 @@
 {
-  "name": "yanhuo-shaobing",
+  "name": "xiaoan-warning-system",
   "version": "0.1.0",
   "private": true,
-  "description": "烟火哨兵项目工作区",
+  "description": "小安智能预警系统项目工作区",
   "workspaces": [
     "apps/dashboard",
     "apps/miniprogram"

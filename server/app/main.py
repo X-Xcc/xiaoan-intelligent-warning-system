@@ -17,6 +17,8 @@ from app.api.routes.platform import router as platform_router
 from app.api.routes.ai_center import router as ai_center_router
 from app.api.routes.training import router as training_router
 from app.api.routes.command import router as command_router
+from app.api.routes.device_bridges import router as device_bridges_router
+from app.api.routes.device_bridges import start_bridge_runtime, stop_bridge_runtime
 from app.services.auth_store import init_auth_db
 from app.services.admin_store import ensure_market_defaults
 from app.services.event_store import init_db
@@ -57,6 +59,9 @@ app.include_router(platform_router, prefix="/api")
 app.include_router(ai_center_router, prefix="/api")
 app.include_router(training_router, prefix="/api")
 app.include_router(command_router, prefix="/api")
+app.include_router(device_bridges_router, prefix="/api")
+app.add_event_handler("startup", start_bridge_runtime)
+app.add_event_handler("shutdown", stop_bridge_runtime)
 
 
 @app.on_event("startup")

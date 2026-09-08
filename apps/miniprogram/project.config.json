@@ -1,7 +1,7 @@
 {
   "miniprogramRoot": "dist/",
-  "projectname": "烟火哨兵",
-  "description": "烟火哨兵群众服务小程序",
+  "projectname": "小安智能预警系统",
+  "description": "小安智能预警系统群众服务小程序",
   "appid": "wxdd3f448369e6ca9f",
   "setting": {
     "urlCheck": false,

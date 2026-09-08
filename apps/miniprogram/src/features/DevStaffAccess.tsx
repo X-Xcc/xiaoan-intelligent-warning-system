@@ -62,7 +62,7 @@ export function DevStaffAccess({ onEnter, onBack }: StaffAccessProps) {
     }
   }
   return <View className='mini-app'>
-    <PageHeader title='工作人员登录' subtitle='烟火哨兵 · 工作身份' brand onBack={goBack} />
+    <PageHeader title='工作人员登录' subtitle='小安智能预警系统 · 工作身份' brand onBack={goBack} />
     <View className='mini-surface'>
       <Text className='mini-tag'>开发测试账号</Text>
       <View className='mini-field'>

@@ -254,7 +254,7 @@ function StaffWorkspaceContent({ staffName, onExit }: Props) {
 
   return <View className='mini-app staff-workspace'>
     <PageHeader title={tab === 'workbench' ? `${staffName}，你好` : tabs.find((item) => item.id === tab)!.label}
-      eyebrow='烟火哨兵 · 工作人员' subtitle={tab === 'workbench' ? '现场任务与日常勤务' : staffName} brand />
+      eyebrow='小安智能预警系统 · 工作人员' subtitle={tab === 'workbench' ? '现场任务与日常勤务' : staffName} brand />
     <View className='mini-surface staff-surface'>
       {(tab === 'workbench' || tab === 'tasks') && <View>
         {tab === 'workbench' && <>

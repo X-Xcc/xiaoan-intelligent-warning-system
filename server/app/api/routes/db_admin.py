@@ -142,7 +142,7 @@ def db_admin(_: str = Depends(_require_admin)) -> str:
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>烟火哨兵数据库管理</title>
+  <title>小安智能预警系统数据库管理</title>
   <style>
     :root {{ color-scheme: light; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; }}
     body {{ margin: 0; background: #eef4f2; color: #17211f; }}
@@ -172,8 +172,8 @@ def db_admin(_: str = Depends(_require_admin)) -> str:
 </head>
 <body>
   <header>
-    <h1>烟火哨兵数据库管理</h1>
-    <p>只读查看 PostgreSQL 数据与烟火哨兵业务表。</p>
+    <h1>小安智能预警系统数据库管理</h1>
+    <p>只读查看 PostgreSQL 数据与小安智能预警系统业务表。</p>
   </header>
   <main>
     <div class="metrics">

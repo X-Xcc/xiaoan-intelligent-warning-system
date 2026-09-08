@@ -1,8 +1,8 @@
 {
-  "name": "@yanhuo-shaobing/miniprogram",
+  "name": "@xiaoan-warning-system/miniprogram",
   "version": "0.1.0",
   "private": true,
-  "description": "烟火哨兵跨端小程序",
+  "description": "小安智能预警系统跨端小程序",
   "templateInfo": {
     "name": "default",
     "typescript": true,

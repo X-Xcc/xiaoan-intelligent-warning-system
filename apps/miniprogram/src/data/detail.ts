@@ -28,7 +28,7 @@ export const detailMap: Record<DetailType, DetailMeta> = {
   guide: { title: '安全锦囊', subtitle: '安心逛夜市，从身边的小事开始', badge: '夜市服务' },
   rescue: { title: '附近点位', subtitle: '夜市位置与现场服务信息', badge: '夜市服务' },
   privacy: { title: '隐私说明', subtitle: '提交前，了解信息与权限', badge: '信息说明' },
-  about: { title: '烟火哨兵', subtitle: '夜市有烟火，身边有守护', badge: '关于我们' },
+  about: { title: '小安智能预警系统', subtitle: '夜市有烟火，身边有守护', badge: '关于我们' },
   bay: { title: '夜市区域', subtitle: '夜市名称、地址与已配置点位', badge: '区域目录' },
   processing: { title: '我的进度', subtitle: '求助、上报与线索回执', badge: '个人记录' },
   serviceOrder: { title: '事件详情', subtitle: '回执、现场材料与处理进度', badge: '事件回执' },

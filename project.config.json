@@ -1,7 +1,7 @@
 {
   "miniprogramRoot": "apps/miniprogram/dist",
-  "projectname": "烟火哨兵",
-  "description": "烟火哨兵群众服务小程序",
+  "projectname": "小安智能预警系统",
+  "description": "小安智能预警系统群众服务小程序",
   "setting": {
     "es6": false,
     "postcss": false,

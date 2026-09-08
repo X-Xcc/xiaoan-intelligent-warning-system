@@ -56,7 +56,7 @@ const messages: Record<Locale, Partial<Record<MessageKey, string>>> = {
     language: '语言',
     selectLanguage: '选择语言',
     'login.kicker': '夜市现场服务',
-    'login.title': '烟火哨兵',
+    'login.title': '小安智能预警系统',
     'login.subtitle': '逛夜市前看一眼，遇到事也能及时求助',
     'login.opening': '今日情况',
     'login.services': '附近点位',

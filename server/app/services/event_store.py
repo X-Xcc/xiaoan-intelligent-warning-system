@@ -1788,7 +1788,7 @@ def overview() -> dict[str, Any]:
     with SessionLocal() as session:
         avg_response_minutes = _average_response_minutes(session, events)
     return {
-        "project": "烟火哨兵",
+        "project": "小安智能预警系统",
         "subtitle": "夜市商圈值守台",
         "stats": {
             "today_events": len(events),

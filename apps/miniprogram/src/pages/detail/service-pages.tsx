@@ -174,7 +174,7 @@ function AboutPage() {
     <View>
       <View className='detail-about-brand'>
         <Image src={brandMark} mode='aspectFit' className='detail-about-logo' />
-        <View><Text className='detail-event-title'>烟火哨兵</Text><Text className='detail-caption'>夜市现场服务</Text></View>
+        <View><Text className='detail-event-title'>小安智能预警系统</Text><Text className='detail-caption'>夜市现场服务</Text></View>
       </View>
       <Text className='detail-body'>连接逛夜市的人、商户与现场工作人员，让求助有记录，让后续情况可追踪。</Text>
       <Section title='服务说明'>

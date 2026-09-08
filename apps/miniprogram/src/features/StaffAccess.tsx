@@ -76,7 +76,7 @@ function VerifiedStaffAccess({ onEnter, onBack }: StaffAccessProps) {
       }
     }
   }
-  return <View className='mini-app'><PageHeader title='工作人员登录' subtitle='烟火哨兵 · 工作身份' brand onBack={goBack} />
+  return <View className='mini-app'><PageHeader title='工作人员登录' subtitle='小安智能预警系统 · 工作身份' brand onBack={goBack} />
     <View className='mini-surface'>
       <EmptyState title='验证工作身份' description='使用已获授权并绑定巡防人员的微信账号' />
       {!!error && <Text className='mini-error'>{error}</Text>}

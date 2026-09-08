@@ -112,7 +112,7 @@ export function AlarmScreen({ controller }: { controller: Controller }) {
   }
 
   return <View>
-    <PageHeader title='一键报警' subtitle='烟火哨兵 · 安全联动'><Text className='alarm-platform-label'>平台求助</Text></PageHeader>
+    <PageHeader title='一键报警' subtitle='小安智能预警系统 · 安全联动'><Text className='alarm-platform-label'>平台求助</Text></PageHeader>
     <View className='mini-surface alarm-surface'>
       {unresolvedReceipt ? <View>
         <EmptyState title={controller.loading ? '正在恢复求助回执' : '已有求助回执暂未读到'} description={`编号 ${controller.savedHelpId}${controller.error ? ` · ${controller.error}` : ''}`} onRetry={() => controller.reloadEvents()} />
@@ -168,7 +168,7 @@ export function AlarmScreen({ controller }: { controller: Controller }) {
     </BottomSheet>}
     {sheet === 'confirm' && <BottomSheet title='确认发送平台求助' onClose={() => setSheet(null)}>
       <View className='alarm-confirm-row'><Icon name='mapPin' tone='blue' /><View><Text>{bay}</Text><Text>{coordinates ? '定位坐标将随求助提交' : '手动位置 · 待现场核实'}</Text></View></View>
-      <View className='alarm-confirm-row'><Icon name='shield' tone='blue' /><View><Text>接收方：烟火哨兵平台</Text><Text>不等同于 110 电话报警</Text></View></View>
+      <View className='alarm-confirm-row'><Icon name='shield' tone='blue' /><View><Text>接收方：小安智能预警系统平台</Text><Text>不等同于 110 电话报警</Text></View></View>
       <Text className='mini-label'>联系电话 <Text className='mini-muted'>（选填）</Text></Text><Input className='mini-input' type='number' value={contact} maxlength={20} placeholder='便于工作人员联系' onInput={(event) => setContact(event.detail.value)} />
       <View className='mini-two-actions'><Button className='mini-secondary' onClick={() => setSheet(null)}>暂不发送</Button><Button id='alarm-confirm-send' className='mini-danger' disabled={busy || undefined} onClick={send}><Icon name='send' tone='white' size={32} /><Text>发送求助</Text></Button></View>
     </BottomSheet>}

@@ -60,7 +60,7 @@ export default function LoginEntry() {
             <View className='brand-mark'>
               <Image className='brand-logo-image' src={yanhuoShaobingLogo} mode='aspectFit' />
             </View>
-            <Text className='login-title'>烟火哨兵</Text>
+            <Text className='login-title'>小安智能预警系统</Text>
             <Text className='login-subtitle'>面向夜间商圈的安全治理与联动处置平台</Text>
           </View>
         </View>
@@ -94,7 +94,7 @@ export default function LoginEntry() {
             <View className={`auth-checkbox ${accepted ? 'checked' : ''}`}>
               {accepted && <Text>✓</Text>}
             </View>
-            <Text>《烟火哨兵用户服务协议》及《隐私政策》</Text>
+            <Text>《小安智能预警系统用户服务协议》及《隐私政策》</Text>
           </View>
 
           <Button className='auth-primary-btn' loading={loggingIn} disabled={loggingIn || undefined} onClick={openVisitor}>

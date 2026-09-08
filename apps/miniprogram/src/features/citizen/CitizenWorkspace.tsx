@@ -45,7 +45,7 @@ export function CitizenWorkspace({ initialTab, initialPanel, onStaff, onLogout }
   }, [])
   useEffect(() => { loadMarkets() }, [loadMarkets])
   useEffect(() => {
-    const titles = { home: '烟火哨兵', report: '隐患上报', help: '一键报警', progress: '我的进度', mine: '我的' }
+    const titles = { home: '小安智能预警系统', report: '隐患上报', help: '一键报警', progress: '我的进度', mine: '我的' }
     Taro.setNavigationBarTitle({ title: titles[tab] })
   }, [tab])
 
@@ -78,7 +78,7 @@ export function CitizenWorkspace({ initialTab, initialPanel, onStaff, onLogout }
 
   return <View className='mini-app citizen-app'>
     {tab === 'home' && <View>
-      <PageHeader title='烟火哨兵' subtitle='夜市有烟火，身边有守护' brand>
+      <PageHeader title='小安智能预警系统' subtitle='夜市有烟火，身边有守护' brand>
         <Button className='citizen-market-switch' onClick={() => setPanel('markets')}><Icon name='mapPin' tone='blue' size={29} /><Text>{market?.name || (marketLoading ? '读取商圈信息' : '选择商圈')}</Text><Icon name='chevronDown' size={25} /></Button>
       </PageHeader>
       <View className='mini-surface'>
@@ -124,7 +124,7 @@ export function CitizenWorkspace({ initialTab, initialPanel, onStaff, onLogout }
           controller.events.filter((event) => controller.progressFilter === 'all' || event.kind === controller.progressFilter).map((event) => <EventCard key={event.id} event={event} onClick={() => openDetail('serviceOrder', { id: event.id })} />) :
           <EmptyState title='暂无相关记录' description='仅展示当前设备和会话保存的提交回执' />}
       </View></View>}
-    {tab === 'mine' && <View><PageHeader title='我的' subtitle='烟火哨兵 · 个人服务' />
+    {tab === 'mine' && <View><PageHeader title='我的' subtitle='小安智能预警系统 · 个人服务' />
       <View className='mini-surface'>
         <View className='citizen-profile'><View className='citizen-avatar'><Icon name='user' tone='blue' size={60} /></View><View><Text>{Taro.getStorageSync('yanhuo-shaobing-auth-token') ? '已登录用户' : '访客'}</Text><Text>本机记录 {controller.events.length} 条</Text></View></View>
         <Section title='我的记录'>{[{ name: '求助记录', kind: 'help' as const, icon: 'siren' }, { name: '上报记录', kind: 'report' as const, icon: 'report' }, { name: '线索记录', kind: 'lost' as const, icon: 'search' }].map((item) =>
@@ -132,7 +132,7 @@ export function CitizenWorkspace({ initialTab, initialPanel, onStaff, onLogout }
         <Section title='服务与设置'>
           <Button className='citizen-menu-row' onClick={onStaff}><Icon name='briefcase' size={38} /><Text>工作人员入口</Text><Icon name='chevronRight' size={28} /></Button>
           <Button className='citizen-menu-row' onClick={() => openDetail('privacy')}><Icon name='shield' size={38} /><Text>隐私与授权</Text><Icon name='chevronRight' size={28} /></Button>
-          <Button className='citizen-menu-row' onClick={() => openDetail('about')}><Icon name='info' size={38} /><Text>关于烟火哨兵</Text><Icon name='chevronRight' size={28} /></Button>
+          <Button className='citizen-menu-row' onClick={() => openDetail('about')}><Icon name='info' size={38} /><Text>关于小安智能预警系统</Text><Icon name='chevronRight' size={28} /></Button>
         </Section>
         <Button className='mini-secondary mini-block' onClick={onLogout}><Icon name='logout' size={34} /><Text>返回登录页</Text></Button>
       </View></View>}
