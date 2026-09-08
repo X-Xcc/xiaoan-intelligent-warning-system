@@ -48,7 +48,7 @@ psql --version
 ## 获取代码
 
 ```powershell
-git clone https://github.com/X-Xcc/jiangtan-zhifang.git
+git clone https://github.com/X-Xcc/xiaoan-intelligent-warning-system.git
 cd jiangtan-zhifang
 ```
 
@@ -262,7 +262,7 @@ sudo apt install -y git curl build-essential python3 python3-venv postgresql ngi
 ### 2. 获取代码并安装依赖
 
 ```bash
-git clone https://github.com/X-Xcc/jiangtan-zhifang.git /opt/cicsic
+git clone https://github.com/X-Xcc/xiaoan-intelligent-warning-system.git /opt/cicsic
 cd /opt/cicsic
 npm install
 python3 -m venv server/.venv
