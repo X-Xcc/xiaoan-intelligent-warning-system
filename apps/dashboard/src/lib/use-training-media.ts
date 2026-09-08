@@ -14,11 +14,15 @@ export function useTrainingMedia(taskId?: string, canRecord = true) {
   const [recording, setRecording] = useState(false);
   const [opening, setOpening] = useState(false);
   const [error, setError] = useState('');
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
+  const [cameraId, setCameraId] = useState('');
 
   const releaseStream = () => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
+    setCameraActive(false);
   };
   const releaseUrl = () => {
     if (urlRef.current) URL.revokeObjectURL(urlRef.current);
@@ -35,12 +39,67 @@ export function useTrainingMedia(taskId?: string, canRecord = true) {
     openingRef.current = false;
     setOpening(false);
   };
+  const stopCamera = () => {
+    cancelOpening();
+    stopRecording();
+  };
+  const startCamera = async (deviceId = '') => {
+    if (openingRef.current || recording || !allowedRef.current) return;
+    setError('');
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError('当前环境无法访问摄像头，请使用 HTTPS 或本机 localhost / 127.0.0.1 地址。');
+      return;
+    }
+    const current = ++generation.current;
+    releaseStream();
+    openingRef.current = true;
+    setOpening(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: deviceId ? { deviceId: { exact: deviceId } } : true, audio: false,
+      });
+      if (current !== generation.current || !allowedRef.current) { stream.getTracks().forEach((track) => track.stop()); return; }
+      streamRef.current = stream;
+      releaseUrl();
+      setPreviewUrl('');
+      const track = stream.getTracks().find((item) => item.kind === 'video');
+      setCameraId(track?.getSettings?.().deviceId ?? deviceId);
+      for (const item of stream.getTracks()) item.onended = () => {
+        if (current !== generation.current || streamRef.current !== stream) return;
+        stopCamera();
+        setError('摄像头连接已中断，请检查设备后重新连接。');
+      };
+      if (videoRef.current) videoRef.current.srcObject = stream;
+      setCameraActive(true);
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        if (current === generation.current) setCameras(devices.filter((device) => device.kind === 'videoinput'));
+      } catch { /* Preview remains available when device enumeration is restricted. */ }
+    } catch (cause) {
+      if (current !== generation.current) return;
+      releaseStream();
+      const name = cause instanceof DOMException ? cause.name : '';
+      setError(name === 'NotAllowedError' || name === 'SecurityError'
+        ? '摄像头未授权，请在浏览器地址栏允许摄像头访问，然后重新连接。'
+        : name === 'NotFoundError' ? '未检测到摄像头，请连接设备后重试。'
+        : name === 'OverconstrainedError' ? '所选摄像头不可用，请选择其他设备。'
+        : '摄像头不可用，请检查设备连接或是否被其他应用占用。');
+    } finally {
+      if (current === generation.current) {
+        openingRef.current = false;
+        setOpening(false);
+      }
+    }
+  };
 
   useEffect(() => {
     setPreviewUrl('');
     setDownloadName('');
     setRecording(false);
     setOpening(false);
+    setCameraActive(false);
+    setCameraId('');
+    setCameras([]);
     openingRef.current = false;
     setError('');
     return () => {
@@ -56,6 +115,7 @@ export function useTrainingMedia(taskId?: string, canRecord = true) {
     if (canRecord) return;
     cancelOpening();
     if (recorderRef.current?.state === 'recording') stopRecording();
+    else releaseStream();
   }, [canRecord]);
 
   useEffect(() => {
@@ -66,10 +126,10 @@ export function useTrainingMedia(taskId?: string, canRecord = true) {
   }, [recording, previewUrl]);
 
   useEffect(() => {
-    if (recording && !previewUrl && videoRef.current && streamRef.current) {
+    if ((recording || cameraActive) && !previewUrl && videoRef.current && streamRef.current) {
       videoRef.current.srcObject = streamRef.current;
     }
-  }, [recording, previewUrl]);
+  }, [recording, cameraActive, previewUrl]);
 
   const startRecording = async () => {
     if (openingRef.current || recording || !allowedRef.current) return;
@@ -82,7 +142,7 @@ export function useTrainingMedia(taskId?: string, canRecord = true) {
     openingRef.current = true;
     setOpening(true);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      const stream = streamRef.current ?? await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       if (current !== generation.current || !allowedRef.current) { stream.getTracks().forEach((track) => track.stop()); return; }
       streamRef.current = stream;
       releaseUrl();
@@ -137,6 +197,7 @@ export function useTrainingMedia(taskId?: string, canRecord = true) {
     if (!file || recording || openingRef.current) return;
     if (!file.type.startsWith('video/')) { setError('请选择视频文件。'); return; }
     if (file.size > 200 * 1024 * 1024) { setError('视频不能超过 200 MB。'); return; }
+    releaseStream();
     releaseUrl();
     urlRef.current = URL.createObjectURL(file);
     setPreviewUrl(urlRef.current);
@@ -144,5 +205,8 @@ export function useTrainingMedia(taskId?: string, canRecord = true) {
     setError('');
   };
 
-  return { videoRef, previewUrl, downloadName, recording, opening, error, startRecording, stopRecording, cancelOpening, loadFile };
+  return {
+    videoRef, previewUrl, downloadName, recording, opening, error, startRecording, stopRecording, cancelOpening, loadFile,
+    cameraActive, cameras, cameraId, startCamera, stopCamera,
+  };
 }

@@ -1,9 +1,9 @@
 import {
-  ArrowLeft, ArrowRight, ArrowUpRight, ChartNoAxesColumnIncreasing,
+  ArrowLeft, ArrowUpRight, ChartNoAxesColumnIncreasing,
   Clock3, Database, MapPin, Maximize2, Minimize2, Pause, Play,
   RefreshCw, RotateCcw, ShieldAlert, Sparkles, Target, Volume2, VolumeX,
 } from 'lucide-react';
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { getTrainingReadiness, getTrainingTasks, type TrainingReadiness, type TrainingTask } from '../lib/training-api';
 import { readSituationView, rememberSituationView, type SituationPhase } from '../lib/training-navigation';
 import { useXiaoanVoice } from '../components/XiaoanVoice';
@@ -59,20 +59,6 @@ function categoryColor(item: Situation['composition'][number], index: number) {
   return /^#[0-9a-f]{6}$/i.test(item.color) ? item.color : COLORS[index % COLORS.length];
 }
 
-function zoneTone(zone: Situation['zones'][number]) {
-  if (/高|hot|high/i.test(zone.level) || /^B(?:区)?$/i.test(zone.id) || /烧烤/.test(zone.name)) return 'danger';
-  return /中|medium|warn/i.test(zone.level) ? 'warning' : 'safe';
-}
-
-function zoneName(zone: Situation['zones'][number]) {
-  return zone.name.startsWith(zone.id) ? zone.name : `${zone.id} ${zone.name}`;
-}
-
-function riskLabel(level: string) {
-  const labels: Record<string, string> = { high: '高风险', medium: '中风险', low: '低风险' };
-  return labels[level.trim().toLowerCase()] ?? level;
-}
-
 function dataModeLabel(mode: string | undefined) {
   return /^desensitized[-_]sample$/i.test(mode ?? '') ? '脱敏样例' : mode || '未提供数据模式';
 }
@@ -98,7 +84,6 @@ export function DutySituationPage({ onBack, onTraining }: { onBack: () => void; 
   const restoredScrollRef = useRef(false);
   const { enabled: sound, setEnabled: setSound, speak, stop: stopVoice, error: voiceError } = useXiaoanVoice();
   const generationRef = useRef(0);
-  const svgId = useId().replace(/:/g, '');
   const [snapshot, setSnapshot] = useState<TrainingReadiness | null>(null);
   const [savedView] = useState(readSituationView);
   const phaseClock = useRef({ key: `1:${savedView.phase}`, remaining: savedView.remainingMs, startedAt: 0 });
@@ -109,7 +94,6 @@ export function DutySituationPage({ onBack, onTraining }: { onBack: () => void; 
   const [refreshing, setRefreshing] = useState(false);
   const [loadNotice, setLoadNotice] = useState('正在读取勤务快照');
   const [feedback, setFeedback] = useState('');
-  const [selectedId, setSelectedId] = useState(savedView.selectedId);
   const [phase, setPhase] = useState<SituationPhase>(savedView.phase);
   const [run, setRun] = useState(savedView.phase === 'idle' ? 0 : 1);
   const [paused, setPaused] = useState(savedView.paused);
@@ -219,13 +203,6 @@ export function DutySituationPage({ onBack, onTraining }: { onBack: () => void; 
   }, [phase, paused, run, reducedMotion]);
 
   const situation = snapshot?.dutySituation ?? SAMPLE;
-  const selectedZone = situation.zones.find((zone) => zone.id === selectedId)
-    ?? situation.zones.find((zone) => /烧烤/.test(zone.name) || /^B(?:区)?$/i.test(zone.id))
-    ?? situation.zones[0];
-  const zoneCallouts = situation.zones.map((zone, index) => ({
-    zone, labelX: index % 2 ? 78 : 22,
-    labelY: (Math.floor(index / 2) + 0.5) / Math.ceil(situation.zones.length / 2) * 100,
-  }));
   const hourly = HOURS.map((hour) => situation.timeTrend.find((item) => item.time === hour)!);
   const maxHourly = Math.max(1, ...hourly.map((item) => item.value));
   const largestCategory = situation.composition.reduce((largest, item) => item.value > largest.value ? item : largest);
@@ -243,7 +220,7 @@ export function DutySituationPage({ onBack, onTraining }: { onBack: () => void; 
 
   const openTraining = (taskId?: string) => {
     rememberSituationView({
-      selectedId: selectedZone.id,
+      selectedId: savedView.selectedId,
       scrollY: Math.max(window.scrollY, rootRef.current?.scrollTop ?? 0),
       phase, paused, sound,
       remainingMs: phaseClock.current.key === `${run}:${phase}`
@@ -341,6 +318,28 @@ export function DutySituationPage({ onBack, onTraining }: { onBack: () => void; 
         </div>
       </header>
 
+      <section className="duty-training-ticker" aria-label="训练推荐">
+        <div className="duty-ticker-heading">
+          <div><Target size={20} aria-hidden="true" /><h2>训练推荐</h2><span>03 项</span></div>
+          <button type="button" aria-label="民警单警训练" title="民警单警训练" onClick={() => openTraining()}>民警单警训练<ArrowUpRight size={16} aria-hidden="true" /></button>
+        </div>
+        <div className="duty-ticker-group">
+          {recommendations.map((task, index) => (
+            <button type="button" className="duty-course" key={task.taskId}
+              data-task-id={task.taskId} title={`${task.subject} · ${task.standard}`} onClick={() => openTraining(task.taskId)}>
+              <span className="duty-course-number">0{index + 1}</span>
+              <span className="duty-course-content"><strong>{task.subject}<ArrowUpRight size={17} aria-hidden="true" /></strong>
+                <span title={task.basis}>{conciseBasis(task.basis)}</span>
+                <span className="duty-course-footer"><b>{task.standard}</b><em className="duty-course-status">
+                  {tasks.find((item) => item.taskId === task.taskId)?.status ?? (tasksOnline ? '未分配' : '状态未同步')}{!tasksOnline && tasks.some((item) => item.taskId === task.taskId) ? ' · 未同步' : ''}
+                </em></span>
+              </span>
+            </button>
+          ))}
+        </div>
+        <span className="duty-generation-state">{generationBusy ? '画像生成中' : phase === 'ticker' ? paused ? '动画已暂停' : '画像已生成' : '勤务训练依据'}</span>
+      </section>
+
       <div className="duty-main-grid">
         <section className="duty-composition-panel" aria-labelledby="duty-composition-heading">
           <div className="duty-section-heading"><span className="duty-section-index">01</span><h2 id="duty-composition-heading">警情类型构成</h2><span>占比 %</span></div>
@@ -376,64 +375,8 @@ export function DutySituationPage({ onBack, onTraining }: { onBack: () => void; 
           </div>}
         </section>
 
-        <section className="duty-map-panel" aria-labelledby="duty-map-heading">
-          <div className="duty-section-heading"><span className="duty-section-index">02</span><h2 id="duty-map-heading">重点区域热力</h2><span>风险分布</span></div>
-          <div className="duty-map-surface">
-            <div className="duty-map-topline"><span><MapPin size={14} aria-hidden="true" />{situation.location}</span><span>北 ↑</span></div>
-            <div className="duty-map-canvas"><div className="duty-map-frame">
-            <svg className="duty-map" viewBox="0 0 654 539" role="img" aria-label="夜市风险区域地图，含人流方向示意">
-              <defs>
-                <clipPath id={`${svgId}-map-crop`}><rect width="654" height="539" /></clipPath>
-                <marker id={`${svgId}-flow-arrow`} markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
-                  <path d="M0,0 L7,3.5 L0,7 Z" fill="#126b68" />
-                </marker>
-              </defs>
-              {/* The existing bitmap is a 1440x1000 screenshot; this viewport isolates its map. */}
-              <g clipPath={`url(#${svgId}-map-crop)`}>
-                <image className="duty-map-bitmap" href="/night-market-shengjinta-map.png" x="-371" y="-461" width="1440" height="1000" />
-                <g className="duty-map-flow" aria-label="人流方向示意">
-                  <path d="M100 479 L188 434 L238 405" markerEnd={`url(#${svgId}-flow-arrow)`} />
-                  <path d="M246 394 L280 362 L323 352" markerEnd={`url(#${svgId}-flow-arrow)`} />
-                  <path d="M297 144 L300 209 L333 253" markerEnd={`url(#${svgId}-flow-arrow)`} />
-                </g>
-                {zoneCallouts.map(({ zone, labelX, labelY }) => {
-                  const x = Math.max(85, Math.min(569, zone.x * 6.54));
-                  const y = Math.max(72, Math.min(467, zone.y * 5.39));
-                  const tone = zoneTone(zone);
-                  return (
-                    <g key={zone.id} className={`duty-map-zone is-${tone}${selectedZone.id === zone.id ? ' is-selected' : ''}`}>
-                      <path key={`${run}-fill`} className="duty-zone-fill"
-                        d={`M${x - 74},${y - 36} L${x + 24},${y - 62} L${x + 80},${y - 8} L${x + 58},${y + 52} L${x - 43},${y + 65} L${x - 82},${y + 18} Z`} />
-                      <line data-zone-leader={zone.id} className="duty-zone-leader" x1={x} y1={y} x2={labelX * 6.54} y2={labelY * 5.39} />
-                    </g>
-                  );
-                })}
-              </g>
-            </svg>
-            {zoneCallouts.map(({ zone, labelX, labelY }) => (
-              <button type="button" key={zone.id} data-zone-id={zone.id}
-                className={`duty-zone-button is-${zoneTone(zone)}${selectedZone.id === zone.id ? ' is-selected' : ''}`}
-                style={{ left: `${labelX}%`, top: `${labelY}%` }}
-                aria-label={`${zoneName(zone)}，${riskLabel(zone.level)}，占比${zone.share}%`} aria-pressed={selectedZone.id === zone.id}
-                title={`${zoneName(zone)} · ${riskLabel(zone.level)} · ${zone.description}`} onClick={() => setSelectedId(zone.id)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelectedId(zone.id); }
-                }}>
-                {zoneName(zone)}
-              </button>
-            ))}
-            </div></div>
-            <div className="duty-map-legend"><span><i className="is-safe" />一般</span><span><i className="is-warning" />关注</span><span><i className="is-danger" />高风险</span><span><ArrowRight size={16} />人流示意</span></div>
-          </div>
-          <div className={`duty-zone-summary is-${zoneTone(selectedZone)}`} aria-label="选区摘要">
-            <div className="duty-zone-summary-heading"><span><Target size={18} aria-hidden="true" /><strong>{zoneName(selectedZone)}</strong></span><b>{riskLabel(selectedZone.level)}</b></div>
-            <p>{selectedZone.description}</p>
-            <div className="duty-zone-summary-footer"><span>区域警情占比 <strong>{selectedZone.share}%</strong></span><span>重点时段 20:00-23:00</span></div>
-          </div>
-        </section>
-
         <section className="duty-trend-panel" aria-labelledby="duty-trend-heading">
-          <div className="duty-section-heading"><span className="duty-section-index">03</span><h2 id="duty-trend-heading">警情时段分布</h2><span>强度</span></div>
+          <div className="duty-section-heading"><span className="duty-section-index">02</span><h2 id="duty-trend-heading">警情时段分布</h2><span>强度</span></div>
           <div className="duty-peak-heading"><Clock3 size={20} aria-hidden="true" /><div><span>高发时段</span><strong>20:00-23:00</strong></div></div>
           <div className="duty-hour-chart" role="group" aria-label="18:00至次日01:00逐小时警情分布">
             <div className="duty-chart-grid" aria-hidden="true"><span /><span /><span /><span /></div>
@@ -455,33 +398,6 @@ export function DutySituationPage({ onBack, onTraining }: { onBack: () => void; 
         </section>
       </div>
 
-      <footer className="duty-training-ticker" aria-label="靶向训练科目">
-        <div className="duty-ticker-heading">
-          <div><Target size={19} aria-hidden="true" /><h2>靶向训练</h2><span>03 项</span></div>
-          <button type="button" aria-label="民警单警训练" title="民警单警训练" onClick={() => openTraining()}>民警单警训练<ArrowUpRight size={16} aria-hidden="true" /></button>
-        </div>
-        <div className="duty-ticker-viewport">
-          <div className="duty-ticker-track">
-            {[false, true].map((copy) => (
-              <div className={`duty-ticker-group${copy ? ' duty-ticker-copy' : ''}`} key={String(copy)} aria-hidden={copy || undefined}>
-                {recommendations.map((task, index) => (
-                  <button type="button" className="duty-course" key={task.taskId}
-                    data-task-id={copy ? undefined : task.taskId} tabIndex={copy ? -1 : 0}
-                    title={`${task.subject} · ${task.standard}`} onClick={() => openTraining(task.taskId)}>
-                    <span className="duty-course-number">0{index + 1}</span>
-                    <span className="duty-course-content"><strong>{task.subject}<ArrowUpRight size={15} aria-hidden="true" /></strong><span title={task.basis}>{conciseBasis(task.basis)}</span>
-                      <span className="duty-course-footer"><b>{task.standard}</b><em className="duty-course-status">
-                        {tasks.find((item) => item.taskId === task.taskId)?.status ?? (tasksOnline ? '未分配' : '状态未同步')}{!tasksOnline && tasks.some((item) => item.taskId === task.taskId) ? ' · 未同步' : ''}
-                      </em></span>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-        <span className="duty-generation-state">{generationBusy ? '画像生成中' : phase === 'ticker' ? paused ? '动画已暂停' : '画像已生成' : '勤务训练依据'}</span>
-      </footer>
     </main>
   );
 }

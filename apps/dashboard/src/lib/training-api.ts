@@ -4,7 +4,7 @@ export type TrainingTask = {
   traineeId: string;
   teamName: string;
   equipment: string[];
-  standard: { label: string; thresholdSeconds?: number; targetMeters?: number };
+  standard: { label: string; thresholdSeconds?: number; targetMeters?: number; assessmentMode?: 'instructor' };
   basis: string[];
   status: string;
   elapsedSeconds?: number | null;
@@ -13,11 +13,24 @@ export type TrainingTask = {
   exception?: { reason: string; auditId: string } | null;
 };
 
+export type TrainingSubject = Pick<TrainingTask, 'subject' | 'equipment' | 'standard' | 'basis'> & { subjectId: string; category: string };
+
+export function filterTrainingSubjects(subjects: TrainingSubject[], category: string, query: string, selectedOnly: boolean, selectedIds: string[]) {
+  const keywords = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
+  return subjects.filter((item) => (category === 'all' || item.category === category)
+    && (!selectedOnly || selectedIds.includes(item.subjectId))
+    && keywords.every((keyword) => `${item.subject} ${item.category} ${item.equipment.join(' ')}`.toLocaleLowerCase().includes(keyword)));
+}
+
+export function isCreatedTrainingTask(task: TrainingTask): boolean {
+  return !/^TRAIN-READINESS-00[1-3]$/.test(task.taskId);
+}
+
 export type TrainingAssessment = {
   assessmentId: string;
   taskId: string;
   inputMode: string;
-  score: { standardization: number; completionTime: number; coordination: number; total: number };
+  score: { standardization: number | null; completionTime: number | null; coordination: number | null; total: number | null };
   confidence: number;
   evidence: string[];
   evidenceTime: string;

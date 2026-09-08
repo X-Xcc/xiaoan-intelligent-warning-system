@@ -95,7 +95,7 @@ def fallback_camera_items() -> list[dict[str, Any]]:
 def video_status() -> dict[str, Any]:
     try:
         stats = _read_json("/api/stats/summary")
-        online = True
+        online = bool(stats.get("online", True))
     except SecurityVideoUnavailable:
         stats = {}
         online = False

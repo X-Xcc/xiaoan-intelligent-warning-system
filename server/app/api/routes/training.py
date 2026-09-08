@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, StrictInt, field_validator
 
 from app.services import training_pilot
 
@@ -17,10 +17,16 @@ class CompleteTaskInput(BaseModel):
     elapsedSeconds: int = Field(ge=0, le=3600)
 
 
+class CreateTasksInput(BaseModel):
+    subjectIds: list[str] = Field(min_length=1, max_length=200)
+    traineeId: str = Field(min_length=1, max_length=80)
+
+
 class ReviewAssessmentInput(BaseModel):
     decision: Literal["confirmed", "revised", "rejected"]
     reason: str = Field(min_length=1, max_length=500)
     reviewerId: str = Field(min_length=1, max_length=80)
+    scores: dict[str, StrictInt] | None = None
 
     @field_validator("reason", "reviewerId")
     @classmethod
@@ -50,6 +56,20 @@ def readiness() -> dict:
 @router.get("/tasks")
 def tasks() -> dict:
     return {"dataMode": training_pilot.DATA_MODE, "items": training_pilot.list_tasks()}
+
+
+@router.get("/subjects")
+def subjects() -> dict:
+    return {"dataMode": training_pilot.DATA_MODE, "items": training_pilot.list_subjects()}
+
+
+@router.post("/tasks")
+def create_tasks(payload: CreateTasksInput) -> dict:
+    try:
+        items = training_pilot.create_tasks(payload.subjectIds, payload.traineeId)
+    except training_pilot.TrainingStateError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    return {"items": items}
 
 
 @router.post("/tasks/{task_id}/start")
@@ -123,7 +143,7 @@ def retry(task_id: str) -> dict:
 @router.post("/assessments/{assessment_id}/review")
 def review(assessment_id: str, payload: ReviewAssessmentInput) -> dict:
     try:
-        assessment = training_pilot.review_assessment(assessment_id, payload.decision, payload.reason, payload.reviewerId)
+        assessment = training_pilot.review_assessment(assessment_id, payload.decision, payload.reason, payload.reviewerId, payload.scores)
     except training_pilot.TrainingStateError as error:
         raise HTTPException(status_code=409, detail=str(error)) from error
     if assessment is None:

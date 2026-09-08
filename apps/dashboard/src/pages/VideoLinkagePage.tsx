@@ -35,7 +35,7 @@ type FightAlertReport = {
 };
 
 const fallbackCameras: CameraItem[] = [
-  { id: 'local', name: '本机摄像头', online: true, source: '浏览器本机信号', area: '控制席' },
+  { id: 'robot-dog-01', name: '机械狗巡检视角', online: false, source: 'ROBOT-DOG-01', area: '东门主通道 · 低位巡检' },
   { id: 'cam-001', name: '东门主通道', online: true, source: 'CCTV-01', area: '东门' },
   { id: 'cam-002', name: '西门主通道', online: true, source: 'CCTV-02', area: '西门' },
   { id: 'cam-003', name: '中心广场', online: true, source: 'CCTV-03', area: '中心广场' },
@@ -54,8 +54,8 @@ const fallbackCameras: CameraItem[] = [
   { id: 'cam-016', name: '河景高位点', online: true, source: 'CCTV-16', area: '河景观景位' },
 ];
 
-// 01 路专用于浏览器本机信号；02–16 路各自绑定一台独立的 CCTV 源。
-const defaultChannels = ['local', ...Array.from({ length: 15 }, (_, index) => `cam-${String(index + 2).padStart(3, '0')}`)];
+// 01 路专用于 Go2 真实画面；02–16 路各自绑定一台独立的 CCTV 源。
+const defaultChannels = ['robot-dog-01', ...Array.from({ length: 15 }, (_, index) => `cam-${String(index + 2).padStart(3, '0')}`)];
 const mechanicalDogFallbackFeed = '/night-market-cam-02.png';
 const mechanicalDogMeta = { name: '机械狗巡检视角', area: '东门主通道 · 低位巡检', source: 'ROBOT-DOG-01' };
 
@@ -109,15 +109,11 @@ function buildFallbackFightReport(): FightAlertReport {
 }
 
 export function VideoLinkagePage({ onBack }: { onBack: () => void }) {
-  const videoRefs = useRef<Array<HTMLVideoElement | null>>([]);
   const imageRefs = useRef<Array<HTMLImageElement | null>>([]);
-  const fightAlertVideoRef = useRef<HTMLVideoElement | null>(null);
-  const localStreamRef = useRef<MediaStream | null>(null);
   const [cameras, setCameras] = useState<CameraItem[]>(fallbackCameras);
   const [channels, setChannels] = useState(defaultChannels);
   const [selectedChannel, setSelectedChannel] = useState(0);
   const [detection, setDetection] = useState<DetectionStats>({ people: 12, fire: 0, abnormal: 0, distance: 1 });
-  const [cameraStarted, setCameraStarted] = useState(false);
   const [cameraError, setCameraError] = useState('');
   const [serviceOnline, setServiceOnline] = useState(false);
   const [failedFeeds, setFailedFeeds] = useState<Record<string, boolean>>({});
@@ -142,24 +138,24 @@ export function VideoLinkagePage({ onBack }: { onBack: () => void }) {
       try {
         const videoResponse = await fetch(`${API_BASE}/security-video/status`);
         if (!videoResponse.ok) throw new Error('视频服务暂不可用');
-        const payload = await videoResponse.json() as { cameras?: CameraItem[]; detection?: DetectionStats; stats?: DetectionStats };
+        const payload = await videoResponse.json() as { online?: boolean; cameras?: CameraItem[]; detection?: DetectionStats; stats?: DetectionStats };
         if (cancelled) return;
-        setServiceOnline(true);
+        setServiceOnline(payload.online === true);
         if (payload.cameras?.length) {
           // Keep the configured 16-channel wall even when the upstream reports only
           // the currently reachable cameras. Merging prevents every unknown channel
           // from being remapped to the first returned feed.
           const upstreamById = new Map(payload.cameras.filter((camera) => camera.id !== 'local').map((camera) => [camera.id, camera]));
-          const mergedCameras = fallbackCameras.slice(1).map((fallback) => ({ ...fallback, ...upstreamById.get(fallback.id) }));
+          const mergedCameras = fallbackCameras.map((fallback) => ({ ...fallback, ...upstreamById.get(fallback.id) }));
           payload.cameras.filter((camera) => camera.id !== 'local' && !mergedCameras.some((item) => item.id === camera.id)).forEach((camera) => mergedCameras.push(camera));
-          const uniqueCameras = [fallbackCameras[0], ...mergedCameras];
+          const uniqueCameras = mergedCameras;
           setCameras(uniqueCameras);
           setChannels((current) => current.map((source, index) => {
-            if (index === 0 && source === 'local') return 'local';
+            if (index === 0 && source === 'robot-dog-01') return 'robot-dog-01';
             if (source !== 'local' && uniqueCameras.some((camera) => camera.id === source)) return source;
             // Keep the deterministic channel id even when that camera is offline.
             // Falling back to the first returned camera duplicates 01 路 across the wall.
-            const defaultCameraId = `cam-${String(index + 2).padStart(3, '0')}`;
+            const defaultCameraId = index === 0 ? 'robot-dog-01' : `cam-${String(index + 2).padStart(3, '0')}`;
             return uniqueCameras.find((camera) => camera.id === defaultCameraId)?.id ?? defaultCameraId;
           }));
         }
@@ -170,26 +166,15 @@ export function VideoLinkagePage({ onBack }: { onBack: () => void }) {
       }
     };
     void loadStatus();
-    return () => { cancelled = true; };
+    const timer = window.setInterval(() => { void loadStatus(); setFailedFeeds({}); }, 5000);
+    return () => { cancelled = true; window.clearInterval(timer); };
   }, []);
-
-  useEffect(() => () => localStreamRef.current?.getTracks().forEach((track) => track.stop()), []);
 
   useEffect(() => {
     const syncFullscreen = () => setFullscreen(Boolean(document.fullscreenElement));
     document.addEventListener('fullscreenchange', syncFullscreen);
     return () => document.removeEventListener('fullscreenchange', syncFullscreen);
   }, []);
-
-  useEffect(() => {
-    videoRefs.current.forEach((element, index) => {
-      if (element && index === 0 && channels[index] === 'local') element.srcObject = localStreamRef.current;
-    });
-  }, [channels, cameraStarted]);
-
-  useEffect(() => {
-    if (fightAlertVideoRef.current && cameraStarted) fightAlertVideoRef.current.srcObject = localStreamRef.current;
-  }, [cameraStarted, fightAlertOpen]);
 
   useEffect(() => {
     if (!fightAlertLoading) return undefined;
@@ -199,34 +184,14 @@ export function VideoLinkagePage({ onBack }: { onBack: () => void }) {
 
   const onlineCount = cameras.filter((camera) => camera.online).length;
 
-  const startLocalCamera = async () => {
-    setCameraError('');
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setCameraError('当前浏览器不支持本机摄像头访问。');
-      return;
-    }
-    try {
-      localStreamRef.current?.getTracks().forEach((track) => track.stop());
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-      localStreamRef.current = stream;
-      setCameraStarted(true);
-    } catch {
-      setCameraStarted(false);
-      setCameraError('请通过本机 localhost 页面授权摄像头后重试。');
-    }
-  };
-
   const setChannelSource = (channelIndex: number, sourceId: string) => {
-    // The local webcam is reserved for 01 路; never let another tile bind to it.
-    if (channelIndex !== 0 && sourceId === 'local') return;
     setChannels((current) => current.map((source, index) => index === channelIndex ? sourceId : source));
     setSelectedChannel(channelIndex);
   };
 
   const captureFrameForChannel = async (channelIndex: number): Promise<CapturedFrame> => {
-    const video = videoRefs.current[channelIndex];
     const image = imageRefs.current[channelIndex];
-    const source = video && video.readyState >= 2 ? video : image;
+    const source = image;
     if (!source) return {};
     try {
       const canvas = document.createElement('canvas');
@@ -260,7 +225,7 @@ export function VideoLinkagePage({ onBack }: { onBack: () => void }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          cameraId: 'local',
+          cameraId: 'robot-dog-01',
           cameraName: mechanicalDogMeta.name,
           ...frame,
           detection: {
@@ -343,7 +308,7 @@ export function VideoLinkagePage({ onBack }: { onBack: () => void }) {
     <section className="monitoring-workspace">
       <div className="monitoring-wall-head">
         <div><span>监控中心 / {channels.length} 路视频</span><h1>全域视频监控</h1></div>
-        <div className="monitoring-wall-controls"><span className="monitoring-selected-label">当前聚焦 {String(selectedChannel + 1).padStart(2, '0')} 路</span><button type="button" className="monitoring-subtle-button" onClick={() => void startLocalCamera()}><Camera size={16} />{cameraStarted ? '重新接入本机' : '接入本机摄像头'}</button><button type="button" className="monitoring-review-button" title="机械狗异常事件研判" onClick={() => void openFightAlert()} disabled={fightAlertLoading}><AlertTriangle size={16} />异常研判</button></div>
+        <div className="monitoring-wall-controls"><span className="monitoring-selected-label">当前聚焦 {String(selectedChannel + 1).padStart(2, '0')} 路</span><span className="monitoring-subtle-button"><Camera size={16} />Go2 真实画面</span><button type="button" className="monitoring-review-button" title="机械狗异常事件研判" onClick={() => void openFightAlert()} disabled={fightAlertLoading}><AlertTriangle size={16} />异常研判</button></div>
       </div>
 
       <div className="monitoring-layout">
@@ -351,21 +316,18 @@ export function VideoLinkagePage({ onBack }: { onBack: () => void }) {
           {channels.map((sourceId, index) => {
             const camera = cameras.find((item) => item.id === sourceId) ?? { id: sourceId, name: `视频源 ${sourceId}`, online: false, area: '未接入' };
             const isSelected = selectedChannel === index;
-            const isLocalChannel = index === 0 && camera.id === 'local';
             const isMechanicalDogChannel = index === 0;
-            const displayCamera = isMechanicalDogChannel ? { ...camera, ...mechanicalDogMeta, online: true } : camera;
+            const displayCamera = isMechanicalDogChannel ? { ...camera, ...mechanicalDogMeta } : camera;
             const liveFeedUrl = streamUrl(camera);
-            const hasLiveFeed = !isLocalChannel && camera.id !== 'local' && Boolean(camera.feedUrl) && !failedFeeds[liveFeedUrl];
-            const placeholderFeed = isMechanicalDogChannel && !cameraStarted ? mechanicalDogFallbackFeed : !isLocalChannel && !hasLiveFeed ? placeholderFeedByCameraId[camera.id] : undefined;
-            const feedStatus = (isLocalChannel && cameraStarted) || hasLiveFeed ? '实时信号' : placeholderFeed && !failedFeeds[placeholderFeed] ? '演示画面' : '信号未接入';
+            const hasLiveFeed = camera.online && Boolean(camera.feedUrl) && !failedFeeds[liveFeedUrl];
+            const placeholderFeed = !hasLiveFeed ? (isMechanicalDogChannel ? mechanicalDogFallbackFeed : placeholderFeedByCameraId[camera.id]) : undefined;
+            const feedStatus = hasLiveFeed ? '实时信号' : placeholderFeed && !failedFeeds[placeholderFeed] ? '演示画面' : '信号未接入';
             return <article key={`channel-${index}`} className={`monitoring-tile ${isSelected ? 'selected' : ''} ${displayCamera.online ? 'online' : 'offline'}`} onClick={() => setSelectedChannel(index)}>
               <div className={`monitoring-scene scene-${(index % 8) + 1}`}>
-                {isLocalChannel && cameraStarted && <video ref={(element) => { videoRefs.current[index] = element; }} autoPlay muted playsInline />}
                 {hasLiveFeed && <img ref={(element) => { imageRefs.current[index] = element; }} crossOrigin="anonymous" src={liveFeedUrl} alt={`${camera.name}视频流`} onError={() => setFailedFeeds((current) => ({ ...current, [liveFeedUrl]: true }))} />}
                 {placeholderFeed && !failedFeeds[placeholderFeed] && <img ref={(element) => { imageRefs.current[index] = element; }} src={placeholderFeed} alt={`${displayCamera.name}监控画面`} onError={() => setFailedFeeds((current) => ({ ...current, [placeholderFeed]: true }))} />}
-                {!hasLiveFeed && (!placeholderFeed || failedFeeds[placeholderFeed]) && !(isLocalChannel && cameraStarted) && <div className="monitoring-feed-empty"><Camera size={24} /><span>暂无可用信号</span></div>}
+                {!hasLiveFeed && (!placeholderFeed || failedFeeds[placeholderFeed]) && <div className="monitoring-feed-empty"><Camera size={24} /><span>暂无可用信号</span></div>}
                 <span className={`monitoring-feed-status ${feedStatus === '实时信号' ? 'live' : ''}`}>{feedStatus}</span>
-                {isLocalChannel && !cameraStarted && <button type="button" className="monitoring-local-start" onClick={(event) => { event.stopPropagation(); void startLocalCamera(); }}><Camera size={14} />接入本机</button>}
               </div>
               <div className="monitoring-tile-meta"><span><i className={displayCamera.online ? 'online' : ''} />{String(index + 1).padStart(2, '0')} 路</span><button className="monitoring-feed-name" type="button" title={`聚焦${displayCamera.name}`} aria-pressed={isSelected} onClick={() => setSelectedChannel(index)}><strong>{displayCamera.name}</strong></button><small>{displayCamera.area ?? displayCamera.source ?? '监控区域'}</small></div>
               {isMechanicalDogChannel ? <div className="monitoring-source-select monitoring-source-locked"><span>设备</span><strong>ROBOT-DOG-01</strong></div> : <label className="monitoring-source-select" onClick={(event) => event.stopPropagation()}><span>画面源</span><select value={sourceId} onChange={(event) => setChannelSource(index, event.target.value)} aria-label={`第 ${index + 1} 路画面源`}>{cameras.filter((item) => item.id !== 'local').map((item) => <option key={item.id} value={item.id}>{item.name}{item.online ? '' : '（待接入）'}</option>)}</select></label>}
@@ -382,7 +344,7 @@ export function VideoLinkagePage({ onBack }: { onBack: () => void }) {
         <header className="fight-alert-header"><div><span>ABNORMAL EVENT REVIEW</span><strong>异常事件研判 · 机械狗</strong></div><Space className="fight-alert-tags" size={8} wrap><Tag color="orange"><AlertTriangle size={13} />{fightAlertReport.riskLevel} · 疑似肢体冲突</Tag><Badge status={fightAlertLoading ? 'processing' : 'success'} text={<span className="fight-alert-model-status">{fightAlertLoading && <Spin size="small" />}{fightAlertLoading ? '千问视觉复核中' : fightAlertReport.confidence}</span>} /></Space></header>
         <div className="fight-alert-body">
           <Card size="small" className="fight-alert-source" title="机械狗巡检画面" extra={<Tag color="cyan">ROBOT-DOG-01</Tag>}>
-            <div className="fight-alert-frame">{cameraStarted ? <video ref={fightAlertVideoRef} autoPlay muted playsInline /> : <img src={mechanicalDogFallbackFeed} alt="机械狗巡检来源画面" />}<div className="fight-alert-hud top"><span>{cameraStarted ? '本机实时信号' : '演示画面'}</span><span>{fightAlertReport.capturedAt}</span></div><div className="fight-alert-hud bottom">东门主通道 · 低位巡检</div></div>
+            <div className="fight-alert-frame"><img src={fightAlertFrame || mechanicalDogFallbackFeed} alt="机械狗巡检来源画面" /><div className="fight-alert-hud top"><span>截帧预览</span><span>{fightAlertReport.capturedAt}</span></div><div className="fight-alert-hud bottom">东门主通道 · 低位巡检</div></div>
             <Descriptions size="small" column={1} className="fight-alert-source-details" items={[{ key: 'source', label: '来源', children: '东门主通道低位巡检' }, { key: 'time', label: '截取时间', children: fightAlertReport.capturedAt }, { key: 'device', label: '设备', children: '机械狗' }]} />
           </Card>
           <aside className="fight-alert-analysis">

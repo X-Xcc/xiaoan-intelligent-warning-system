@@ -32,6 +32,9 @@ import {
   Workflow,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { CommandIntakeSheet } from '../components/CommandIntakeSheet';
+import { demoIntakeEvents } from '../lib/intake-demo-data';
+import { useAlarmIntake } from '../lib/use-alarm-intake';
 
 type DomainNavigate = (view: 'platform' | 'command' | 'case' | 'community' | 'ai-center' | 'duty-plan' | 'admin') => void;
 type Tone = 'blue' | 'green' | 'orange' | 'purple' | 'red';
@@ -443,13 +446,6 @@ const trainingModules: AssistantModule[] = [
   { id: 'archive', title: 'AI 训练档案（一人一档）', description: '训练全程可追溯并实时监测指标', detail: '汇聚课程、体能、健康和复训记录。', tone: 'green', icon: Database },
 ];
 
-const demoCommandEvents: DomainEvent[] = [
-  { id: 'alarm-demo-001', title: '群众求助：家属失联', bay: '东湖分局 · 站前网格', time: '刚刚', status: '待分派', level: '中风险', owner: '未分派' },
-  { id: 'alarm-demo-002', title: '纠纷警情：现场有人受伤', bay: '西湖分局 · 绳金塔街道', time: '3 分钟前', status: '待确认', level: '高风险', owner: '指挥席 02' },
-  { id: 'alarm-demo-003', title: '反诈劝阻：疑似转账风险', bay: '青山湖分局 · 湖坊派出所', time: '8 分钟前', status: '已派警', level: '中风险', owner: '巡逻组 A' },
-  { id: 'alarm-demo-004', title: '邻里求助：噪声扰民', bay: '红谷滩分局 · 凤凰洲网格', time: '12 分钟前', status: '处理中', level: '低风险', owner: '社区民警 17' },
-];
-
 function toneClass(tone: Tone) {
   return 'domain-tone-' + tone;
 }
@@ -462,6 +458,7 @@ function DomainHeader({
   apiOnline,
   navigate,
   backLabel = '返回平台总览',
+  showFlow = true,
 }: {
   eyebrow: string;
   title: string;
@@ -470,6 +467,7 @@ function DomainHeader({
   apiOnline: boolean;
   navigate: DomainNavigate;
   backLabel?: string;
+  showFlow?: boolean;
 }) {
   const operationFlow = operationFlows[eyebrow];
 
@@ -485,7 +483,7 @@ function DomainHeader({
           <button className="domain-secondary-button" type="button" onClick={() => navigate('platform')}><ArrowLeft size={15} />{backLabel}</button>
         </div>
       </header>
-      {operationFlow && <DomainOperationFlow steps={operationFlow.steps} />}
+      {showFlow && operationFlow && <DomainOperationFlow steps={operationFlow.steps} />}
     </>
   );
 }
@@ -549,6 +547,7 @@ function ProcessSteps({ label, steps, active, onSelect, doneUntil = 0 }: { label
         const state = index < doneUntil || index < active ? 'done' : index === active ? 'active' : '';
         return (
           <button
+            aria-label={step.label}
             aria-current={index === active ? 'step' : undefined}
             className={'domain-process-step ' + state}
             key={step.label}
@@ -645,60 +644,20 @@ function ObjectWorkbench({ className, objectPanel, processPanel, navigate }: { c
   );
 }
 
-export function CommandOperationsPage({ overview, apiOnline, navigate, refresh }: DomainPageProps) {
-  const [selectedId, setSelectedId] = useState(overview.events?.[0]?.id ?? demoCommandEvents[0].id);
-  const [activeTool, setActiveTool] = useState('transcribe');
-  const [activeProcess, setActiveProcess] = useState(0);
-  const [transcript, setTranscript] = useState('报警人称：站前路口有人争执，一名人员疑似受伤，请尽快到场。');
-  const [actionState, setActionState] = useState<Record<string, boolean>>({});
-  const events = overview.events?.length ? overview.events : demoCommandEvents;
-  const selected = useMemo(() => events.find((event) => event.id === selectedId) ?? events[0], [events, selectedId]);
-  const activeModule = commandModules.find((module) => module.id === activeTool) ?? commandModules[0];
-  const completed = Boolean(actionState[activeTool]);
-  const processSteps: ProcessStep[] = [
-    { label: '接警转写', detail: '录音转结构化警情', tool: 'transcribe' },
-    { label: '问询补录', detail: '补齐伤情与危险源', tool: 'question' },
-    { label: '定位推荐警力', detail: '结合位置与警力状态', tool: 'dispatch' },
-    { label: '人工派警', detail: '确认后下达处置指令', tool: 'dispatch' },
-  ];
-  const markAction = () => setActionState((state) => ({ ...state, [activeTool]: true }));
-  const selectProcess = (index: number) => {
-    setActiveProcess(index);
-    setActiveTool(processSteps[index].tool ?? activeTool);
-  };
-
-  const renderCommandTool = () => {
-    if (activeTool === 'transcribe') {
-      return <div className="ops-capability-body"><label className="ops-field-label">原始报警语音 / 现场补录</label><textarea value={transcript} onChange={(event) => setTranscript(event.target.value)} rows={5} /><div className="ops-inline-meta"><span><Mic size={14} />普通话识别</span><span>时间戳 00:18 · 置信度 96%</span></div><button type="button" className="domain-primary-button" onClick={markAction}><CheckCircle2 size={15} />{completed ? '已生成结构化文本' : '生成结构化文本'}</button>{completed && <div className="ops-result-card"><strong>结构化警情已生成</strong><span>地点：站前路口 · 类型：纠纷求助 · 伤情：疑似轻微</span><small>依据：报警原音、转写时间戳 · 数据时间：刚刚 · 审计编号：AI-ALARM-0001</small></div>}</div>;
-    }
-    if (activeTool === 'summary') {
-      return <div className="ops-capability-body"><div className="ops-summary-preview"><span>警情概要</span><strong>{selected?.title ?? '待选择警情'}</strong><p>{transcript}</p><div><b>地点</b><span>{selected?.bay ?? '站前路口'}</span><b>状态</b><span>{selected?.status ?? '待生成'}</span></div></div><button type="button" className="domain-primary-button" onClick={markAction}><FileText size={15} />{completed ? '警情摘要已进入确认队列' : '确认警情摘要'}</button><small className="domain-action-safety">确认只记录人工意见，不直接改变警情状态。</small></div>;
-    }
-    if (activeTool === 'dispatch') {
-      return <div className="ops-capability-body"><div className="ops-recommendation-grid"><div><small>建议分类</small><strong>纠纷 / 人身安全</strong><b>置信度 92%</b></div><div><small>警情定位</small><strong>站前路口东南侧</strong><b>定位精度 18 m</b></div><div><small>推荐警力</small><strong>站前派出所巡逻组</strong><b>距离约 1.8 km</b></div></div><div className="ops-evidence-line"><ShieldCheck size={14} />依据：关键词“争执、受伤” · 历史同址警情 3 起 · 数据时间：刚刚</div><button type="button" className="domain-primary-button" onClick={markAction}><Workflow size={15} />{completed ? '建议已进入人工确认队列' : '确认分级派警建议'}</button><small className="domain-action-safety">高风险派警建议须由指挥席下达，未确认前不能显示为已派警。</small></div>;
-    }
-    if (activeTool === 'question') {
-      return <div className="ops-capability-body"><div className="ops-checks">{['是否有人受伤、是否需要医疗联动', '涉事人员关系与是否有利器', '现场是否仍有冲突或危险源', '报警人联系方式与安全位置'].map((item, index) => <label key={item}><input type="checkbox" defaultChecked={index < 2} /><span>{item}</span><small>关键问询 {String(index + 1).padStart(2, '0')}</small></label>)}</div><button type="button" className="domain-primary-button" onClick={markAction}><MessageSquareText size={15} />{completed ? '问询要点已带入警单' : '生成问询指引'}</button></div>;
-    }
-    if (activeTool === 'portrait') {
-      return <div className="ops-capability-body"><div className="ops-portrait"><div className="ops-portrait-ring"><Fingerprint size={26} /></div><div><strong>站前路口 · 纠纷警情画像</strong><p>关联人员 2 名 · 近 30 日同址警情 3 起 · 夜间风险上升</p><div className="ops-tag-row"><span>时空关联</span><span>重复警情</span><span>伤情待确认</span></div></div></div><button type="button" className="domain-primary-button" onClick={markAction}><Radio size={15} />{completed ? '画像已推送至处警端' : '推送警情画像'}</button></div>;
-    }
-    if (activeTool === 'trend') {
-      return <div className="ops-capability-body"><div className="ops-trend-list">{['纠纷求助', '反诈劝阻', '人员走失', '噪声扰民'].map((item, index) => <div key={item}><span>{item}</span><div><i style={{ width: [82, 68, 46, 31][index] + '%' }} /></div><b>{[82, 68, 46, 31][index]}%</b></div>)}</div><button type="button" className="domain-primary-button" onClick={markAction}><BarChart3 size={15} />{completed ? '研判摘要已归档' : '生成态势研判摘要'}</button></div>;
-    }
-    return <div className="ops-capability-body"><div className="ops-risk-card"><span className="ops-risk-level">高关注</span><div><strong>同一人 / 同一地址重复报警</strong><p>近 7 日关联 3 起纠纷类警情，建议由社区民警复核人员关系和地址风险。</p></div><b>风险分 87</b></div><button type="button" className="domain-primary-button" onClick={markAction}><AlertTriangle size={15} />{completed ? '已加入人工核查队列' : '加入人工核查队列'}</button></div>;
-  };
+export function CommandOperationsPage({ navigate }: DomainPageProps) {
+  const playback = new URLSearchParams(window.location.search).get('mode') === 'playback';
+  const intake = useAlarmIntake(!playback);
+  const events = playback ? demoIntakeEvents : intake.events;
 
   return (
-    <section className="domain-page command-operations-page">
-      <DomainHeader eyebrow="接处警系统 / DISPATCH OPERATIONS" title="接处警工作台" description="警情受理、分级研判与派警确认" icon={Radio} apiOnline={apiOnline} navigate={navigate} />
-      <div className="domain-metrics"><DomainMetric label="今日警情" value={overview.stats?.today_events ?? events.length} note="统一事件中心" icon={Radio} tone="blue" /><DomainMetric label="待分派" value={overview.stats?.pending_orders ?? '—'} note="人工确认队列" icon={Workflow} tone="orange" /><DomainMetric label="高风险待确认" value={overview.stats?.urgent_events ?? '—'} note="不得自动派警" icon={AlertTriangle} tone="red" /><DomainMetric label="平均响应" value={overview.stats?.avg_response_minutes ? overview.stats.avg_response_minutes + ' 分钟' : '—'} note="接警到签收" icon={Gauge} tone="green" /></div>
-      <ObjectWorkbench
-        className="command-intake-workbench"
-        navigate={navigate}
-        objectPanel={<><CurrentObjectCard label="当前警情对象" title={selected?.title ?? '待同步警情'} status={selected?.status ?? '待分派'} details={[{ label: '警情编号', value: selected?.id ?? '待生成' }, { label: '报警位置', value: selected?.bay ?? '待定位' }, { label: '风险等级', value: selected?.level ?? '待研判' }, { label: '当前责任', value: selected?.owner ?? '未分派' }]} /><section className="domain-panel domain-object-queue"><PanelHeading kicker="INCIDENT QUEUE" title="待处置警情" icon={Radio} /><div className="ops-queue-list">{events.map((event, index) => <button key={event.id ?? String(index)} type="button" className={selected?.id === event.id ? 'active' : ''} onClick={() => setSelectedId(event.id ?? '')}><span className={'ops-queue-dot ' + (event.level === '高风险' ? 'danger' : event.level === '中风险' ? 'warn' : 'info')} /><span><strong>{event.title ?? '待同步警情'}</strong><small>{event.bay ?? '未上报辖区'} · {event.time ?? '刚刚'}</small></span><b>{event.status ?? '待分派'}</b></button>)}</div><div className="ops-queue-footer"><span><Radio size={13} />{apiOnline ? '实时同步' : '演示数据'}</span><button type="button" onClick={() => void refresh?.()}><ArrowRight size={14} />刷新队列</button></div></section><AiAssistMenu label="接处警 AI 助手" modules={commandModules} activeId={activeTool} onSelect={setActiveTool} /></>}
-        processPanel={<><section className="domain-panel"><PanelHeading kicker="INCIDENT DISPOSITION CHAIN" title="警情接入—分级派警台" icon={Workflow} description="操作对象始终是当前选中的单条警情，所有建议保留人工确认与审计。"/><ProcessSteps label="警情" steps={processSteps} active={activeProcess} onSelect={selectProcess} doneUntil={Object.keys(actionState).length > 0 ? 1 : 0} /></section><section className="domain-panel domain-active-process"><PanelHeading kicker="CURRENT ACTION" title={activeModule.title} icon={activeModule.icon} description={activeModule.detail} />{renderCommandTool()}<ContractNote>派警建议展示位置、推荐警力和分级依据；派警指令必须由指挥席人工确认。</ContractNote></section></>}
-      />
+    <section className="domain-page command-operations-page" data-source={playback ? 'demo' : intake.online ? 'api' : 'offline'}>
+      <DomainHeader eyebrow="接处警系统 / DISPATCH OPERATIONS" title="接处警工作台" description={playback ? '演示回放 · 警情受理、分级研判与派警确认' : '警情受理、分级研判与派警确认'} icon={Radio} apiOnline={!playback && intake.online} navigate={navigate} showFlow={false} />
+      {!playback && <div className="intake-sync-status" role="status">
+        <span>{intake.loading ? '正在连接报警接收服务' : intake.online ? `报警接收在线 · ${events.length} 条警情` : '报警接收离线'}</span>
+        {intake.notice && <strong>{intake.notice}</strong>}
+      </div>}
+      {!playback && intake.error && <p className="intake-error" role="alert">{intake.error}</p>}
+      <CommandIntakeSheet events={events} refresh={playback ? undefined : intake.refresh} />
     </section>
   );
 }

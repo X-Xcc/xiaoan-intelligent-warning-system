@@ -4,6 +4,14 @@ import type { TrainingSnapshot } from './training-api';
 export const DOCUMENT_VOICE_CUES = {
   'portrait-ready': '画像已生成',
   'training-passed': '全体科目达标',
+  'new-incident': '新警情',
+  'route-pushed': '路线已推送',
+  'verification-done': '核验完成',
+  'linked-four': '已串并4起',
+  'anomaly-stay': '异常停留，疑似藏匿',
+  'chain-closed': '链条闭环',
+  'target-alone': '目标落单，建议盾棍',
+  '方案已推送': '方案已推送',
 } as const;
 export type XiaoanCue = keyof typeof DOCUMENT_VOICE_CUES;
 

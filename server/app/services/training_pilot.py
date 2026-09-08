@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from typing import Any
+from uuid import uuid4
 
 from sqlalchemy import select
 
 from app.services.database import DB_LOCK, SessionLocal, init_database
 from app.services.models import TrainingArchive, TrainingAssessment, TrainingException, TrainingTask
+from app.services.training_catalog import training_subjects
 
 
 RULE_VERSION = "READINESS-RULE-2026.09-V1"
@@ -197,6 +199,36 @@ def list_tasks() -> list[dict[str, Any]]:
         return [_task_payload(task, exceptions.get(task.taskId)) for task in rows]
 
 
+def list_subjects() -> list[dict[str, Any]]:
+    return training_subjects(SAMPLE_TASKS)
+
+
+def create_tasks(subject_ids: list[str], trainee_id: str) -> list[dict[str, Any]]:
+    catalog = {item["subjectId"]: item for item in list_subjects()}
+    if not subject_ids or len(set(subject_ids)) != len(subject_ids) or any(key not in catalog for key in subject_ids):
+        raise TrainingStateError("请选择有效且不重复的训练科目")
+    init_database()
+    with DB_LOCK, SessionLocal() as session:
+        _ensure_sample_tasks(session)
+        officer = session.scalar(select(TrainingTask).where(TrainingTask.traineeId == trainee_id))
+        if officer is None:
+            raise TrainingStateError("训练对象不存在")
+        now = _now()
+        rows = []
+        for key in subject_ids:
+            subject = catalog[key]
+            task = TrainingTask(
+                taskId=f"TRAIN-CUSTOM-{uuid4().hex[:16].upper()}",
+                subject=subject["subject"], traineeId=trainee_id, teamName=officer.teamName,
+                equipment_json=subject["equipment"], standard_json=subject["standard"],
+                basis_json=subject["basis"], status="待训练", createdAt=now, updatedAt=now,
+            )
+            session.add(task)
+            rows.append(task)
+        session.commit()
+        return [_task_payload(task) for task in rows]
+
+
 def start_task(task_id: str) -> dict[str, Any] | None:
     init_database()
     with DB_LOCK, SessionLocal() as session:
@@ -326,6 +358,7 @@ def create_assessment(task_id: str) -> dict[str, Any] | None:
         if task.status != "待复核" or task.completedAt is None or task.elapsedSeconds is None:
             raise TrainingStateError("训练完成后才能生成评分")
         elapsed = task.elapsedSeconds
+        instructor_scored = task.standard_json.get("assessmentMode") == "instructor"
         threshold = int(task.standard_json.get("thresholdSeconds", 30))
         time_score = max(0, min(100, 100 - max(0, elapsed - threshold) * 5))
         standardization = 92 if elapsed <= threshold else 84
@@ -335,10 +368,12 @@ def create_assessment(task_id: str) -> dict[str, Any] | None:
         assessment = TrainingAssessment(
             assessmentId=f"ASSESS-{task_id}",
             taskId=task_id,
-            inputMode="pre_recorded_desensitized_sample",
-            score_json={"standardization": standardization, "completionTime": time_score, "coordination": coordination, "total": total},
-            confidence=0.86,
-            evidence_json=["sample://readiness-training/pre-recorded-segment", f"elapsedSeconds:{elapsed}", f"thresholdSeconds:{threshold}"],
+            inputMode="instructor_pending" if instructor_scored else "pre_recorded_desensitized_sample",
+            score_json=({key: None for key in ("standardization", "completionTime", "coordination", "total")}
+                        if instructor_scored else {"standardization": standardization, "completionTime": time_score, "coordination": coordination, "total": total}),
+            confidence=0 if instructor_scored else 0.86,
+            evidence_json=([f"elapsedSeconds:{elapsed}", "instructor_review_required"]
+                           if instructor_scored else ["sample://readiness-training/pre-recorded-segment", f"elapsedSeconds:{elapsed}", f"thresholdSeconds:{threshold}"]),
             evidenceTime=now,
             ruleVersion=RULE_VERSION,
             humanReviewRequired=True,
@@ -390,7 +425,8 @@ def create_retry_task(task_id: str) -> dict[str, Any] | None:
         return _task_payload(retry_task)
 
 
-def review_assessment(assessment_id: str, decision: str, reason: str, reviewer_id: str) -> dict[str, Any] | None:
+def review_assessment(assessment_id: str, decision: str, reason: str, reviewer_id: str,
+                      instructor_scores: dict[str, int] | None = None) -> dict[str, Any] | None:
     init_database()
     with DB_LOCK, SessionLocal() as session:
         assessment = session.get(TrainingAssessment, assessment_id)
@@ -412,6 +448,18 @@ def review_assessment(assessment_id: str, decision: str, reason: str, reviewer_i
         archive = session.scalar(select(TrainingArchive).where(TrainingArchive.taskId == task.taskId))
         if archive is not None:
             raise TrainingStateError("训练已归档，不能重新复核")
+        instructor_scored = task.standard_json.get("assessmentMode") == "instructor"
+        if instructor_scored and decision in {"confirmed", "revised"}:
+            keys = ("standardization", "completionTime", "coordination")
+            if instructor_scores is None or any(
+                type(instructor_scores.get(key)) is not int or not 0 <= instructor_scores[key] <= 100 for key in keys
+            ):
+                raise TrainingStateError("请填写全部三项教官评分（0 至 100 的整数）")
+            assessment.score_json = {
+                **{key: instructor_scores[key] for key in keys},
+                "total": round(sum(instructor_scores[key] for key in keys) / len(keys)),
+            }
+            assessment.inputMode = "instructor_recorded"
         now = _now()
         assessment.reviewStatus = decision
         assessment.reviewComment = reason
@@ -421,14 +469,14 @@ def review_assessment(assessment_id: str, decision: str, reason: str, reviewer_i
         task.updatedAt = now
         if decision in {"confirmed", "revised"}:
             score = assessment.score_json
-            weak_points = ["完成用时"] if score.get("completionTime", 0) < 90 else ["协同一致性"]
+            weak_points = [] if instructor_scored else ["完成用时"] if score.get("completionTime", 0) < 90 else ["协同一致性"]
             session.add(TrainingArchive(
                 recordId=f"RECORD-{task.taskId}",
                 taskId=task.taskId,
                 assessmentId=assessment.assessmentId,
                 traineeId=task.traineeId,
                 teamName=task.teamName,
-                result="合格" if score.get("total", 0) >= 80 else "待补训",
+                result="已复核" if instructor_scored else "合格" if score.get("total", 0) >= 80 else "待补训",
                 weakPoints_json=weak_points,
                 retrainingRecommendation=f"样例补训建议（非训练规范）：围绕“{task.subject}”安排针对性练习，具体安排由教官确认。",
                 auditId=f"ARCHIVE-{assessment.auditId}",

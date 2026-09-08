@@ -8,19 +8,16 @@
   --duty-green: #23835b;
   --duty-amber: #a76700;
   --duty-red: #cf3f4b;
-  position: fixed;
-  inset: 0;
+  position: relative;
   z-index: 60;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  gap: 18px;
+  grid-template-rows: auto auto 1fr;
+  gap: 24px;
   width: 100%;
-  height: 100vh;
-  height: 100dvh;
+  min-height: 100dvh;
   min-width: 0;
-  min-height: 0;
   padding: 20px 24px 16px;
-  overflow: hidden;
+  overflow: visible;
   background: var(--duty-bg);
   color: var(--duty-text);
   font-family: "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
@@ -69,7 +66,7 @@
 .duty-statusline { display: flex; justify-content: space-between; align-items: flex-start; gap: 4px 20px; grid-column: 1 / -1; margin-top: -6px; min-width: 0; font-size: 12px; color: var(--duty-muted); }
 .duty-statusline p { min-width: 0; overflow-wrap: anywhere; }
 .duty-statusline [role="status"] { color: var(--duty-cyan); text-align: right; }
-.duty-main-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr); min-width: 0; min-height: 0; }
+.duty-main-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); min-width: 0; min-height: 0; }
 .duty-main-grid > section { min-width: 0; min-height: 0; }
 .duty-composition-panel { display: flex; flex-direction: column; gap: 14px; padding-right: 22px; overflow-y: auto; scrollbar-width: thin; border-right: 1px solid var(--duty-line); }
 .duty-map-panel { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 14px; padding: 0 22px; }
@@ -292,4 +289,82 @@
   .duty-situation-page .duty-donut-segments, .duty-situation-page .duty-zone-fill { opacity: 1; }
   .duty-situation-page .duty-ticker-track { animation: none; transform: none; }
   .duty-situation-page .duty-ticker-copy { display: none; }
+}
+
+/* Training stays in document order above the two supporting analyses. */
+.duty-situation-page { padding: 24px 32px 32px; }
+.duty-situation-page:fullscreen { height: 100dvh; overflow-y: auto; }
+.duty-topbar { padding-bottom: 4px; }
+.duty-situation-page .duty-training-ticker {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  padding: 18px 0 12px;
+  border-top: 2px solid var(--duty-cyan);
+  border-bottom: 1px solid var(--duty-line);
+  background: #f5f8f8;
+}
+.duty-ticker-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; padding: 0 18px; }
+.duty-ticker-heading h2 { font-size: 18px; }
+.duty-ticker-heading > button { min-height: 44px; color: var(--duty-cyan); }
+.duty-situation-page .duty-ticker-group { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; }
+.duty-situation-page .duty-course {
+  width: 100%;
+  min-height: 120px;
+  padding: 16px 18px;
+  border-top: 0;
+  border-left: 1px solid var(--duty-line);
+  transition: background-color 160ms ease;
+  cursor: pointer;
+}
+.duty-situation-page .duty-course:first-child { border-left: 0; }
+.duty-course-number { padding-top: 0; font-size: 18px; color: #75868a; }
+.duty-course-content { align-self: stretch; gap: 12px; }
+.duty-course-content > strong { font-size: 17px; line-height: 1.5; }
+.duty-course-content > span { font-size: 13px; }
+.duty-course-content > .duty-course-footer { margin-top: auto; gap: 8px; }
+.duty-course-status { padding: 2px 0; }
+.duty-generation-state { position: static; padding: 0 18px; }
+.duty-situation-page .duty-main-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; }
+.duty-situation-page .duty-composition-panel {
+  display: grid;
+  grid-template-columns: minmax(150px, .9fr) minmax(0, 1fr);
+  grid-template-rows: auto 1fr auto;
+  align-content: start;
+  gap: 24px 18px;
+  padding: 0 28px 0 0;
+  overflow: visible;
+  border-right: 1px solid var(--duty-line);
+}
+.duty-composition-panel .duty-section-heading, .duty-risk-note { grid-column: 1 / -1; }
+.duty-situation-page .duty-donut-wrap { height: 250px; min-height: 0; max-height: none; align-self: center; }
+.duty-composition-list { align-content: center; gap: 22px; }
+.duty-risk-note { padding-top: 16px; margin-top: 0; }
+.duty-situation-page .duty-trend-panel { padding: 0 0 0 28px; border: 0; gap: 18px; overflow: visible; }
+.duty-section-heading { min-height: 32px; }
+.duty-section-heading h2 { font-size: 17px; }
+.duty-situation-page .duty-hour-chart { height: 220px; min-height: 220px; max-height: 220px; flex: 0 0 220px; gap: 12px; }
+.duty-hour-column { grid-template-rows: minmax(0, 1fr) 30px; }
+.duty-chart-grid { bottom: 30px; }
+.duty-hour-label { writing-mode: horizontal-tb; transform: none; }
+.duty-trend-note { margin-top: 0; }
+@media (max-width: 1100px) {
+  .duty-situation-page { padding: 20px 24px 28px; }
+  .duty-situation-page .duty-composition-panel { grid-template-columns: minmax(0, 1fr); gap: 18px; padding-right: 24px; }
+  .duty-situation-page .duty-trend-panel { padding-left: 24px; }
+  .duty-situation-page .duty-donut-wrap { height: 190px; }
+  .duty-situation-page .duty-hour-chart { height: 250px; min-height: 250px; max-height: 250px; flex-basis: 250px; gap: 7px; }
+  .duty-situation-page .duty-course { padding: 14px; min-height: 136px; gap: 8px; }
+  .duty-course-content > strong { font-size: 15px; }
+}
+@media (max-width: 700px) {
+  .duty-situation-page { padding: 16px 16px 28px; }
+  .duty-situation-page .duty-ticker-group, .duty-situation-page .duty-main-grid { grid-template-columns: minmax(0, 1fr); }
+  .duty-situation-page .duty-course { min-height: 128px; border-left: 0; border-top: 1px solid var(--duty-line); padding: 18px 16px; }
+  .duty-situation-page .duty-main-grid { gap: 28px; }
+  .duty-situation-page .duty-composition-panel { padding: 0; border: 0; }
+  .duty-situation-page .duty-trend-panel { padding: 24px 0 0; border-top: 1px solid var(--duty-line); }
+  .duty-situation-page .duty-donut-wrap { height: 220px; flex-basis: auto; }
+  .duty-course-content > strong { font-size: 16px; }
+  .duty-ticker-heading { padding: 0 16px; }
+  .duty-ticker-heading > div { flex-wrap: wrap; }
 }

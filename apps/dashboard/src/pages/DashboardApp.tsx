@@ -344,6 +344,7 @@ export function DashboardApp() {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
+
   const currentNav = useMemo(() => systemNavItems.find((item) => item.view === view) ?? systemNavItems[0], [view]);
   const formattedDate = new Intl.DateTimeFormat('zh-CN', { month: '2-digit', day: '2-digit', weekday: 'short' }).format(clock);
   const formattedTime = new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(clock);

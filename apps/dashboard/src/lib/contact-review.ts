@@ -25,7 +25,7 @@ export type ContactReviewDraft = Record<string, { status: ReviewStatus; note: st
 const recurringCompanion: CompanionProfile = {
   id: 'P-2048',
   label: '同行对象 2048',
-  name: '叶承宇',
+  name: 'xxx',
   source: '合成脚本预设 · 非身份识别',
   note: '虚构角色，未接入真实身份资料',
 };
@@ -88,7 +88,9 @@ const companionSequence = [0, 0, 1, 0, 0, 2, 0, 3, 0, 4, 0, 5, 0, 6, 0, 7, 0, 8,
 
 export const contactReviewRecords: ContactReviewRecord[] = locations.map(([location, camera], index) => ({
   id: `CR-${String(index + 1).padStart(3, '0')}`,
-  assetPath: `/contact-review-assets/contact-${String(index + 1).padStart(2, '0')}.png`,
+  assetPath: index < 2
+    ? `/contact-review-assets/contact-${String(index + 1).padStart(2, '0')}-self-portrait.png`
+    : `/contact-review-assets/contact-${String(index + 1).padStart(2, '0')}.png`,
   occurredAt: occurredAt[index],
   location,
   camera,

@@ -303,6 +303,29 @@ npm run server:dev
 
 后续可以继续补充巡防人员账号、设备、物资、预案、权限和消息通知等表。
 
+## 宇树 Go2 真实画面接入
+
+视频监控页第 01 路支持通过本地桥接服务显示 Go2 摄像头真实画面。桥接服务只接收视频，不发送机器狗控制指令。具体安装说明见 `tools/README-go2-video.md`。
+
+```powershell
+$env:GO2_IP="192.168.8.181"
+server\.venv-runtime\Scripts\python.exe -m pip install "go2-webrtc-connect[video]"
+server\.venv-runtime\Scripts\python.exe tools\go2_video_bridge.py
+```
+
+另外两个终端分别启动后端和 dashboard：
+
+```powershell
+$env:SECURITY_VIDEO_BASE_URL="http://127.0.0.1:5000"
+npm run server:dev
+```
+
+```powershell
+npm run dashboard:dev
+```
+
+Go2 未连接或没有收到视频帧时，后台显示离线并保留原有演示回退画面，不会伪造实时在线状态。
+
 ## 视频检测与画面复核接入
 
 项目采用“本地实时检测 + 数据库入库 + 画面复核”的接入路径。YOLO 负责快速发现人员聚集、打架、跌倒、离岗等线索；CICSIC 先保存检测记录，再生成事件工单；复核服务通过可配置 API 对关键帧或短片段再看一遍，输出风险等级和处置建议。复核结果会回写事件等级与派单优先级，相同 `eventKey` 保持一次事件归并。

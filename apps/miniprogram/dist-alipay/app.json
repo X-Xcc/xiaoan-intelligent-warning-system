@@ -1,1 +1,0 @@
-{"pages":["pages/index/index","pages/main/main","pages/detail/detail"],"window":{"backgroundTextStyle":"dark","navigationBarTextStyle":"black","titleBarColor":"#f5f7f6","defaultTitle":"烟火哨兵"},"permission":{"scope.userLocation":{"desc":"用于在地图上展示当前位置和附近联动点"}},"requiredPrivateInfos":["getLocation"]}

@@ -45,4 +45,27 @@ server/.secrets/
 .codex-*/
 .codex-screenshots/
 .verify/
+.superpowers/
+.playwright-mcp/
+_artifact_work/
 _artifact_work/lo_*/
+
+# Local generated reports, renders, exports, and scratch files
+deliverables/
+output/
+outputs/
+lo_profile*/
+render_*/
+report_render*/
+report_word_render/
+source_render/
+ppt_analysis/
+tmp/
+*.docx
+*.pdf
+*.jpg
+*.jpeg
+*.html
+*_text.txt
+source_extract.txt
+*.pyc
