@@ -49,7 +49,7 @@ psql --version
 
 ```powershell
 git clone https://github.com/X-Xcc/xiaoan-intelligent-warning-system.git
-cd jiangtan-zhifang
+cd xiaoan-intelligent-warning-system
 ```
 
 默认分支 `main` 就是可部署版本。确认当前版本：
