@@ -1,471 +1,348 @@
 # 小安智能预警系统
 
-小安智能预警系统是一套面向夜市商圈、文旅街区和商业综合体周边夜间消费场景的安全治理系统原型，包含 FastAPI 后端、React Web 指挥后台、Taro 微信/支付宝小程序、PostgreSQL 数据库和可选的 Go2 视频桥接。
+这是一个安全预警系统原型，包含电脑网页后台、后端服务和小程序。
 
-本仓库只保留可部署源码、必要资源、依赖清单和部署模板，不包含本机虚拟环境、数据库、环境变量、浏览器缓存、构建缓存、报告和临时导出物。
+**第一次安装，先按照下面的“第一部分”在 Windows 电脑上打开网页。** 不需要买服务器、买域名，也不需要准备摄像头或微信小程序账号。
 
-## 目录
+> **当前版本提醒（2026 年 9 月 9 日核对）**
+>
+> `main` 的后端引用了 `server/app/services/device_bridges.py`，但这个文件尚未提交到仓库，会阻止后端启动。因此，当前不能把本仓库称为“下载后即可完整部署”的版本。
+>
+> 第一部分用于预览网页。没有后端时，部分页面会显示演示数据、离线状态或请求失败，不能保存或处理真实业务。第二部分是后端安装参考，**请等缺失代码补齐并通过验证后再做，避免白白安装数据库。** 这个问题不是你的电脑操作错了。
 
-```text
-apps/dashboard        React + Vite Web 指挥后台
-apps/miniprogram      Taro 微信/支付宝小程序源码
-server/app            FastAPI 后端
-server/models         本地检测模型
-deploy/production     systemd、Nginx 和环境变量模板
-tools                 可选设备接入工具
-scripts/dev_server.py 本地后端启动入口
-package.json          npm workspaces 和统一命令
-```
+## 第一部分：先把网页打开
 
-系统链路：
+以下步骤适用于 Windows 10/11 的普通 64 位电脑。建议使用 Edge 或 Chrome 浏览器。安装软件、下载代码和安装依赖时需要联网。
 
-```text
-小程序 / Web -> FastAPI :8010 -> PostgreSQL
-```
+### 第 1 步：安装两个软件
 
-## 环境要求
+已经安装过的可以跳过。
 
-推荐环境：
+| 软件 | 去哪里下载 | 安装时怎么选 |
+| --- | --- | --- |
+| Git：用来下载项目 | [Git 官方下载页](https://git-scm.com/downloads/win) | 普通 Intel/AMD 电脑选择 x64 安装包。大部分选项保持默认；出现 PATH 选项时，保留允许命令行和第三方软件使用 Git 的选项。 |
+| Node.js：用来运行网页 | [Node.js 官方下载页](https://nodejs.org/en/download) | 选择 **22.x，且不低于 22.13**，Windows、x64、`.msi` 安装包。保留 npm 和添加到 PATH 的默认选项。 |
 
-- Windows 10/11 或 Linux
-- Node.js 22.x
-- npm 10.x
-- Python 3.11+
-- PostgreSQL 14+
-- Git
-- 微信开发者工具（仅小程序开发需要）
-- Nginx、systemd（仅 Linux 生产部署需要）
+ARM 电脑需要选择与电脑架构对应的安装包，不要照搬 x64。
 
-检查版本：
+安装完后，**关闭之前打开的终端窗口，再重新打开**：
+
+1. 点击 Windows 开始菜单。
+2. 搜索 `PowerShell`，打开它。后面提到的“终端”就是这个窗口，不需要以管理员身份运行。
+3. 把下面三行命令逐行粘贴进去，每粘贴一行就按一次回车。
 
 ```powershell
+git --version
 node --version
-npm --version
-python --version
-psql --version
+npm.cmd --version
 ```
 
-## 获取代码
+**成功标志：** 三行都能显示版本号，没有“无法识别”之类的报错。Node.js 显示的版本应符合上表要求。
+
+后面的命令框只复制框内内容，不要复制 `PS C:\...>` 这样的终端提示符。
+
+### 第 2 步：下载项目
+
+继续在刚才的 PowerShell 中，逐行运行：
 
 ```powershell
-git clone https://github.com/X-Xcc/xiaoan-intelligent-warning-system.git
+cd $HOME
+git clone --branch main https://github.com/X-Xcc/xiaoan-intelligent-warning-system.git
 cd xiaoan-intelligent-warning-system
 ```
 
-默认分支 `main` 就是可部署版本。确认当前版本：
+下载可能需要几分钟，等上一条命令完成，再运行下一条。
 
-```powershell
-git branch --show-current
-git log -1 --oneline
-```
-
-## 安装依赖
-
-Node 依赖：
-
-```powershell
-npm install
-```
-
-Windows Python 依赖：
-
-```powershell
-python -m venv server\.venv
-server\.venv\Scripts\python.exe -m pip install --upgrade pip
-server\.venv\Scripts\python.exe -m pip install -r server\requirements.txt
-```
-
-启动前激活虚拟环境：
-
-```powershell
-server\.venv\Scripts\Activate.ps1
-```
-
-Linux Python 依赖：
-
-```bash
-python3 -m venv server/.venv
-server/.venv/bin/python -m pip install --upgrade pip
-server/.venv/bin/python -m pip install -r server/requirements.txt
-```
-
-## 配置环境变量
-
-不要把真实密码、微信 AppSecret、API Key 或管理员 Token 写入 Git。
-
-开发环境可使用：
-
-```powershell
-$env:APP_ENV="development"
-$env:DATABASE_URL="postgresql://cicsic:密码@127.0.0.1:5432/yanhuo_shaobing"
-$env:CICSIC_ADMIN_AUTH_ENABLED="false"
-```
-
-也可以创建 `server/.env.local`，该文件已被 `.gitignore` 忽略。
-
-生产环境至少需要：
+项目会放在你的 Windows 用户文件夹里，例如：
 
 ```text
-APP_ENV=production
-DATABASE_URL=postgresql://用户名:密码@数据库地址:5432/yanhuo_shaobing
-CICSIC_ADMIN_TOKEN=随机生成的高熵 Token
-DB_ADMIN_USER=受控管理员账号
-DB_ADMIN_PASSWORD=随机生成的高熵密码
+C:\Users\你的用户名\xiaoan-intelligent-warning-system
 ```
 
-环境变量模板：
+命令中的 `$HOME` 会自动找到你的用户文件夹，不用把它改成自己的名字。
+
+**成功标志：** 运行下面的命令，能看到 `package.json`：
+
+```powershell
+Get-Item .\package.json
+```
+
+如果提示项目文件夹已经存在，先不要删除它。以前按本教程下载过的，直接运行下面这行进入文件夹，然后继续第 3 步：
+
+```powershell
+cd "$HOME\xiaoan-intelligent-warning-system"
+```
+
+### 第 3 步：安装项目需要的依赖
+
+“依赖”就是系统运行时需要的软件包。保持当前目录不变，运行：
+
+```powershell
+npm.cmd ci
+```
+
+这一步通常比下载代码更久。窗口持续输出内容时请耐心等待，不要关闭，也不要重复运行。
+
+**成功标志：** 安装结束，窗口重新出现可以输入命令的提示符，没有以 `npm error` 结束。
+
+黄色的 `warn` 或漏洞数量提示不一定代表安装失败，但也不代表已经通过安全检查。先不要执行网上的 `npm audit fix --force`，它可能改变项目需要的版本。
+
+### 第 4 步：启动网页
+
+在同一个窗口运行：
+
+```powershell
+npm.cmd run dashboard:dev
+```
+
+**成功标志：** 窗口出现 Vite 启动信息，以及类似下面的地址：
 
 ```text
-deploy/production/cicsic-api.env.example
+Local: http://127.0.0.1:5177/
 ```
 
-微信登录还需要：
+**这个窗口要一直开着。** 没有重新出现输入提示符是正常的，表示网页服务正在运行。
+
+### 第 5 步：用浏览器打开
+
+打开 Edge 或 Chrome，把这个地址输入浏览器顶部的地址栏，按回车：
 
 ```text
-WECHAT_APPID=微信小程序 AppID
-WECHAT_APP_SECRET=微信小程序 AppSecret
+http://127.0.0.1:5177
 ```
 
-`WECHAT_APP_SECRET` 只能放在后端环境，不能放入小程序前端。
+不要输入到百度等搜索框里。如果终端显示的是其他端口，以终端的 `Local` 地址为准。
 
-## 初始化数据库
+**看到系统页面，就完成了网页预览。** 页面里的演示画面、统计数字不等于真实设备已经接入；真实数据保存、接口调用还需要后端和数据库。
+
+### 下次怎么打开？怎么关闭？
+
+**以后不用重复安装，也不用重新下载项目。**
+
+重启电脑后，打开 PowerShell，只运行这两行：
+
+```powershell
+cd "$HOME\xiaoan-intelligent-warning-system"
+npm.cmd run dashboard:dev
+```
+
+再用浏览器打开终端显示的地址。
+
+不用时，回到运行网页的终端，按键盘上的 `Ctrl+C`。如果询问是否终止，输入 `Y` 后回车，再关闭窗口。
+
+## 第二部分：完整本机部署（当前先不要操作）
+
+完整系统需要三个部分一起运行：
+
+```text
+网页：你在浏览器里看到的界面
+  ↓
+后端：处理请求和业务
+  ↓
+数据库：保存数据
+```
+
+**当前 `main` 存在开头说明的缺失模块问题。下面保留安装参考，不代表已经完成新电脑端到端验证。** 后续补齐源码后，还需要实际验证后端启动、数据库读写和页面业务操作。
+
+<details>
+<summary>展开后端安装参考：仅在缺失代码补齐并验证后继续</summary>
+
+### 第 1 步：检查下载的版本
+
+先完成第一部分。在新的 PowerShell 窗口中运行：
+
+```powershell
+cd "$HOME\xiaoan-intelligent-warning-system"
+git ls-files server/app/services/device_bridges.py
+```
+
+如果没有任何文件路径输出，说明你下载的版本仍缺少这个模块，**到这里停止**。不要尝试用 `pip install device_bridges` 修复，它是项目自己的文件。
+
+即使显示了文件路径，也只代表这个文件已提交，不代表整套系统已经验证通过，请以维护者的后续验收结果为准。
+
+### 第 2 步：安装 Python
+
+本项目后端依赖版本较旧，本机兼容性参考采用 **Python 3.11**，不要直接选最新版 Python。
+
+1. 打开 [Python 3.11.9 官方页面](https://www.python.org/downloads/release/python-3119/)，在页面下方的 Files 中选择 `Windows installer (64-bit)`。
+2. 打开安装包，勾选 `Add python.exe to PATH`，保留 Python Launcher 的安装选项，然后安装。
+3. 安装后重新打开 PowerShell，运行：
+
+```powershell
+py -3.11 --version
+```
+
+显示 `Python 3.11.x` 后继续。这是本机兼容性参考，不是公网服务器的安全版本建议。
+
+### 第 3 步：安装 PostgreSQL 数据库
+
+1. 打开 [PostgreSQL Windows 官方下载页](https://www.postgresql.org/download/windows/)，进入页面提供的安装包下载入口，选择 PostgreSQL **16.x** 的 Windows 64 位安装包。
+2. 安装时保留 `PostgreSQL Server`、`pgAdmin 4` 和 `Command Line Tools`。
+3. 设置安装程序要求的 `postgres` 管理员密码，记在自己的密码管理器里，后面需要输入。不要发给别人。
+4. 端口保留 `5432`，其他设置一般保持默认。
+5. 安装结束时如有 Stack Builder 附加组件提示，可以取消，不影响本教程。
+
+如果电脑已经安装并使用 PostgreSQL，不要重装或覆盖已有数据库，先确认已有实例的端口和管理密码。
+
+### 第 4 步：创建系统专用数据库
+
+1. 从开始菜单打开 `pgAdmin 4`。如果它要求设置自己的主密码，按提示设置；这与数据库的 `postgres` 密码不是一回事。
+2. 展开左侧 `Servers`，连接本机的 PostgreSQL，输入安装时设置的 `postgres` 密码。
+3. 展开 `Databases`，右键数据库 `postgres`，点击 `Query Tool`。
+4. 在查询编辑区粘贴下面的第一条 SQL。把 `替换为你的数据库密码` 改成你自己生成的、至少 20 位的随机字母和数字，再点击执行按钮或按 `F5`。
 
 ```sql
-CREATE USER cicsic WITH PASSWORD '请替换为高熵密码';
-CREATE DATABASE yanhuo_shaobing OWNER cicsic;
+CREATE USER xiaoan WITH PASSWORD '替换为你的数据库密码';
 ```
 
-后端启动时会自动初始化业务表，主要包括：
+这里创建的是给系统使用的 `xiaoan` 账号，不是刚才的 `postgres` 管理员账号。为简化连接配置，本教程的应用数据库密码先只用字母和数字，避免 `@`、`:`、`/` 等字符需要额外编码。
 
-- `safety_events`：求助、上报和工单事件。
-- `alarm_pushes`：报警推送确认记录。
-- `event_audit_logs`：事件流转审计。
-- `security_detections`：视频检测和证据索引。
-- `wechat_users`：微信登录态。
-- `markets`、`zones`、`devices`：夜市、区域和设备。
-- `system_audit_logs`：后台配置和权限变更审计。
+**第一条执行成功后，清空编辑区，再单独粘贴并执行第二条。不要把两条一起执行。**
 
-## 启动后端
+```sql
+CREATE DATABASE xiaoan OWNER xiaoan;
+```
 
-Windows（已激活 `server\.venv`）：
+执行成功后，右键左侧 `Databases`，选择刷新，应该能看到 `xiaoan` 数据库。
+
+### 第 5 步：安装后端依赖
+
+打开 PowerShell，逐行运行。每条命令成功结束后，再运行下一条：
 
 ```powershell
-python scripts\dev_server.py
+cd "$HOME\xiaoan-intelligent-warning-system"
+py -3.11 -m venv server\.venv
+.\server\.venv\Scripts\python.exe -m pip install --upgrade pip
+.\server\.venv\Scripts\python.exe -m pip install -r server\requirements.txt
 ```
 
-或：
+`.venv` 是项目自己的 Python 环境。这里直接使用它里面的 Python，**不需要执行激活脚本，也不需要修改 PowerShell 执行策略**。
+
+依赖较多，需要联网下载；出现红色错误并停止时，不要继续启动后端，先看后面的常见问题。
+
+### 第 6 步：填写数据库连接
+
+在同一个终端运行：
 
 ```powershell
-npm run server:dev
+notepad .\server\.env
 ```
 
-Linux（已激活 `server/.venv`）：
+如果提示创建文件，选择创建。填入以下三行，记得把密码改成第 4 步给 `xiaoan` 用户设置的那个密码：
 
-```bash
-python scripts/dev_server.py
+```dotenv
+APP_ENV=development
+DATABASE_URL=postgresql://xiaoan:替换为你的数据库密码@127.0.0.1:5432/xiaoan
+CICSIC_ADMIN_AUTH_ENABLED=false
 ```
 
-默认地址：
+保存位置必须是项目的 `server` 文件夹，文件名必须是 **`.env`**，不是 `.env.txt` 或 `.env.local`。记事本“另存为”时选“所有文件”和 UTF-8 编码。
 
-```text
-http://127.0.0.1:8010
-```
-
-健康检查：
+回到 PowerShell 检查：
 
 ```powershell
-Invoke-WebRequest http://127.0.0.1:8010/api/health
+Get-Item .\server\.env
 ```
 
-接口文档：
+能够显示该文件才算保存正确。这个文件含密码，不要上传 GitHub，也不要截图发给别人。
 
-```text
-http://127.0.0.1:8010/docs
-```
+**以上配置仅用于自己电脑上、监听 `127.0.0.1` 的本地测试。** `false` 表示关闭管理接口鉴权，不能原样用于局域网、公网或正式部署。
 
-## 启动 Web 后台
+### 第 7 步：启动后端，再启动网页
 
-开发模式：
+准备两个 PowerShell 窗口。
+
+**窗口一：后端。**
 
 ```powershell
-npm run dashboard:dev
+cd "$HOME\xiaoan-intelligent-warning-system"
+.\server\.venv\Scripts\python.exe scripts\dev_server.py --no-reload
 ```
 
-默认地址：
+缺失模块修复且环境配置正确后，预期出现 `Application startup complete`，没有随后报错退出。首次正常启动会创建所需业务表，无需复制原电脑的数据库文件夹。
+
+用浏览器打开下面的地址：
 
 ```text
-http://127.0.0.1:5173
+http://127.0.0.1:8010/api/health/ready
 ```
 
-生产构建：
+**成功标志：** 返回内容中的顶层 `status` 和 `database.status` 都是 `ready`。只看到网页，或者只看到 `/api/health` 的 `ok`，都不足以证明数据库正常。
+
+**窗口二：网页。** 如果第一部分的网页窗口还在运行，不要再启动一份，直接刷新浏览器即可；否则运行：
 
 ```powershell
-npm run dashboard:build
+cd "$HOME\xiaoan-intelligent-warning-system"
+npm.cmd run dashboard:dev
 ```
 
-构建输出：
+浏览器打开 `http://127.0.0.1:5177`，两个终端窗口都保持开启。先只使用虚构数据测试；健康检查通过后，还要确认实际的保存、刷新和查询操作正常，才能验收业务功能。
 
-```text
-apps/dashboard/dist
-```
+**以后重启电脑：** 确认 PostgreSQL 服务已启动，只需要重新执行本步骤的两组启动命令，不用再创建数据库、安装依赖或填写密码。停止时，在两个窗口分别按 `Ctrl+C`。
 
-前后端不在同一台电脑时，在 `apps/dashboard/.env.local` 配置：
+</details>
 
-```text
-VITE_API_BASE_URL=http://后端地址:8010/api
-```
+## 卡住了，先查这里
 
-生产环境建议用 Nginx 反向代理，让 Web 和 API 共用一个 HTTPS 域名。
+| 遇到的问题 | 先这样处理 |
+| --- | --- |
+| `git`、`node` 或 `py` “无法识别” | 安装对应软件后，关闭所有终端再重新打开；仍不行时检查安装时是否添加了 PATH。 |
+| 提示 `npm.ps1` 禁止运行 | 使用本教程的 `npm.cmd`，不需要修改系统执行策略。 |
+| 找不到 `package.json`，或出现 `ENOENT` | 先执行 `cd "$HOME\xiaoan-intelligent-warning-system"`，再重试。 |
+| 下载很久，出现连接超时 | 确认浏览器能访问相应下载网站；恢复网络后重试失败的步骤，不要删除整个项目。 |
+| `npm.cmd ci` 报 Node 版本不符合要求 | 用 `node --version` 检查，按第一部分安装符合要求的 Node.js 22.x，再重新开终端。 |
+| 网页打不开 | 先看网页终端是否还在运行；把它显示的 `Local` 地址完整复制到浏览器地址栏。默认端口是 `5177`，不是 `5173`。 |
+| 页面显示演示、离线或接口失败 | 只运行网页时可能出现。完整业务需要后端和数据库，不能靠反复刷新解决。 |
+| `No module named 'app.services.device_bridges'` | 当前仓库缺少自身模块，不是漏装第三方软件。停止后端安装，等待代码补齐。 |
+| `DATABASE_URL must be configured` | 检查 `server\.env` 是否存在、有无保存成 `.env.txt`，以及是否填写了 `DATABASE_URL`。 |
+| 数据库连接失败或密码错误 | 在 Windows“服务”中检查 PostgreSQL 是否运行，再核对端口、数据库名 `xiaoan`、用户 `xiaoan` 及其密码。不要误填 `postgres` 的密码。 |
+| SQL 提示用户或数据库已存在 | 不要删除它，可能之前已创建成功。确认是本项目的数据库后，继续下一步。 |
+| 后端提示端口 `8010` 已占用 | 检查是否已经开了一个后端窗口；先停止自己重复启动的进程，不要随意结束不认识的服务。 |
+| 接口返回 `401` | 表示需要授权。检查当前运行模式和管理令牌配置，不要为了绕过报错关闭正式环境的鉴权。 |
 
-## 构建小程序
+仍解决不了时，提供：卡在哪一步、最后几行报错、使用的软件版本。**请先遮住密码、Token、密钥、设备地址和个人信息。**
 
-微信小程序：
+## 换一台电脑怎么办？
+
+- **只是打开网页看看：** 在新电脑重新做第一部分，不用从原电脑复制 `node_modules`。
+- **独立部署整套系统：** 等后端问题修复并验证后，在新电脑完成两部分。新建数据库不会自动带上原电脑的业务数据。
+- **还要迁移已有数据：** 需要单独备份并恢复 PostgreSQL，以及业务需要的上传文件和设备配置。不要直接复制正在运行的数据库数据目录，也不要把这些内容上传到代码仓库。
+- **让另一台电脑访问同一套系统：** 这与独立安装不同。`127.0.0.1` 只表示当前电脑，把这个地址发给别人打不开你的服务。本教程没有开放外网访问。
+
+仓库文件看起来少，不一定是漏了系统：依赖会在安装时下载，数据库和密码由部署者自己创建。但开头提到的后端模块缺失是实际问题，不能归为“正常省略”。
+
+## 小程序、摄像头和正式上线
+
+这些不是第一部分的必做步骤，新手可以先跳过。
+
+| 需要做什么 | 还需要准备什么 |
+| --- | --- |
+| 微信或支付宝小程序 | 对应开发者工具、自己的 AppID，以及可访问的后端。构建前显式设置 `TARO_APP_API_BASE_URL`，不要依赖历史默认地址；正式使用需按平台要求配置 HTTPS 和合法域名。 |
+| 摄像头、Go2、视频检测或 AI 复核 | 对应设备、网络、模型或服务密钥，并逐项验证真实链路。网页里的演示画面不能当作接入成功。Go2 的补充说明在 `tools/README-go2-video.md`。 |
+| 长期运行或开放给别人访问 | 先解决缺失源码并验收完整功能，再配置正式服务、鉴权、HTTPS、防火墙、数据库备份和依赖安全更新。不应直接把本教程的开发服务暴露出去。 |
+
+`deploy/production` 里保留了 Linux 的 Nginx、systemd 和环境变量参考模板，其中路径、用户和端口需要按实际机器调整。**它们不是双击就能安装的一键部署包，也不能修复缺失的源码。**
+
+网页的生产构建命令是：
 
 ```powershell
-npm run miniprogram:build:weapp
+npm.cmd run dashboard:build
 ```
 
-支付宝小程序：
-
-```powershell
-npm run miniprogram:build:alipay
-```
-
-微信开发者工具使用：
-
-```text
-apps/miniprogram/dist
-```
-
-本地调试可关闭合法域名校验。生产环境必须配置 HTTPS API、request 合法域名和真实 AppID，然后重新构建上传。
-
-## Linux 生产部署
-
-部署模板位于：
-
-```text
-deploy/production/cicsic-api.service
-deploy/production/cicsic-nginx.conf
-deploy/production/public-security-web-api.service
-deploy/production/public-security-web-nginx.conf
-```
-
-### 1. 安装系统依赖
-
-Ubuntu/Debian 示例：
-
-```bash
-sudo apt update
-sudo apt install -y git curl build-essential python3 python3-venv postgresql nginx
-```
-
-### 2. 获取代码并安装依赖
-
-```bash
-git clone https://github.com/X-Xcc/xiaoan-intelligent-warning-system.git /opt/cicsic
-cd /opt/cicsic
-npm install
-python3 -m venv server/.venv
-server/.venv/bin/pip install -r server/requirements.txt
-npm run dashboard:build
-```
-
-### 3. 配置数据库和服务环境
-
-```bash
-sudo -u postgres createuser --pwprompt cicsic
-sudo -u postgres createdb --owner=cicsic yanhuo_shaobing
-sudo install -o root -g cicsic -m 640 deploy/production/cicsic-api.env.example /etc/cicsic-api.env
-sudo nano /etc/cicsic-api.env
-```
-
-至少填写真实值：
-
-```text
-APP_ENV=production
-DATABASE_URL=postgresql://cicsic:密码@127.0.0.1:5432/yanhuo_shaobing
-CICSIC_ADMIN_TOKEN=至少16位的随机Token
-DB_ADMIN_USER=管理员账号
-DB_ADMIN_PASSWORD=至少16位的随机密码
-```
-
-### 4. 安装 API systemd 服务
-
-部署模板默认假设项目位于 `/opt/cicsic`、Python 环境位于 `/opt/cicsic/server/.venv`。如果路径不同，先编辑模板：
-
-```bash
-sudo cp deploy/production/cicsic-api.service /etc/systemd/system/cicsic-api.service
-sudo sed -i 's#WorkingDirectory=/opt/cicsic/project/server#WorkingDirectory=/opt/cicsic/server#' /etc/systemd/system/cicsic-api.service
-sudo sed -i 's#ExecStart=/opt/cicsic/venv/bin/uvicorn#ExecStart=/opt/cicsic/server/.venv/bin/uvicorn#' /etc/systemd/system/cicsic-api.service
-sudo systemctl daemon-reload
-sudo systemctl enable --now cicsic-api
-sudo systemctl status cicsic-api
-```
-
-### 5. 配置 Nginx
-
-将构建产物发布到 Nginx 静态目录：
-
-```bash
-sudo mkdir -p /var/www/cicsic
-sudo cp -r apps/dashboard/dist/. /var/www/cicsic/
-```
-
-编辑 `deploy/production/public-security-web-nginx.conf`：
-
-- `root` 改为 `/var/www/cicsic`
-- `proxy_pass` 指向 `http://127.0.0.1:8010/api/`
-- `server_name` 改为你的域名
-
-然后启用：
-
-```bash
-sudo cp deploy/production/public-security-web-nginx.conf /etc/nginx/sites-available/cicsic
-sudo ln -sf /etc/nginx/sites-available/cicsic /etc/nginx/sites-enabled/cicsic
-sudo nginx -t
-sudo systemctl reload nginx
-```
-
-### 6. HTTPS 和验收
-
-生产小程序要求 HTTPS。可使用 Certbot 或已有证书配置 Nginx：
-
-```bash
-curl http://127.0.0.1:8010/api/health
-curl -I https://你的域名/
-sudo journalctl -u cicsic-api -n 100 --no-pager
-```
-
-然后：
-
-1. 将生产变量写入 `/etc/cicsic-api.env`，并限制文件权限。
-2. 确认 API、Nginx、PostgreSQL 均设置为开机启动。
-3. 检查 `/api/health`、Web 首页和 `/docs`。
-4. 配置 HTTPS、防火墙、数据库备份和日志轮转。
-
-生产环境不要使用 `CICSIC_ADMIN_AUTH_ENABLED=false`，必须配置高熵 `CICSIC_ADMIN_TOKEN`。
-
-## 可选 Go2 视频桥接
-
-Go2 桥接不是系统启动必需项，只接收视频，不发送机器狗控制指令：
-
-```powershell
-$env:GO2_IP="机器狗 IP"
-server\.venv\Scripts\python.exe -m pip install "go2-webrtc-connect[video]"
-server\.venv\Scripts\python.exe tools\go2_video_bridge.py
-```
-
-详细说明：
-
-```text
-tools/README-go2-video.md
-```
-
-没有 Go2 时，Web 后台使用离线状态和演示回退画面。
-
-## 视频检测和 AI 复核
-
-可选配置：
-
-```text
-SECURITY_MODEL_PATH=server/models/yolov8n-pose.pt
-SECURITY_DETECTION_DATA_DIRS=server/security-data
-SECURITY_VIDEO_BASE_URL=http://127.0.0.1:5000
-SECURITY_VLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
-SECURITY_VLM_API_KEY=你的密钥
-SECURITY_VLM_MODEL=qwen-vl-plus
-```
-
-主要接口：
-
-```text
-GET  /api/security-video/status
-GET  /api/security-video/cameras
-GET  /api/security-video/feed?cam=cam-001
-GET  /api/security-ai/status
-POST /api/security-ai/judgements
-POST /api/security-ai/yolo-reviews
-POST /api/events/security-detections/sync
-```
-
-未配置云端复核密钥时，本地演示和检测数据链路仍可运行。
-
-## 部署完整性说明
-
-从 `main` 克隆后，仓库已经包含：
-
-- Web 源码和生产构建所需的依赖锁文件。
-- Taro 小程序源码、图标和页面资源。
-- FastAPI 后端源码、数据库模型、迁移初始化逻辑和检测模型。
-- WebAssembly、姿态模型、演示图片和语音等运行时资源。
-- PostgreSQL、systemd、Nginx 和环境变量模板。
-- Go2 桥接源码和测试。
-
-仓库不包含、也不应包含：
-
-- `node_modules`、Python 虚拟环境和编译输出。
-- PostgreSQL 数据目录、日志、缓存和本机路径配置。
-- 微信 AppSecret、数据库密码、管理员 Token、AI API Key。
-
-因此，其他电脑需要重新安装依赖并注入环境变量，但不需要从原电脑复制隐藏文件。Web 后台和后端可以从干净 clone 独立构建和启动；小程序还需要微信开发者工具、真实 AppID 和平台域名配置。
-
-## 常用命令
-
-```powershell
-npm run server:dev
-npm run dashboard:dev
-npm run dashboard:build
-npm run miniprogram:build:weapp
-npm run miniprogram:build:alipay
-```
-
-验证：
-
-```powershell
-npm run dashboard:build
-npm --workspace apps/miniprogram run typecheck
-server\.venv\Scripts\python.exe -m pytest server\tests
-server\.venv\Scripts\python.exe -m pytest tools\tests
-```
-
-## 常见问题
-
-### Web 页面打不开
-
-先确认：
-
-```text
-http://127.0.0.1:8010/api/health
-```
-
-### 数据库连接失败
-
-检查 PostgreSQL 服务、数据库名称、用户名、密码和 `DATABASE_URL`。
-
-### 小程序请求失败
-
-开发时检查合法域名校验；生产时检查 HTTPS、request 合法域名和 API 地址。
-
-### 管理接口返回 401
-
-生产请求需要携带：
-
-```text
-X-Admin-Token: 你的 CICSIC_ADMIN_TOKEN
-```
-
-### 构建缺少依赖
-
-删除本机 `node_modules` 后重新执行 `npm install`，不要把 `node_modules` 上传到 GitHub。
-
-## 数据和安全边界
-
-- `.env`、数据库、日志、缓存和本地运行目录不会提交。
-- 管理员 Token、数据库密码、微信 AppSecret 和云端 API Key 必须通过部署环境注入。
-- 小程序前端不能保存后端密钥。
-- 演示图片、语音和地图素材用于原型展示，不代表真实监控证据。
-- 紧急求助页面不能替代 110、120 等正式报警和急救渠道。
-
-## 第三方资源
-
-地图底图包含 OpenStreetMap 归属信息。Node 依赖、Python 依赖和许可证分别由 `package-lock.json`、workspace `package.json` 和 `server/requirements.txt` 管理。
+输出目录为 `apps/dashboard/dist`。这个目录只有网页，不包含后端和数据库；不要把它单独复制给别人就称为完整系统。
+
+## 仓库里各目录是做什么的？
+
+| 目录或文件 | 用途 |
+| --- | --- |
+| `apps/dashboard` | 电脑网页后台源码和资源 |
+| `apps/miniprogram` | 小程序源码和资源 |
+| `server/app` | 后端源码；当前缺失模块见开头提醒 |
+| `server/models` | 本地检测模型资源 |
+| `server/requirements.txt` | Python 依赖清单 |
+| `package.json`、`package-lock.json` | 网页/小程序命令及依赖版本清单 |
+| `scripts/dev_server.py` | 本地后端启动入口 |
+| `deploy/production` | 正式部署参考模板 |
+| `tools` | 可选设备接入工具 |
+
+数据库、`.env` 密码配置、日志、缓存、`node_modules` 和 Python 虚拟环境不应提交到仓库。演示数据和画面仅用于原型展示，不代表真实监控证据；系统不能替代正式报警和急救渠道。地图及其他第三方资源仍需保留相应署名和许可信息。
