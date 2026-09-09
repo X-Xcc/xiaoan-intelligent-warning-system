@@ -461,7 +461,9 @@ test('H5 relative API base resolves requests, evidence and realtime against brow
     assert.equal(m.calls[0].url, `${origin}/api/events/HELP-1`)
     const disconnect = api.connectRealtimeEvents(() => {})
     await Promise.resolve()
-    assert.equal(m.calls.find((call) => call.type === 'socket').url, `${origin.replace(/^http/, 'ws')}/api/events/realtime`)
+    const socketUrl = new URL(m.calls.find((call) => call.type === 'socket').url)
+    assert.equal(`${socketUrl.origin}${socketUrl.pathname}`, `${origin.replace(/^http/, 'ws')}/api/events/realtime`)
+    assert.equal(socketUrl.searchParams.get('token'), 'session-a')
     disconnect()
   }
 })

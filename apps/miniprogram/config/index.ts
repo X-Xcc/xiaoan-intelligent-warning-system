@@ -1,6 +1,7 @@
 import { defineConfig, type UserConfigExport } from '@tarojs/cli'
 import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin'
 import * as sass from 'sass'
+import { isIP } from 'node:net'
 import devConfig from './dev'
 import prodConfig from './prod'
 
@@ -11,8 +12,21 @@ export default defineConfig<'webpack5'>(async (merge) => {
   const isH5 = process.env.TARO_ENV === 'h5'
   const buildMode = process.env.NODE_ENV === 'development' ? 'development' : 'production'
   const outputRoot = isH5 ? 'dist-h5' : process.env.TARO_ENV === 'alipay' ? 'dist-alipay' : 'dist'
-  const apiBaseUrl = isH5 ? (process.env.TARO_APP_H5_API_BASE_URL || '/api')
-    : (process.env.TARO_APP_API_BASE_URL || 'http://120.26.137.173/api')
+  const apiBaseUrl = (isH5 ? (process.env.TARO_APP_H5_API_BASE_URL || '/api')
+    : (process.env.TARO_APP_API_BASE_URL || (buildMode === 'development' ? 'http://127.0.0.1:8010/api' : ''))).trim().replace(/\/+$/, '')
+  if (!isH5 && buildMode === 'production') {
+    let api: URL
+    try { api = new URL(apiBaseUrl) } catch {
+      throw new Error('TARO_APP_API_BASE_URL: 请先配置体验版可访问的 HTTPS 接口地址，再上传体验版。')
+    }
+    const hostname = api.hostname.toLowerCase().replace(/\.$/, '')
+    if (api.protocol !== 'https:' || !hostname.includes('.') || isIP(hostname)
+      || hostname.endsWith('.localhost') || hostname.endsWith('.local')
+      || hostname.endsWith('.trycloudflare.com') || hostname === 'trycloudflare.com'
+      || api.username || api.password || api.search || api.hash || !api.pathname.endsWith('/api')) {
+      throw new Error('TARO_APP_API_BASE_URL: 体验版需要固定 HTTPS 域名和以 /api 结尾的路径，不能使用本机地址、IP、临时隧道或带凭据的 URL。请与 Web 接入同一套后端，并配置微信服务器合法域名。')
+    }
+  }
   const enableDevLogin = process.env.NODE_ENV === 'development' && process.env.TARO_APP_ENABLE_DEV_LOGIN !== 'false'
     ? 'true' : 'false'
 

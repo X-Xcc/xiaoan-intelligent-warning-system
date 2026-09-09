@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { ChangeEvent } from 'react';
 import { Button, Input, Select, Tag, Tooltip } from 'antd';
 import { ArrowUpRight, Check, FileCheck2, LogIn, LogOut, Monitor, Plus, RefreshCw, Send, ShieldCheck, Upload, X } from 'lucide-react';
 import {
@@ -281,7 +282,7 @@ export function CommandOperationsPage(_props: CommandProps) {
       {demoEnabled && <><Select aria-label="教学账号" value={persona} onChange={setPersona} options={personaOptions} disabled={busy} />
         <Button icon={<LogIn size={15} />} onClick={() => void demoLogin()} disabled={busy}>登录教学账号</Button></>}
       {!demoEnabled && !principal && <><Input.Password aria-label="接处警访问令牌" value={tokenInput}
-        onChange={(event) => setTokenInput(event.target.value)} placeholder="访问令牌" autoComplete="off" />
+        onChange={(event: ChangeEvent<HTMLInputElement>) => setTokenInput(event.target.value)} placeholder="访问令牌" autoComplete="off" />
         <Button onClick={() => signIn(tokenInput.trim())} disabled={!tokenInput.trim()}>登录</Button></>}
       {principal && <Tooltip title="退出当前账号"><Button aria-label="退出账号" icon={<LogOut size={15} />} onClick={signOut} disabled={busy} /></Tooltip>}
     </div>
@@ -294,8 +295,8 @@ export function CommandOperationsPage(_props: CommandProps) {
       {!playback && <aside className="command-queue"><div className="command-section-heading"><h2>事件队列</h2><b>{events.length}</b></div>
         <div className="command-queue-actions"><Button icon={<Plus size={15} />} disabled={busy || !principal?.roles.includes('intake')} onClick={() => setCreateOpen(!createOpen)}>登记接警</Button>
           {demoEnabled && <Button disabled={busy || !principal?.roles.includes('intake')} onClick={() => void create(true)}>新建教学轮次</Button>}</div>
-        {createOpen && <div className="command-new-intake"><label>报警地点<Input value={newBay} onChange={(e) => setNewBay(e.target.value)} maxLength={80} /></label>
-          <label>接警文本<Input.TextArea value={newText} onChange={(e) => setNewText(e.target.value)} rows={4} /></label>
+        {createOpen && <div className="command-new-intake"><label>报警地点<Input value={newBay} onChange={(e: ChangeEvent<HTMLInputElement>) => setNewBay(e.target.value)} maxLength={80} /></label>
+          <label>接警文本<Input.TextArea value={newText} onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setNewText(e.target.value)} rows={4} /></label>
           <Button type="primary" disabled={busy || !newBay.trim() || !newText.trim()} onClick={() => void create(false)}>保存新接警</Button></div>}
         {events.map((item) => <button key={item.id} type="button" className={item.id === control.eventId ? 'active' : ''}
           disabled={busy} onClick={() => pickEvent(item.id)}><strong>{item.title}</strong><span>{item.bay}</span><small>{item.id}</small><b>{item.status}</b></button>)}
@@ -370,21 +371,21 @@ function CommandActions({ snapshot, stage, roles, token, busy, online, staff, pe
   };
   return <section className="command-actions"><header><h3>{stageNames[stages.indexOf(stage as typeof stages[number])]} · 业务操作</h3><span>版本 {command.version} · {event.status}</span></header>
     {roles.includes('field') && nextStatus[event.status] && <div className="command-field-status">
-      {event.status === '处理中' && <label>现场处置结果<Input.TextArea value={result} onChange={(e) => setResult(e.target.value)} rows={2} /></label>}
+      {event.status === '处理中' && <label>现场处置结果<Input.TextArea value={result} onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setResult(e.target.value)} rows={2} /></label>}
       <Button icon={<Check size={16} />} disabled={!allowed('status') || (event.status === '处理中' && (!result.trim() || command.handover?.status !== 'accepted'))}
         onClick={() => void perform('status', { status: nextStatus[event.status], result })}>{event.status === '处理中' ? '提交结果并完成现场任务' : nextStatus[event.status] === '已接收' ? '接收任务' : nextStatus[event.status] === '已到达' ? '确认到场' : '开始处置'}</Button>
     </div>}
     {stage === 'b1' && <div className="command-form">
-      <label className="command-form-wide">接警文本<Input.TextArea value={text} onChange={(e) => setText(e.target.value)} rows={3} /></label>
-      <label>报警地点<Input value={bay} onChange={(e) => setBay(e.target.value)} maxLength={80} /></label>
-      <label>坐标（可留空）<div className="command-coordinate"><Input aria-label="纬度" value={lat} onChange={(e) => setLat(e.target.value)} placeholder="纬度" />
-        <Input aria-label="经度" value={lon} onChange={(e) => setLon(e.target.value)} placeholder="经度" /></div></label>
+      <label className="command-form-wide">接警文本<Input.TextArea value={text} onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setText(e.target.value)} rows={3} /></label>
+      <label>报警地点<Input value={bay} onChange={(e: ChangeEvent<HTMLInputElement>) => setBay(e.target.value)} maxLength={80} /></label>
+      <label>坐标（可留空）<div className="command-coordinate"><Input aria-label="纬度" value={lat} onChange={(e: ChangeEvent<HTMLInputElement>) => setLat(e.target.value)} placeholder="纬度" />
+        <Input aria-label="经度" value={lon} onChange={(e: ChangeEvent<HTMLInputElement>) => setLon(e.target.value)} placeholder="经度" /></div></label>
       <Button disabled={!allowed('intake') || !text.trim() || !bay.trim()} onClick={() => void perform('intake', {
         transcript: text, locationText: bay, latitude: lat.trim() ? Number(lat) : null, longitude: lon.trim() ? Number(lon) : null,
       })}>保存接警修订</Button>
-      <label className="command-form-wide">警情摘要<Input.TextArea value={summary} onChange={(e) => setSummary(e.target.value)} rows={2} /></label>
-      <label>警情类别<Input value={category} onChange={(e) => setCategory(e.target.value)} /></label>
-      <label>危险因素<Input value={danger} onChange={(e) => setDanger(e.target.value)} /></label>
+      <label className="command-form-wide">警情摘要<Input.TextArea value={summary} onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setSummary(e.target.value)} rows={2} /></label>
+      <label>警情类别<Input value={category} onChange={(e: ChangeEvent<HTMLInputElement>) => setCategory(e.target.value)} /></label>
+      <label>危险因素<Input value={danger} onChange={(e: ChangeEvent<HTMLInputElement>) => setDanger(e.target.value)} /></label>
       <Button type="primary" icon={<ShieldCheck size={16} />} disabled={!allowed('summary/confirm') || dirtyIntake || !summary.trim() || !danger.trim()
         || command.summary.reviewStatus === 'confirmed'} onClick={() => void perform('summary/confirm', {
           summaryVersion: command.summary.version, text: summary, category, dangerFactors: [danger], riskTags: command.summary.riskTags,
@@ -401,9 +402,9 @@ function CommandActions({ snapshot, stage, roles, token, busy, online, staff, pe
           onClick={() => void perform('dispatch', { recommendationId: command.dispatch?.recommendationId })}>下达派警</Button></div>
     </div>}
     {stage === 'b3' && <div className="command-form">
-      <label>教学档案编号或姓名<Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="例如：教学档案-03" /></label>
+      <label>教学档案编号或姓名<Input value={query} onChange={(e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)} placeholder="例如：教学档案-03" /></label>
       <Button disabled={!allowed('verification') || !query.trim()} onClick={() => void perform('verification', { query })}>查询核验线索</Button>
-      <label className="command-form-wide">人工核查说明<Input.TextArea value={reason} onChange={(e) => setReason(e.target.value)} rows={2} /></label>
+      <label className="command-form-wide">人工核查说明<Input.TextArea value={reason} onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setReason(e.target.value)} rows={2} /></label>
       <div className="command-button-row">
         {(['confirmed', 'no_match', 'fallback'] as const).map((decision, index) => <Button key={decision}
           disabled={!allowed('verification/review') || verification?.resultStatus !== 'pending'
@@ -414,9 +415,9 @@ function CommandActions({ snapshot, stage, roles, token, busy, online, staff, pe
       </div>
     </div>}
     {stage === 'b4' && <div className="command-form">
-      <label>材料名称<Input value={name} onChange={(e) => setName(e.target.value)} /></label>
+      <label>材料名称<Input value={name} onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)} /></label>
       <label>发现时间（本地时区）<input type="datetime-local" value={discovered} onChange={(e) => setDiscovered(e.target.value)} /></label>
-      <label className="command-form-wide">现场说明<Input.TextArea value={note} onChange={(e) => setNote(e.target.value)} rows={3} /></label>
+      <label className="command-form-wide">现场说明<Input.TextArea value={note} onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setNote(e.target.value)} rows={3} /></label>
       <label className="command-file"><Upload size={18} />选择图片或视频<input type="file" accept="image/png,image/jpeg,image/webp,video/mp4,video/webm"
         disabled={!allowed('evidence')} onChange={(e) => { setFile(e.target.files?.[0] || null); setReceipt(null); e.target.value = ''; }} /></label>
       {file && <div>{file.name} {receipt ? '已上传，待登记' : '待上传'}<Button aria-label="删除待上传项" icon={<X size={14} />} disabled={uploading}
@@ -428,13 +429,13 @@ function CommandActions({ snapshot, stage, roles, token, busy, online, staff, pe
         <div key={item.evidenceId}><FileCheck2 size={16} /><b>{item.name}</b><span>{item.evidenceId}</span></div>)}</div>
     </div>}
     {(stage === 'handover' || stage === 'b4') && <div className="command-transfer">
-      {roles.includes('field') && <><label>移交摘要<Input.TextArea value={handover} onChange={(e) => setHandover(e.target.value)} rows={2} /></label>
+      {roles.includes('field') && <><label>移交摘要<Input.TextArea value={handover} onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setHandover(e.target.value)} rows={2} /></label>
         <Button type="primary" icon={<ArrowUpRight size={16} />} disabled={!allowed('handover') || !handover.trim() || !command.evidenceIndex.length
           || !['confirmed', 'no_match', 'fallback'].includes(verification?.resultStatus || '')}
           onClick={() => void perform('handover', { summary: handover, evidenceIds: command.evidenceIndex.map((item) => item.evidenceId) })}>提交研判移交</Button></>}
       {command.handover && <div className="command-handover-receipt"><Tag>{command.handover.status}</Tag><span>{command.handover.handoverId} · 第 {command.handover.version} 版</span>
         {command.handover.rejectionReason && <p>退回原因：{command.handover.rejectionReason}</p>}</div>}
-      {roles.includes('analyze') && <><label>退回原因<Input.TextArea value={reason} onChange={(e) => setReason(e.target.value)} rows={2} /></label>
+      {roles.includes('analyze') && <><label>退回原因<Input.TextArea value={reason} onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setReason(e.target.value)} rows={2} /></label>
         <div className="command-button-row"><Button type="primary" disabled={!allowed('handover/review')} onClick={() =>
           void perform(`handover/${command.handover?.handoverId}/review`, { decision: 'accepted' })}>接收研判移交</Button>
         <Button danger disabled={!allowed('handover/review') || !reason.trim()} onClick={() =>

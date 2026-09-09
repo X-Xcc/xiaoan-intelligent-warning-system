@@ -8,7 +8,7 @@ import tempfile
 
 from cryptography.fernet import Fernet
 
-MAX_STORE_BYTES = 262144
+MAX_STORE_BYTES = 524288
 STORAGE_ERROR = "\u8bbe\u5907\u52a0\u5bc6\u5b58\u50a8\u8bfb\u5199\u5931\u8d25\uff0c\u8bf7\u68c0\u67e5\u76ee\u5f55\u6743\u9650\u548c\u5bc6\u94a5\u5907\u4efd"
 
 

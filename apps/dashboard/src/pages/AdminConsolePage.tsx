@@ -1,6 +1,7 @@
 import {
   Activity,
   BrainCircuit,
+  Cable,
   CheckCircle2,
   ClipboardCheck,
   Database,
@@ -35,6 +36,7 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createAdminRequest } from '../lib/admin-request';
 
 const REMOTE_API_BASE = typeof window !== 'undefined' ? `${window.location.origin}/api` : 'http://127.0.0.1:8010/api';
 const DEFAULT_API_BASE = import.meta.env.DEV ? 'http://127.0.0.1:8010/api' : REMOTE_API_BASE;
@@ -44,7 +46,7 @@ const ADMIN_API = `${CORE_API}/admin`;
 type Props = {
   apiOnline: boolean;
   refresh: () => void;
-  navigate: (view: 'command' | 'duty-plan') => void;
+  navigate: (view: 'command' | 'duty-plan' | 'device-bridges') => void;
 };
 
 type AgentRecord = {
@@ -210,17 +212,6 @@ const statusColor = (status: string) => {
   return 'default';
 };
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const url = /^https?:\/\//.test(path) ? path : `${ADMIN_API}${path}`;
-  const { headers, ...rest } = init ?? {};
-  const response = await fetch(url, {
-    ...rest,
-    headers: { 'Content-Type': 'application/json', 'X-Operator': 'platform-governance', ...(headers ?? {}) },
-  });
-  if (!response.ok) throw new Error(await response.text());
-  return (await response.json()) as T;
-}
-
 const governanceTabs = [
   { key: 'overview', label: '治理总览', icon: Database },
   { key: 'ai', label: 'AI 运行时', icon: BrainCircuit },
@@ -252,11 +243,50 @@ function GovernanceSection({ icon, title, extra, children, className = '' }: { i
 }
 
 export function AdminConsolePage({ apiOnline, refresh, navigate }: Props) {
+  const [token, setToken] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [form] = Form.useForm<{ token: string }>();
+  const login = async ({ token: submitted }: { token: string }) => {
+    setBusy(true);
+    setError('');
+    try {
+      const value = submitted.trim();
+      await createAdminRequest(CORE_API, value)('/runtime-status');
+      form.resetFields();
+      setToken(value);
+    } catch {
+      setError('授权失败，请检查管理令牌和后端连接');
+    } finally {
+      setBusy(false);
+    }
+  };
+  if (!token) return <section className="governance-section">
+    <header className="governance-section-heading"><h2><KeyRound size={20} />管理授权</h2></header>
+    <div className="governance-section-body">
+      {error && <Alert type="error" title={error} showIcon />}
+      <Form form={form} layout="vertical" onFinish={login} style={{ maxWidth: 440 }}>
+        <Form.Item name="token" label="管理令牌" rules={[{ required: true, message: '请输入管理令牌' }]}>
+          <Input.Password autoComplete="off" />
+        </Form.Item>
+        <Button type="primary" htmlType="submit" loading={busy} icon={<KeyRound size={16} />}>验证</Button>
+      </Form>
+    </div>
+  </section>;
+  return <>
+    <Button onClick={() => setToken('')} icon={<KeyRound size={16} />}>退出管理授权</Button>
+    <AuthorizedAdminConsolePage apiOnline={apiOnline} refresh={refresh} navigate={navigate} token={token} />
+  </>;
+}
+
+function AuthorizedAdminConsolePage({ apiOnline, refresh, navigate, token }: Props & { token: string }) {
+  const request = useMemo(() => createAdminRequest(CORE_API, token), [token]);
   const { message } = App.useApp();
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [platform, setPlatform] = useState<PlatformSnapshot | null>(null);
   const [runtime, setRuntime] = useState<RuntimeStatus | null>(null);
   const [settings, setSettings] = useState<PlatformSettings>(defaultPlatformSettings);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [accessKeys, setAccessKeys] = useState<AccessKey[]>([]);
   const [systemAudits, setSystemAudits] = useState<SystemAudit[]>([]);
   const [alarmPushes, setAlarmPushes] = useState<AlarmPush[]>([]);
@@ -298,6 +328,7 @@ export function AdminConsolePage({ apiOnline, refresh, navigate }: Props) {
       setSettings(next);
       platformForm.setFieldsValue(next);
     }
+    setSettingsLoaded(Boolean(settingsPayload?.settings));
     if (keyPayload) setAccessKeys(keyPayload.items ?? []);
     if (auditPayload) setSystemAudits(auditPayload.items ?? []);
     if (alarmPayload) setAlarmPushes(alarmPayload.items ?? []);
@@ -367,6 +398,7 @@ export function AdminConsolePage({ apiOnline, refresh, navigate }: Props) {
   };
 
   const saveSettings = async () => {
+    if (loading || !settingsLoaded || savingSettings) return;
     try {
       const values = await platformForm.validateFields();
       setSavingSettings(true);
@@ -609,7 +641,7 @@ export function AdminConsolePage({ apiOnline, refresh, navigate }: Props) {
   const settingsView = (
     <div className="governance-two-column governance-settings-grid">
       <GovernanceSection icon={<ServerCog size={17} />} title="平台安全策略">
-        <Form form={platformForm} layout="vertical" initialValues={settings}>
+        <Form form={platformForm} layout="vertical" initialValues={settings} disabled={loading || !settingsLoaded || savingSettings}>
           <div className="governance-switch-fields">
             <Form.Item name="adminAuthEnabled" label="管理接口身份校验" valuePropName="checked"><Switch checkedChildren="开启" unCheckedChildren="关闭" /></Form.Item>
             <Form.Item name="sourceAuthEnabled" label="来源服务凭据校验" valuePropName="checked"><Switch checkedChildren="开启" unCheckedChildren="关闭" /></Form.Item>
@@ -618,7 +650,7 @@ export function AdminConsolePage({ apiOnline, refresh, navigate }: Props) {
             <Form.Item name="publicWriteRateLimitPerMinute" label="公开写入限流"><InputNumber min={1} max={120} addonAfter="次/分钟" /></Form.Item>
             <Form.Item name="evidenceUploadLimitMb" label="证据上传上限"><InputNumber min={1} max={100} addonAfter="MB" /></Form.Item>
           </div>
-          <Button type="primary" loading={savingSettings} icon={<Save size={15} />} onClick={saveSettings}>保存安全策略</Button>
+          <Button type="primary" disabled={loading || !settingsLoaded} loading={savingSettings} icon={<Save size={15} />} onClick={saveSettings}>保存安全策略</Button>
         </Form>
       </GovernanceSection>
       <GovernanceSection icon={<Eye size={17} />} title="模型调用约束">
@@ -637,6 +669,7 @@ export function AdminConsolePage({ apiOnline, refresh, navigate }: Props) {
       <header className="governance-heading">
         <div><h1>平台治理</h1><span className="governance-sync-time">{runtime?.checkedAt ? `最近同步 ${runtime.checkedAt}` : '每 20 秒同步'}</span></div>
         <div className="governance-heading-actions">
+          <Button icon={<Cable size={16} />} onClick={() => navigate('device-bridges')}>设备桥接</Button>
           <span className={`governance-service-status ${apiOnline ? 'online' : ''}`}><span className={`governance-status-dot ${apiOnline ? 'online' : ''}`} />{apiOnline ? '平台在线' : '等待同步'}</span>
           <Button onClick={load} loading={loading} icon={<RefreshCw size={16} />}>重新同步</Button>
         </div>

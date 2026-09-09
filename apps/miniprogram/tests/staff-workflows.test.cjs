@@ -58,7 +58,13 @@ function mount(entry, exportName, props, api = {}, environment = 'production') {
   };
   const jsx = (type, props, key) => ({ type, props: props || {}, key });
   const components = new Proxy({}, { get: (_, key) => key });
-  const taro = { useDidShow() {}, useDidHide() {}, openLocation: async () => {}, ...api.taro };
+  const storage = new Map();
+  const taro = {
+    useDidShow() {}, useDidHide() {}, openLocation: async () => {},
+    getStorageSync: (key) => storage.get(key),
+    setStorageSync: (key, value) => storage.set(key, structuredClone(value)),
+    ...api.taro,
+  };
   const { outputFiles } = buildSync({
     entryPoints: [path.resolve(__dirname, `../src/features/staff/${entry}.tsx`)],
     bundle: true, write: false, platform: 'node', format: 'cjs', packages: 'external',
@@ -73,6 +79,7 @@ function mount(entry, exportName, props, api = {}, environment = 'production') {
       if (id === '@tarojs/components' || id === '@/components/ui') return components;
       if (id === '@tarojs/taro') return taro;
       if (id === '@/utils/api') return {
+        getAuthToken: () => 'synthetic-staff-session',
         fetchStaffTasks: async () => [], connectRealtimeEvents: () => () => {},
         fetchSecurityOpsOverview: async () => ({}), ...api,
       };

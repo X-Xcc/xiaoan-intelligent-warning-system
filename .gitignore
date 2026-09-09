@@ -36,6 +36,7 @@ server/logs/
 
 # Local runtime data
 server/data/*.db
+server/data/event-evidence/
 server/security-data/
 server/.pgdata/
 server/.secrets/
@@ -74,4 +75,5 @@ scripts/*
 !scripts/dev_server.py
 _review2_slide-*.jpg
 project.private.config.json
+.deployment-verification.json
 .docx-requirements.txt

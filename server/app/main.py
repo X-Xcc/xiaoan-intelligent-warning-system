@@ -27,7 +27,7 @@ from app.services.local_env import load_local_env
 
 load_local_env()
 
-app = FastAPI(title="公安大数据与 AI 平台 API", version="0.1.0")
+app = FastAPI(title="小安智能预警系统 API", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
