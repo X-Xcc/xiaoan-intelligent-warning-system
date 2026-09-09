@@ -5,6 +5,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, model_validator
 
+from app.api.access_control import require_admin_token
 from app.api.dependencies import require_source_ingest_key
 from app.services import event_store
 from app.services.security_ai import SecurityAiUnavailable, judge_scene, review_latest_yolo_detection, review_posted_yolo_detection, vision_model_status
@@ -91,7 +92,7 @@ def review_yolo(payload: YoloReviewIn | None = None):
     return {**result, "event": event}
 
 
-@router.post("/face-match")
+@router.post("/face-match", dependencies=[Depends(require_admin_token)])
 def face_match(payload: FaceMatchIn):
     return {
         "items": security_ops.compare_identity_archive(

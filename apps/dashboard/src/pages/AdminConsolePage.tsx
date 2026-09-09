@@ -35,7 +35,7 @@ import {
   Typography,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createAdminRequest } from '../lib/admin-request';
 
 const REMOTE_API_BASE = typeof window !== 'undefined' ? `${window.location.origin}/api` : 'http://127.0.0.1:8010/api';
@@ -175,26 +175,6 @@ const defaultPlatformSettings: PlatformSettings = {
   evidenceUploadLimitMb: 20,
 };
 
-const fallbackAgents: AgentRecord[] = [
-  { agentKey: 'command-copilot', name: '接处警协同 Agent', status: 'active', currentTask: '警情摘要与分级建议', latency: '240ms' },
-  { agentKey: 'case-assistant', name: '执法办案助手 Agent', status: 'active', currentTask: '法条与证据规则检索', latency: '310ms' },
-  { agentKey: 'training-coach', name: '勤务训练教官 Agent', status: 'active', currentTask: '训练评分与短板画像', latency: '280ms' },
-  { agentKey: 'field-companion', name: '移动勤务伴随 Agent', status: 'running', currentTask: '现场指引与身份核验提示', latency: '180ms' },
-];
-
-const fallbackSkills: SkillRecord[] = [
-  { skillKey: 'alarm-structure', name: '警情结构化抽取', status: 'active', trigger: '接警语音进入', confidence: 96 },
-  { skillKey: 'evidence-check', name: '证据规则校验', status: 'active', trigger: '案件提交前', confidence: 92 },
-  { skillKey: 'training-profile', name: '训练短板画像', status: 'active', trigger: '训练结束后', confidence: 88 },
-  { skillKey: 'field-guidance', name: '现场指引生成', status: 'active', trigger: '移动警情签收', confidence: 94 },
-];
-
-const fallbackConnectors: ConnectorRecord[] = [
-  { name: '公安主数据目录 MCP', status: '在线', scope: '组织 / 人员 / 地点 / 车辆', lastSync: '刚刚' },
-  { name: '法律与类案知识库 MCP', status: '在线', scope: '法条 / 判例 / 制度', lastSync: '2 分钟前' },
-  { name: '统一事件链 MCP', status: '在线', scope: '警情 / 案件 / 训练 / 移动', lastSync: '刚刚' },
-];
-
 const dataDomains = [
   { key: 'org', name: '组织与权限', detail: '机构、岗位、角色、数据授权', tone: 'blue' },
   { key: 'alarm', name: '警情与指令', detail: '接报、派警、处置、回传', tone: 'orange' },
@@ -297,9 +277,11 @@ function AuthorizedAdminConsolePage({ apiOnline, refresh, navigate, token }: Pro
   const [newSecret, setNewSecret] = useState<string | null>(null);
   const [accessKeyForm] = Form.useForm<{ name: string; scopes: string[] }>();
   const [platformForm] = Form.useForm<PlatformSettings>();
+  const settingsDirty = useRef(false);
+  const loadSequence = useRef(0);
 
   const load = async () => {
-    setLoading(true);
+    const sequence = ++loadSequence.current;
     const results = await Promise.allSettled([
       request<AdminOverview>('/overview'),
       request<PlatformSnapshot>(`${CORE_API}/platform/overview`),
@@ -309,6 +291,7 @@ function AuthorizedAdminConsolePage({ apiOnline, refresh, navigate, token }: Pro
       request<{ items: SystemAudit[] }>('/system-audit-logs'),
       request<{ items: AlarmPush[] }>(`${CORE_API}/events/alarm-pushes`),
     ]);
+    if (sequence !== loadSequence.current) return;
     const value = <T,>(index: number): T | undefined => {
       const result = results[index];
       return result.status === 'fulfilled' ? (result.value as T) : undefined;
@@ -326,7 +309,7 @@ function AuthorizedAdminConsolePage({ apiOnline, refresh, navigate, token }: Pro
     if (settingsPayload?.settings) {
       const next = { ...defaultPlatformSettings, ...settingsPayload.settings };
       setSettings(next);
-      platformForm.setFieldsValue(next);
+      if (!settingsDirty.current) platformForm.setFieldsValue(next);
     }
     setSettingsLoaded(Boolean(settingsPayload?.settings));
     if (keyPayload) setAccessKeys(keyPayload.items ?? []);
@@ -339,12 +322,12 @@ function AuthorizedAdminConsolePage({ apiOnline, refresh, navigate, token }: Pro
   useEffect(() => {
     load();
     const timer = window.setInterval(load, 20000);
-    return () => window.clearInterval(timer);
+    return () => { window.clearInterval(timer); loadSequence.current++; };
   }, []);
 
-  const agents = platform?.ai_copilot?.agents?.length ? platform.ai_copilot.agents : overview?.agents?.length ? overview.agents : fallbackAgents;
-  const skills = platform?.ai_copilot?.skills?.length ? platform.ai_copilot.skills : overview?.skills?.length ? overview.skills : fallbackSkills;
-  const connectors = platform?.ai_copilot?.mcp_connectors?.length ? platform.ai_copilot.mcp_connectors : fallbackConnectors;
+  const agents = platform?.ai_copilot?.agents ?? overview?.agents ?? [];
+  const skills = platform?.ai_copilot?.skills ?? overview?.skills ?? [];
+  const connectors = platform?.ai_copilot?.mcp_connectors ?? [];
   const roles = overview?.roles ?? [];
   const events = overview?.events ?? [];
   const eventAudits = overview?.auditLogs ?? [];
@@ -369,7 +352,9 @@ function AuthorizedAdminConsolePage({ apiOnline, refresh, navigate, token }: Pro
   ], [alarmPushes, pendingEvents]);
   const domainObjectCount = platform?.dataCatalog?.objectCount ?? Object.values(overview?.counts ?? {}).reduce((sum, value) => sum + (Number.isFinite(value) ? value : 0), 0);
   const domainCount = platform?.dataCatalog?.domainCount ?? dataDomains.length;
-  const modelReady = Boolean(platform?.security_model?.configured || platform?.security_model?.model?.exists || apiOnline);
+  const modelConfigured = platform?.security_model?.configured === true;
+  const modelStatus = modelConfigured ? '已配置，连通性未验证'
+    : platform?.security_model?.model?.exists ? '模型文件已就绪' : '未配置';
   const onlineAgentCount = agents.filter((agent) => ['active', 'running', '在线', '运行中'].includes(agent.status)).length;
   const onlineConnectorCount = connectors.filter((connector) => ['在线', 'active', 'ready'].includes(connector.status)).length;
 
@@ -405,6 +390,7 @@ function AuthorizedAdminConsolePage({ apiOnline, refresh, navigate, token }: Pro
       const payload = await request<{ settings: PlatformSettings }>('/platform-settings', { method: 'PUT', body: JSON.stringify(values) });
       const next = { ...defaultPlatformSettings, ...(payload.settings ?? values) };
       setSettings(next);
+      settingsDirty.current = false;
       platformForm.setFieldsValue(next);
       message.success('平台安全策略已保存');
       await load();
@@ -486,12 +472,12 @@ function AuthorizedAdminConsolePage({ apiOnline, refresh, navigate, token }: Pro
     <div className="governance-content-stack">
       <div className="governance-kpi-row">
         <GovernanceMetric icon={<Database size={16} />} title="主数据域" value={domainCount} note={`${domainObjectCount} 个对象`} tone="blue" />
-        <GovernanceMetric icon={<BrainCircuit size={16} />} title="统一模型" value={modelReady ? 2 : 0} note="DeepSeek / Qwen3" tone="blue" />
+        <GovernanceMetric icon={<BrainCircuit size={16} />} title="模型配置" value={modelConfigured ? '已配置' : '未配置'} note="连通性未验证" tone="blue" />
         <GovernanceMetric icon={<Workflow size={16} />} title="智能体运行" value={`${onlineAgentCount}/${agents.length}`} note="已运行 / 已注册" tone="green" />
         <GovernanceMetric icon={<ClipboardCheck size={16} />} title="待人工确认" value={confirmationQueue.length} note="高风险输出待审核" tone="orange" />
       </div>
       <div className="governance-baseline">
-        <span>模型服务 <b>{modelReady ? '可调用' : '待接入'}</b></span>
+        <span>模型服务 <b>{modelStatus}</b></span>
         <span>人工确认 <b>强制保留</b></span>
         <span>主数据同步 <b>{platform?.dataCatalog?.syncStatus ?? (apiOnline ? '正常' : '待同步')}</b></span>
       </div>
@@ -520,7 +506,7 @@ function AuthorizedAdminConsolePage({ apiOnline, refresh, navigate, token }: Pro
 
   const aiRuntimeView = (
     <div className="governance-content-stack">
-      <GovernanceSection icon={<BrainCircuit size={17} />} title="统一 AI 模型服务" extra={<Tag color={modelReady ? 'green' : 'gold'}>{modelReady ? '内网可调用' : '待接入'}</Tag>}>
+      <GovernanceSection icon={<BrainCircuit size={17} />} title="统一 AI 模型服务" extra={<Tag color="gold">{modelStatus}</Tag>}>
         <div className="governance-model-service">
           <div className="governance-model-name"><strong>国产大模型推理网关</strong><div className="governance-tag-row"><Tag>Qwen3</Tag><Tag>DeepSeek</Tag><Tag>内网部署</Tag></div></div>
           <div className="governance-model-capabilities">
@@ -641,7 +627,8 @@ function AuthorizedAdminConsolePage({ apiOnline, refresh, navigate, token }: Pro
   const settingsView = (
     <div className="governance-two-column governance-settings-grid">
       <GovernanceSection icon={<ServerCog size={17} />} title="平台安全策略">
-        <Form form={platformForm} layout="vertical" initialValues={settings} disabled={loading || !settingsLoaded || savingSettings}>
+        <Form form={platformForm} layout="vertical" initialValues={settings}
+          onValuesChange={() => { settingsDirty.current = true; }} disabled={loading || !settingsLoaded || savingSettings}>
           <div className="governance-switch-fields">
             <Form.Item name="adminAuthEnabled" label="管理接口身份校验" valuePropName="checked"><Switch checkedChildren="开启" unCheckedChildren="关闭" /></Form.Item>
             <Form.Item name="sourceAuthEnabled" label="来源服务凭据校验" valuePropName="checked"><Switch checkedChildren="开启" unCheckedChildren="关闭" /></Form.Item>

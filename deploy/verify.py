@@ -89,7 +89,7 @@ def main():
     assert device["hasPassword"] and device["name"] == record["marker"]
     assert call("/api/device-bridges/", admin=True)["bindings"][0] == record["device"]
     assert call("/api/admin/platform-settings", admin=True)["settings"]["publicWriteRateLimitPerMinute"] == 23
-    label = "after container recreation" if args.check_persistence else "after writes"
+    label = "after service restart" if args.check_persistence else "after writes"
     print(f"PASS: event, evidence file, encrypted device registry, wall bindings and settings {label}")
 
 

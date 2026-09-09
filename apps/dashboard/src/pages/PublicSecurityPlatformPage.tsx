@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { Drawer, Empty } from 'antd';
 import type { PlatformOverview, PlatformView } from './DashboardApp';
-import { eventCategory, filterEvents, formatMetric, type EventFilter } from '../lib/presentation';
+import { appBasePath, eventCategory, filterEvents, formatMetric, type EventFilter } from '../lib/presentation';
 
 type Props = {
   overview: PlatformOverview;
@@ -100,7 +100,7 @@ export function PublicSecurityPlatformPage({ overview, apiOnline, navigate }: Pr
           <div className="overview-safety-note"><ShieldCheck size={15} /><span>高风险建议待人工确认</span></div>
         </section>
         <button type="button" className="overview-monitor-link" onClick={() => navigate('video')} aria-label="打开视频联动">
-          <img src="/night-market-cam-02.png" alt="夜市监控场景" loading="lazy" />
+          <img src={`${appBasePath}/night-market-cam-02.png`} alt="夜市监控场景" loading="lazy" />
           <span className="overview-monitor-caption"><span><Video size={17} /><strong>视频联动</strong></span><ArrowUpRight size={18} /></span>
         </button>
       </aside>

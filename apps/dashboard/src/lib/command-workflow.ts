@@ -56,6 +56,11 @@ export function initialControl(runKey: string, mode: CommandMode): ControlState 
   return { stage: 'b1', reveal: 0, paused: true, runKey, mode, eventId: null, revision: 0 };
 }
 
+export function localDateTimeInput(date = new Date()): string {
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 export function advanceControl(state: ControlState, action: 'next' | 'previous' | 'pause' | 'reset'): ControlState {
   const next = { ...state, revision: state.revision + 1 };
   if (action === 'reset') return { ...next, stage: 'b1', reveal: 0, paused: true };
@@ -93,6 +98,8 @@ export function actionAllowed(event: CommandEvent | null, roles: string[], actio
 }
 
 type Pending = { fingerprint: string; payload: Record<string, unknown> & { requestId: string } };
+type LedgerStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
+  & Partial<Pick<Storage, 'length' | 'key'>>;
 export function commandRequestId(source: Pick<Crypto, 'getRandomValues'> = crypto): string {
   const bytes = source.getRandomValues(new Uint8Array(16));
   bytes[6] = (bytes[6] & 15) | 64;
@@ -102,7 +109,7 @@ export function commandRequestId(source: Pick<Crypto, 'getRandomValues'> = crypt
 }
 export class RequestLedger {
   private requests = new Map<string, Pending>();
-  constructor(private storage?: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>, private prefix = 'command-pending') {}
+  constructor(private storage?: LedgerStorage, private prefix = 'command-pending') {}
   begin(eventId: string, action: string, fields: Record<string, unknown>) {
     const key = `${this.prefix}:${eventId}:${action}`;
     const fingerprint = JSON.stringify(fields);
@@ -121,5 +128,26 @@ export class RequestLedger {
     const key = `${this.prefix}:${eventId}:${action}`;
     this.requests.delete(key);
     this.storage?.removeItem(key);
+  }
+  pending(eventId: string): Array<{ action: string; payload: Pending['payload'] }> {
+    const prefix = `${this.prefix}:${eventId}:`;
+    const keys = new Set(this.requests.keys());
+    if (this.storage?.key) {
+      for (let index = 0; index < (this.storage.length ?? 0); index++) {
+        const key = this.storage.key(index);
+        if (key?.startsWith(prefix)) keys.add(key);
+      }
+    }
+    const pending = [];
+    for (const key of keys) {
+      if (!key.startsWith(prefix)) continue;
+      try {
+        const entry: Pending | undefined = this.requests.get(key) ?? JSON.parse(this.storage?.getItem(key) || 'null');
+        if (entry?.payload && typeof entry.payload.requestId === 'string') {
+          pending.push({ action: key.slice(prefix.length), payload: entry.payload });
+        }
+      } catch { /* Ignore malformed browser drafts, never send them as requests. */ }
+    }
+    return pending;
   }
 }

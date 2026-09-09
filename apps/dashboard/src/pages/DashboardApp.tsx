@@ -26,6 +26,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Tooltip } from 'antd';
 import { appBasePath, routePath, viewForPath, type PlatformView } from '../lib/presentation';
 import { trainingEntryPath } from '../lib/training-navigation';
+import { normalizeLiveOverview } from '../lib/platform-overview';
+import { CommandOperationsPage as CommandWorkbench } from './CommandOperationsPage';
 import { AdminConsolePage } from './AdminConsolePage';
 import { DeviceBridgesPage } from './DeviceBridgesPage';
 import { PublicSecurityPlatformPage } from './PublicSecurityPlatformPage';
@@ -35,6 +37,7 @@ import { OfficerTrainingPage } from './OfficerTrainingPage';
 import { ContactReviewPage } from './ContactReviewPage';
 import { DutySituationPage } from './DutySituationPage';
 import { XiaoanVoiceControls, useXiaoanVoice } from '../components/XiaoanVoice';
+import { XiaoanAssistant } from '../components/XiaoanAssistant';
 import {
   AICenterPage,
   CaseHandlingPage,
@@ -107,10 +110,6 @@ export type PlatformOverview = {
 
 const PRODUCT_NAME = '小安智能预警系统';
 const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.DEV ? 'http://127.0.0.1:8010/api' : `${window.location.origin}/api`)).replace(/\/$/, '');
-const BUSINESS_ROUTE_ALIASES = {
-  alarm: 'command',
-  training: 'duty-plan',
-} as const;
 
 const systemNavItems: Array<{ view: PlatformView; label: string; shortLabel: string; icon: typeof Activity; section: '业务工作台' | '平台能力' }> = [
   { view: 'platform', label: '平台总览', shortLabel: '总览', icon: LayoutDashboard, section: '业务工作台' },
@@ -207,42 +206,6 @@ function pathView(): PlatformView {
   return viewForPath(window.location.pathname);
 }
 
-function mergeBusinessSystems(runtimeSystems?: PlatformOverview['businessSystems']): PlatformOverview['businessSystems'] {
-  if (!runtimeSystems?.length) return demoOverview.businessSystems;
-
-  return demoOverview.businessSystems?.map((fallback) => {
-    const runtime = runtimeSystems.find((item) => {
-      const route = BUSINESS_ROUTE_ALIASES[item.key as keyof typeof BUSINESS_ROUTE_ALIASES] ?? item.key;
-      return route === fallback.key;
-    });
-
-    return {
-      ...fallback,
-      key: fallback.key,
-      name: runtime?.name ?? fallback.name,
-      description: runtime?.description ?? fallback.description,
-      status: runtime?.status ?? fallback.status,
-      metric: runtime?.metric ?? fallback.metric,
-      capabilities: runtime?.capabilities?.length ? runtime.capabilities : fallback.capabilities,
-    };
-  });
-}
-
-function mergeOverview(payload: PlatformOverview): PlatformOverview {
-  return {
-    ...demoOverview,
-    ...payload,
-    stats: payload.stats ?? {},
-    events: payload.events ?? [],
-    businessSystems: mergeBusinessSystems(payload.businessSystems),
-    dataCatalog: { ...demoOverview.dataCatalog, ...(payload.dataCatalog ?? {}), domains: payload.dataCatalog?.domains?.length ? payload.dataCatalog.domains : demoOverview.dataCatalog?.domains },
-    ai_copilot: { ...demoOverview.ai_copilot, ...(payload.ai_copilot ?? {}), agents: payload.ai_copilot?.agents?.length ? payload.ai_copilot.agents : demoOverview.ai_copilot?.agents, skills: payload.ai_copilot?.skills?.length ? payload.ai_copilot.skills : demoOverview.ai_copilot?.skills, mcp_connectors: payload.ai_copilot?.mcp_connectors?.length ? payload.ai_copilot.mcp_connectors : demoOverview.ai_copilot?.mcp_connectors },
-    aiCenter: { ...demoOverview.aiCenter, ...(payload.aiCenter ?? {}) },
-    eventChain: payload.eventChain ?? [],
-    governance: { ...demoOverview.governance, ...(payload.governance ?? {}) },
-  };
-}
-
 function ShellNav({ view, navigate, open, close, online }: { view: PlatformView; navigate: (next: PlatformView) => void; open: boolean; close: () => void; online: boolean }) {
   const sections = ['业务工作台', '平台能力'] as const;
   return <>
@@ -271,6 +234,7 @@ export function DashboardApp() {
   const [apiOnline, setApiOnline] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [assistantVisible, setAssistantVisible] = useState(true);
   const [statusMessage, setStatusMessage] = useState('正在读取平台运行态');
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [clock, setClock] = useState(() => new Date());
@@ -283,7 +247,7 @@ export function DashboardApp() {
       const response = await fetch(`${API_BASE}/platform/overview`);
       if (!response.ok) throw new Error(`平台接口返回 ${response.status}`);
       const payload = (await response.json()) as PlatformOverview;
-      setOverview(mergeOverview(payload));
+      setOverview(normalizeLiveOverview(payload));
       setApiOnline(true);
       hasLiveData.current = true;
       setLastSync(new Date());
@@ -348,10 +312,12 @@ export function DashboardApp() {
   }, []);
 
 
-  const currentNav = useMemo(() => systemNavItems.find((item) => item.view === view) ?? systemNavItems[0], [view]);
+  const navView = view === 'command-workbench' ? 'command' : view;
+  const currentNav = useMemo(() => systemNavItems.find((item) => item.view === navView) ?? systemNavItems[0], [navView]);
   const formattedDate = new Intl.DateTimeFormat('zh-CN', { month: '2-digit', day: '2-digit', weekday: 'short' }).format(clock);
   const formattedTime = new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(clock);
 
+  if (view === 'command-workbench' && new URLSearchParams(window.location.search).get('surface') === 'display') return <CommandWorkbench />;
   if (view === 'video') return <VideoLinkagePage onBack={() => navigate('platform')} />;
   if (view === 'night-market-command') return <NightMarketCommandPage onBack={() => navigate('video')} />;
   if (view === 'duty-plan') return <OfficerTrainingPage onSituation={() => navigate('duty-situation')} />;
@@ -364,6 +330,8 @@ export function DashboardApp() {
     ? <ContactReviewPage onBack={() => navigate('platform')} />
     : view === 'platform'
     ? <PublicSecurityPlatformPage overview={overview} apiOnline={apiOnline} refreshing={refreshing} refresh={loadOverview} navigate={navigate} />
+    : view === 'command-workbench'
+      ? <CommandWorkbench onBack={() => navigate('command')} />
     : view === 'command'
       ? <CommandOperationsPage overview={overview} apiOnline={apiOnline} navigate={navigate} refresh={loadOverview} />
       : view === 'case'
@@ -378,7 +346,7 @@ export function DashboardApp() {
 
   return <main className="platform-control-shell">
     <a className="skip-link" href="#workspace-content">跳转到工作区</a>
-    <ShellNav view={view} navigate={navigate} open={mobileNavOpen} close={() => { setMobileNavOpen(false); menuRef.current?.focus(); }} online={apiOnline} />
+    <ShellNav view={navView} navigate={navigate} open={mobileNavOpen} close={() => { setMobileNavOpen(false); menuRef.current?.focus(); }} online={apiOnline} />
     <div className="platform-control-main">
       <header className="platform-control-topbar">
         <div className="platform-control-topbar-left">
@@ -386,6 +354,7 @@ export function DashboardApp() {
           <div className="platform-control-breadcrumb"><span>工作空间</span><ChevronRight size={14} /><strong>{currentNav.label}</strong></div>
         </div>
         <div className="platform-control-topbar-right">
+          <Tooltip title={assistantVisible ? '隐藏小安助手' : '显示小安助手'}><button type="button" className="ui-icon-button xiaoan-shell-entry" aria-label={assistantVisible ? '隐藏小安助手' : '显示小安助手'} aria-pressed={assistantVisible} onClick={() => setAssistantVisible(value => !value)}><ShieldCheck size={17} /></button></Tooltip>
           <XiaoanVoiceControls />
           <span className="platform-control-clock"><Clock3 size={14} />{formattedDate} {formattedTime}</span>
               {view !== 'device-bridges' && <span className={`platform-control-sync ${apiOnline ? 'online' : 'demo'}`} aria-live="polite"><span />{apiOnline ? '内网数据在线' : hasLiveData.current ? '离线快照' : '演示数据'}</span>}
@@ -397,5 +366,6 @@ export function DashboardApp() {
       <div id="workspace-content" tabIndex={-1} className="platform-control-content">{page}</div>
       <footer className="platform-control-footer"><span><ShieldCheck size={14} />高风险 AI 建议需人工确认</span><span><Database size={14} />操作留痕 · 分级授权</span><span>最近同步 {lastSync ? lastSync.toLocaleTimeString('zh-CN', { hour12: false }) : '尚未连接'}</span></footer>
     </div>
+    <XiaoanAssistant visible={assistantVisible} onVisibilityChange={setAssistantVisible} />
   </main>;
 }

@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { Button, Input, Select, Tag, Tooltip } from 'antd';
-import { ArrowUpRight, Check, FileCheck2, LogIn, LogOut, Monitor, Plus, RefreshCw, Send, ShieldCheck, Upload, X } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, Check, FileCheck2, LogIn, LogOut, Monitor, Plus, RefreshCw, Send, ShieldCheck, Upload, X } from 'lucide-react';
 import {
-  actionAllowed, advanceControl, acceptsResponse, initialControl, RequestLedger, stages, commandRequestId,
+  actionAllowed, advanceControl, acceptsResponse, initialControl, localDateTimeInput, RequestLedger, stages, commandRequestId,
   type CommandContext, type CommandEvent, type CommandMode, type CommandResponse,
   type CommandRoute, type ControlState,
 } from '../lib/command-workflow';
-import { commandAction, commandContext, commandRequest, commandRoute, commandUpload, CommandApiError, protectedMaterial } from '../lib/command-api';
+import { commandAction, commandContext, commandRequest, commandRoute, commandUpload, CommandApiError, protectedMaterial, reconcileCommandRequests } from '../lib/command-api';
 import { commandScenario, playbackSnapshot } from '../lib/command-scenario';
 import { routePath } from '../lib/presentation';
 import { CommandControls } from '../components/command/CommandControls';
@@ -16,7 +16,7 @@ import { CommandVoice } from '../components/command/CommandVoice';
 import '../styles/command.css';
 
 type Principal = { openid: string; roles: string[]; staffId?: string };
-type CommandProps = { overview?: unknown; apiOnline?: boolean; navigate?: unknown; refresh?: unknown };
+type CommandProps = { onBack?: () => void };
 const personaOptions = [
   { value: 'intake', label: '接警员' }, { value: 'dispatch', label: '指挥席' },
   { value: 'field', label: '处警人员' }, { value: 'analysis', label: '研判人员' }, { value: 'screen', label: '控屏员' },
@@ -27,7 +27,7 @@ const errorText = (error: unknown) => error instanceof Error ? error.message : '
 function readControl(): ControlState {
   const params = new URLSearchParams(window.location.search);
   const runKey = params.get('runKey') || 'night-market-local';
-  const mode: CommandMode = params.get('mode') === 'rehearsal' ? 'rehearsal' : 'playback';
+  const mode: CommandMode = params.get('mode') === 'playback' ? 'playback' : 'rehearsal';
   const initial = { ...initialControl(runKey, mode), eventId: params.get('eventId') };
   try {
     const stored = JSON.parse(sessionStorage.getItem(`command-control:${runKey}`) || 'null') as ControlState | null;
@@ -39,7 +39,7 @@ function readControl(): ControlState {
   } catch { return initial; }
 }
 
-export function CommandOperationsPage(_props: CommandProps) {
+export function CommandOperationsPage({ onBack }: CommandProps) {
   const [control, setControl] = useState(readControl);
   const [token, setToken] = useState(() => sessionStorage.getItem('command-token') || '');
   const [tokenInput, setTokenInput] = useState('');
@@ -65,6 +65,7 @@ export function CommandOperationsPage(_props: CommandProps) {
   const controlRef = useRef(control);
   controlRef.current = control;
   const current = useRef({ id: control.eventId, version: 0, token });
+  const mounted = useRef(true);
   const operation = useRef(false);
   const loadSequence = useRef(0);
   const ledger = useMemo(() => new RequestLedger(sessionStorage, `command-pending:${principal?.openid || 'guest'}`), [principal?.openid]);
@@ -74,13 +75,19 @@ export function CommandOperationsPage(_props: CommandProps) {
   current.current.token = token;
 
   const updateControl = useCallback((next: ControlState) => {
+    if (!mounted.current) return;
     setControl(next);
     sessionStorage.setItem(`command-control:${next.runKey}`, JSON.stringify(next));
     const params = new URLSearchParams(window.location.search);
     params.set('runKey', next.runKey); params.set('mode', next.mode);
     if (next.eventId) params.set('eventId', next.eventId); else params.delete('eventId');
-    window.history.replaceState({}, '', `${routePath('command')}?${params}`);
+    window.history.replaceState({}, '', `${routePath('command-workbench')}?${params}`);
     channel.current?.postMessage({ type: 'control', state: next });
+  }, []);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
   }, []);
 
   useEffect(() => {
@@ -101,10 +108,10 @@ export function CommandOperationsPage(_props: CommandProps) {
   }, [control.runKey, display]);
 
   useEffect(() => {
-    if (display || control.paused || control.reveal >= 3) return;
+    if (display || busy || control.paused || control.reveal >= 3) return;
     const timer = window.setTimeout(() => updateControl(advanceControl(control, 'next')), 2000);
     return () => window.clearTimeout(timer);
-  }, [control, display, updateControl]);
+  }, [control, display, busy, updateControl]);
 
   useEffect(() => {
     void commandRequest<{ demoEnabled: boolean }>('/command/config', '').then((value) => setDemoEnabled(value.demoEnabled)).catch(() => undefined);
@@ -170,11 +177,29 @@ export function CommandOperationsPage(_props: CommandProps) {
     return () => { cancelled = true; objectUrls.forEach(URL.revokeObjectURL); };
   }, [snapshot?.command.version, snapshot?.event.id, token, playback]);
 
-  const signIn = (value: string) => { sessionStorage.setItem('command-token', value); setToken(value); setTokenInput(''); };
+  const signIn = (value: string) => {
+    if (!mounted.current) return;
+    sessionStorage.setItem('command-token', value); setToken(value); setTokenInput('');
+  };
   const signOut = () => {
     const prefix = `command-pending:${principal?.openid}:`;
     Object.keys(sessionStorage).filter((key) => key.startsWith(prefix)).forEach((key) => sessionStorage.removeItem(key));
     sessionStorage.removeItem('command-token'); setToken(''); setSnapshot(null); setEvents([]);
+  };
+  const reconcile = async () => {
+    const id = control.eventId;
+    if (!id || !principal || operation.current || playback) return;
+    operation.current = true; setBusy(true); setError(''); loadSequence.current++;
+    try {
+      const { snapshot: latest, pendingCount } = await reconcileCommandRequests(id, token, ledger);
+      if (current.current.id === id && current.current.token === token) {
+        current.current.version = latest.command.version;
+        setSnapshot(latest); setOnline(true);
+        setFeedback(pendingCount ? '回执尚未确认，原请求编号已保留。'
+          : '回执已核对，事件已同步。');
+      }
+    } catch (cause) { setError(`核对未完成：${errorText(cause)}`); }
+    finally { operation.current = false; setBusy(false); }
   };
   const demoLogin = async () => {
     if (operation.current) return;
@@ -263,7 +288,7 @@ export function CommandOperationsPage(_props: CommandProps) {
   const openDisplay = () => {
     const params = new URLSearchParams({ surface: 'display', mode: control.mode, runKey: control.runKey });
     if (control.eventId) params.set('eventId', control.eventId);
-    window.open(`${routePath('command')}?${params}`, '_blank');
+    window.open(`${routePath('command-workbench')}?${params}`, '_blank');
   };
 
   if (display) return <main className="command-display-shell">{view
@@ -273,12 +298,14 @@ export function CommandOperationsPage(_props: CommandProps) {
 
   return <section className="command-workbench">
     <header className="command-header"><div><span className="command-kicker">小安 / 接处警</span><h1>接处警工作台</h1></div>
-      <div className="command-header-actions"><Select aria-label="工作模式" value={control.mode} disabled={busy}
+      <div className="command-header-actions">
+        {onBack && <Button icon={<ArrowLeft size={16} />} onClick={onBack} disabled={busy}>返回接警单</Button>}
+        <Select aria-label="工作模式" value={control.mode} disabled={busy}
         onChange={setMode} options={[{ value: 'playback', label: '只读教学回放' }, { value: 'rehearsal', label: '业务联调' }]} />
         <Tooltip title="打开同机大屏"><Button aria-label="打开同机大屏" icon={<Monitor size={17} />} onClick={openDisplay} /></Tooltip></div>
     </header>
     <div className="command-session">
-      <ShieldCheck size={18} /><span>{principal ? `${principal.openid} · ${principal.roles.join(' / ')}` : '未登录 · 仅教学回放'}</span>
+      <ShieldCheck size={18} /><span>{principal ? `${principal.openid} · ${principal.roles.join(' / ')}` : playback ? '未登录 · 只读教学回放' : '未登录 · 业务操作不可用'}</span>
       {demoEnabled && <><Select aria-label="教学账号" value={persona} onChange={setPersona} options={personaOptions} disabled={busy} />
         <Button icon={<LogIn size={15} />} onClick={() => void demoLogin()} disabled={busy}>登录教学账号</Button></>}
       {!demoEnabled && !principal && <><Input.Password aria-label="接处警访问令牌" value={tokenInput}
@@ -290,6 +317,8 @@ export function CommandOperationsPage(_props: CommandProps) {
       <Tag color={playback ? 'gold' : online ? 'green' : 'red'}>{playback ? '只读回放，不写业务' : online ? '接口在线' : '离线 / 未同步'}</Tag>
       <span>{error || feedback || (lastSync && !playback ? `最后同步 ${lastSync}` : '教学场景 V1.0')}</span>
       {!playback && <Tooltip title="刷新队列及当前事件"><Button aria-label="刷新接处警" icon={<RefreshCw size={15} />} onClick={() => void load()} disabled={busy} /></Tooltip>}
+      {!playback && control.eventId && ledger.pending(control.eventId).length > 0
+        && <Button icon={<RefreshCw size={15} />} disabled={busy || !principal} onClick={() => void reconcile()}>核对待确认回执</Button>}
     </div>
     <div className={`command-layout ${playback ? 'command-layout-playback' : ''}`}>
       {!playback && <aside className="command-queue"><div className="command-section-heading"><h2>事件队列</h2><b>{events.length}</b></div>
@@ -305,7 +334,7 @@ export function CommandOperationsPage(_props: CommandProps) {
       <div className="command-main">
         <CommandVoice key={`${principal?.openid || 'guest'}:${control.mode}`}
           eventId={control.eventId} snapshot={snapshot} events={events} stage={control.stage} playback={playback} online={online} />
-        <CommandControls value={control} onChange={updateControl} />
+        <CommandControls value={control} onChange={updateControl} disabled={busy} />
         {view ? <CommandStageView snapshot={view} stage={control.stage} reveal={surface === 'control' || playback ? control.reveal : 3}
           route={route} playback={playback} offline={!playback && !online} materialUrls={materialUrls} />
           : <div className="command-empty"><FileCheck2 size={44} /><h2>选择接警事件</h2><p>当前没有可展示的授权事件快照</p></div>}
@@ -344,7 +373,7 @@ function CommandActions({ snapshot, stage, roles, token, busy, online, staff, pe
   const [reason, setReason] = useState('');
   const [note, setNote] = useState('');
   const [name, setName] = useState('');
-  const [discovered, setDiscovered] = useState(new Date().toISOString().slice(0, 16));
+  const [discovered, setDiscovered] = useState(() => localDateTimeInput());
   const [handover, setHandover] = useState(command.handover?.summary || '');
   const [result, setResult] = useState('');
   const [file, setFile] = useState<File | null>(null);

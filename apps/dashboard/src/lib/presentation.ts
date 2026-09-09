@@ -1,6 +1,7 @@
 export const routePaths = {
   platform: '/platform',
   command: '/command',
+  'command-workbench': '/command/workbench',
   case: '/case',
   community: '/community',
   'duty-plan': '/duty-situation/training',

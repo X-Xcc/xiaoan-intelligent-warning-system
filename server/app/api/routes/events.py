@@ -10,6 +10,7 @@ from uuid import uuid4
 from app.api.dependencies import enforce_public_write_rate_limit
 from app.services import event_store
 from app.services import system_control
+from app.services import evidence_media
 from app.services.realtime import realtime_hub
 from app.services import command_workflow
 from app.api.routes.command import optional_actor
@@ -153,14 +154,21 @@ async def upload_evidence(
     content = await file.read(limit_mb * 1024 * 1024 + 1)
     if len(content) > limit_mb * 1024 * 1024:
         raise HTTPException(status_code=413, detail="文件过大")
-    suffix = Path(file.filename or "").suffix or ".bin"
+    try:
+        mime, suffix = evidence_media.validate_upload(content, file.content_type)
+    except ValueError as exc:
+        raise HTTPException(status_code=415, detail=str(exc)) from exc
     stored_name = f"{uuid4().hex}{suffix}"
-    (EVIDENCE_DIR / stored_name).write_bytes(content)
+    try:
+        with (EVIDENCE_DIR / stored_name).open("xb") as target:
+            target.write(content)
+    except FileExistsError as exc:
+        raise HTTPException(status_code=409, detail="请重试上传") from exc
     return {
         "evidence": {
-            "kind": "video" if (file.content_type or "").startswith("video/") else "image",
+            "kind": "video" if mime.startswith("video/") else "image",
             "name": file.filename,
-            "mimeType": file.content_type,
+            "mimeType": mime,
             "url": f"/api/events/evidence/{stored_name}",
             "size": len(content),
         }
@@ -169,11 +177,32 @@ async def upload_evidence(
 
 @router.get("/evidence/{filename}")
 def get_evidence(filename: str, actor=Depends(optional_actor)):
-    protected_mime = command_workflow.authorize_file(filename, actor) if filename.startswith("cmd-") else None
-    target = (EVIDENCE_DIR / filename).resolve()
-    if EVIDENCE_DIR not in target.parents or not target.exists():
+    if (not filename or filename in {".", ".."} or filename.endswith((" ", "."))
+            or any(char in filename for char in "/\\:")
+            or any(ord(char) < 32 or ord(char) == 127 for char in filename)):
         raise HTTPException(status_code=404, detail="证据文件不存在")
-    return FileResponse(target, media_type=protected_mime, headers={"Cache-Control": "private, no-store"} if protected_mime else None)
+    protected_mime = command_workflow.authorize_file(filename, actor) if filename.lower().startswith("cmd-") else None
+    try:
+        source = EVIDENCE_DIR / filename
+        target = source.resolve()
+        if source.is_symlink() or target.parent != EVIDENCE_DIR or not target.is_file():
+            raise HTTPException(status_code=404, detail="证据文件不存在")
+        with target.open("rb") as evidence:
+            mime = evidence_media.inline_media_type(
+                evidence.read(evidence_media.HEADER_LIMIT), os.fstat(evidence.fileno()).st_size,
+                target.suffix, protected_mime,
+            )
+    except (OSError, ValueError, RuntimeError) as exc:
+        raise HTTPException(status_code=404, detail="证据文件不存在") from exc
+    return FileResponse(
+        target, media_type=mime or "application/octet-stream", filename=target.name,
+        content_disposition_type="inline" if mime else "attachment",
+        headers={
+            "Cache-Control": "private, no-store",
+            "X-Content-Type-Options": "nosniff",
+            "Content-Security-Policy": "sandbox; default-src 'none'; frame-ancestors 'none'",
+        },
+    )
 
 
 @router.post("/staff-location")

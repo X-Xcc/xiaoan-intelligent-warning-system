@@ -1,6 +1,8 @@
 import { ArrowRight, Camera, Check, ClipboardCheck, MapPin, Maximize2, Radio, RefreshCw, UserRound, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { IntakeSource } from '../lib/intake-sheet';
+import { appBasePath } from '../lib/presentation';
+import { sceneFeedUrl } from '../lib/scene-video';
 import '../styles/command-scene.css';
 
 const apiBase = (import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.DEV ? 'http://127.0.0.1:8010/api' : `${window.location.origin}/api`)).replace(/\/$/, '');
@@ -82,13 +84,12 @@ export function CommandScene({ event, draft, onNext }: {
 
   function renderFeed(view: typeof cameraViews[number]) {
     const source = cameras.find((item) => item.id === view.id);
-    const connected = source?.online === true && !failed[view.id] && !loading;
-    const feed = source?.feedUrl
-      ? new URL(source.feedUrl, `${apiBase.replace(/\/api$/, '')}/`).href
-      : `${apiBase}/security-video/feed?cam=${view.id}`;
+    const feed = sceneFeedUrl(source?.feedUrl ?? `/api/security-video/feed?cam=${encodeURIComponent(view.id)}`,
+      apiBase, window.location.href);
+    const connected = source?.online === true && Boolean(feed) && !failed[view.id] && !loading;
     return <>
       <div className="scene-feed-frame">
-        <img key={`${view.id}:${connected}:${retry}`} src={connected ? feed : view.preview}
+        <img key={`${view.id}:${connected}:${retry}`} src={connected ? feed : `${appBasePath}${view.preview}`}
           alt={connected ? `${view.title}视频流` : `${view.title}参考画面`}
           onError={(e) => {
             if (connected) setFailed((previous) => ({ ...previous, [view.id]: true }));

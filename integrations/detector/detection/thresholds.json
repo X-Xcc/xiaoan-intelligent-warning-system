@@ -1,0 +1,42 @@
+{
+  "model": {
+    "img_size": 512,
+    "conf_thresh": 0.5,
+    "inference_every": 2
+  },
+  "fall": {
+    "confirm_frames": 2,
+    "score_threshold": 0.5,
+    "min_keypoint_conf": 0.5,
+    "min_valid_keypoints": 5,
+    "aspect_ratio_high": 0.7,
+    "aspect_ratio_low": 0.55,
+    "head_hip_ratio": -0.05,
+    "knee_angle_bend": 60,
+    "knee_angle_straight": 170,
+    "verticality_ratio": 0.25,
+    "hip_ankle_diff": 0.03,
+    "trunk_angle": 40,
+    "head_ground_ratio": 0.65,
+    "min_features": 2
+  },
+  "fight": {
+    "threshold": 0.3,
+    "trunk_distance": 0.15,
+    "bbox_overlap": 0.1,
+    "arm_elbow_offset": 0.05,
+    "arm_wrist_offset": 0.1
+  },
+  "gathering": {
+    "threshold": 3,
+    "radius": 0.08,
+    "duration": 3.0,
+    "confidence_divisor": 8.0
+  },
+  "tracking": {
+    "iou_threshold": 0.3
+  },
+  "alert": {
+    "cooldown": 5.0
+  }
+}

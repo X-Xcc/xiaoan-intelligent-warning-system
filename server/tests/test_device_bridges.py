@@ -462,6 +462,15 @@ class ManagerLifecycleTests(unittest.TestCase):
         self.manager.shutdown()
         self.assertEqual(self.manager.runtime_info()["running"], 0)
 
+    def test_restore_can_defer_autostart_without_changing_device_configuration(self):
+        automatic = self.device(autoStart=True)
+        with patch.dict(os.environ, {"CICSIC_BRIDGE_AUTOSTART": "false"}):
+            with patch.object(self.manager, "start_device") as launch:
+                self.manager.startup()
+                launch.assert_not_called()
+        self.assertTrue(self.manager.get_device(automatic["id"])["autoStart"])
+        self.assertEqual(self.manager.runtime_info()["running"], 0)
+
     def test_concurrent_tests_share_one_worker_and_user_start_adopts_it(self):
         device = self.device()
         with ThreadPoolExecutor(max_workers=2) as executor:

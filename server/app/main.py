@@ -13,6 +13,7 @@ from app.api.routes.security_linkage import router as security_linkage_router
 from app.api.routes.security_ai import router as security_ai_router
 from app.api.routes.security_ops import router as security_ops_router
 from app.api.routes.security_video import router as security_video_router
+from app.api.routes.deployment_config import router as deployment_config_router
 from app.api.routes.platform import router as platform_router
 from app.api.routes.ai_center import router as ai_center_router
 from app.api.routes.training import router as training_router
@@ -46,6 +47,7 @@ async def add_request_id(request: Request, call_next):
     return response
 
 app.include_router(health_router, prefix="/api")
+app.include_router(deployment_config_router, prefix="/api")
 app.include_router(auth_router, prefix="/api")
 app.include_router(public_admin_router, prefix="/api")
 app.include_router(admin_router, prefix="/api")

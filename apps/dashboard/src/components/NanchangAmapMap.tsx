@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { getAmapConfig } from '../lib/deployment-config';
 
 export type PoliceIncidentGeo = {
   id: string;
@@ -20,8 +21,6 @@ declare global {
   }
 }
 
-const AMAP_KEY = import.meta.env.VITE_AMAP_KEY as string | undefined;
-const AMAP_SECURITY_JS_CODE = import.meta.env.VITE_AMAP_SECURITY_JS_CODE as string | undefined;
 export function PoliceJurisdictionAmapMap({
   incidents,
   selectedIncidentId,
@@ -29,11 +28,12 @@ export function PoliceJurisdictionAmapMap({
   incidents: PoliceIncidentGeo[];
   selectedIncidentId: string;
 }) {
+  const { key } = getAmapConfig();
   const hostRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
   const geocoderRef = useRef<any>(null);
   const lookupIdRef = useRef(0);
-  const [state, setState] = useState<MapState>(AMAP_KEY ? 'loading' : 'missing-key');
+  const [state, setState] = useState<MapState>(key ? 'loading' : 'missing-key');
   const [geocoderReady, setGeocoderReady] = useState(false);
 
   const selectedIncident = useMemo(
@@ -42,7 +42,7 @@ export function PoliceJurisdictionAmapMap({
   );
 
   useEffect(() => {
-    if (!AMAP_KEY) return;
+    if (!key) return;
     let cancelled = false;
 
     async function bootstrap() {
@@ -102,9 +102,9 @@ export function PoliceJurisdictionAmapMap({
       }
       geocoderRef.current = null;
       setGeocoderReady(false);
-      setState(AMAP_KEY ? 'loading' : 'missing-key');
+      setState(key ? 'loading' : 'missing-key');
     };
-  }, [incidents]);
+  }, [incidents, key]);
 
   useEffect(() => {
     if (state !== 'ready' || !mapRef.current || !selectedIncident) return;
@@ -133,7 +133,7 @@ export function PoliceJurisdictionAmapMap({
   }, [geocoderReady, state, selectedIncident]);
 
   const fallback = state === 'missing-key'
-    ? '配置 VITE_AMAP_KEY 后显示公安辖区警情地图'
+    ? '公安辖区警情地图暂不可用'
     : state === 'error'
       ? '公安辖区警情地图加载失败，请检查 key、securityJsCode 和网络'
       : '公安辖区警情地图加载中';
@@ -155,16 +155,17 @@ export function PoliceJurisdictionAmapMap({
 async function loadAmapSdk() {
   if (window.AMap) return window.AMap;
   if (window.__publicSecurityPlatformAmapLoader) return window.__publicSecurityPlatformAmapLoader;
-  if (!AMAP_KEY) throw new Error('Missing AMap key');
+  const { key, securityJsCode } = getAmapConfig();
+  if (!key) throw new Error('Missing AMap key');
 
-  if (AMAP_SECURITY_JS_CODE) {
-    window._AMapSecurityConfig = { securityJsCode: AMAP_SECURITY_JS_CODE };
+  if (securityJsCode) {
+    window._AMapSecurityConfig = { securityJsCode };
   }
 
   window.__publicSecurityPlatformAmapLoader = new Promise((resolve, reject) => {
     const script = document.createElement('script');
     script.async = true;
-    script.src = `https://webapi.amap.com/maps?v=2.0&key=${encodeURIComponent(AMAP_KEY)}&plugin=AMap.ToolBar,AMap.Scale`;
+    script.src = `https://webapi.amap.com/maps?v=2.0&key=${encodeURIComponent(key)}&plugin=AMap.ToolBar,AMap.Scale`;
     script.onload = () => resolve(window.AMap);
     script.onerror = () => reject(new Error('Failed to load AMap JS API'));
     document.head.appendChild(script);

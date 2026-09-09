@@ -1,4 +1,4 @@
-import type { CommandResponse, CommandRoute } from './command-workflow';
+import type { CommandResponse, CommandRoute, RequestLedger } from './command-workflow';
 
 export const commandApiBase = (import.meta.env.VITE_API_BASE_URL
   ?? (import.meta.env.DEV ? 'http://127.0.0.1:8010/api' : `${window.location.origin}/api`)).replace(/\/$/, '');
@@ -21,6 +21,26 @@ export async function commandRequest<T>(path: string, token: string, options: Re
 }
 export const commandContext = (id: string, token: string, signal?: AbortSignal) =>
   commandRequest<CommandResponse>(`/command/events/${encodeURIComponent(id)}/context`, token, { signal });
+export async function reconcileCommandRequests(id: string, token: string, ledger: RequestLedger) {
+  let snapshot = await commandContext(id, token);
+  for (const pending of ledger.pending(id)) {
+    try {
+      const receipt = await commandRequest<CommandResponse>(
+        `/command/events/${encodeURIComponent(id)}/receipts/${encodeURIComponent(pending.payload.requestId)}`, token);
+      if (receipt.event.id !== id) throw new CommandApiError('回执与当前事件不一致', 502);
+      if (receipt.command.version >= snapshot.command.version) snapshot = receipt;
+      ledger.resolve(id, pending.action);
+    } catch (cause) {
+      if (!(cause instanceof CommandApiError) || cause.status !== 404) throw cause;
+      // A 404 can race an in-flight commit. Only a newer version rules out that old write.
+      const expectedVersion = pending.payload.expectedVersion;
+      if (typeof expectedVersion === 'number' && snapshot.command.version > expectedVersion) {
+        ledger.resolve(id, pending.action);
+      }
+    }
+  }
+  return { snapshot, pendingCount: ledger.pending(id).length };
+}
 export const commandRoute = (id: string, staffId: string, token: string) =>
   commandRequest<{ route: CommandRoute }>(`/command/events/${encodeURIComponent(id)}/route-preview?staffId=${encodeURIComponent(staffId)}`, token);
 export const commandAction = (id: string, action: string, payload: Record<string, unknown>, token: string) =>

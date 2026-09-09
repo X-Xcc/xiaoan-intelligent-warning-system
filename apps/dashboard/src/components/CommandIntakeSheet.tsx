@@ -2,8 +2,8 @@ import { ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, Clock3, FileText,
 import { useEffect, useRef, useState } from 'react';
 import { buildIntakeDraft, type IntakeSource } from '../lib/intake-sheet';
 import '../styles/intake-sheet.css';
-import placeholderAudio from '../assets/intake-hello.wav?inline';
-import disorderCallAudio from '../assets/intake-disorder-call.wav?inline';
+import placeholderAudio from '../assets/intake-hello.wav?url';
+import disorderCallAudio from '../assets/intake-disorder-call.wav?url';
 import { CommandScene } from './CommandScene';
 
 type Incident = IntakeSource & { id: string };
@@ -108,7 +108,7 @@ export function CommandIntakeSheet({ events, refresh }: {
           <div className="intake-section-heading"><h3><Headphones size={18} />接警录音</h3>
           </div>
           {audioSource ? <div className="intake-audio-body"><span className="intake-recording-name">录音编号：{draft.number}-01</span>
-            <audio ref={audioRef} key={id} aria-label={`接警录音 ${draft.number}`} controls preload="auto" src={audioSource}
+            <audio ref={audioRef} key={id} aria-label={`接警录音 ${draft.number}`} controls preload="metadata" src={audioSource}
               onLoadedData={() => setAudioError('')}
               onPlaying={() => setAudioError('')}
               onError={() => setAudioError('录音加载失败，请重试。')} />

@@ -23,6 +23,7 @@ import {
   Mic,
   Network,
   Radio,
+  RefreshCw,
   Route,
   ScanSearch,
   ShieldCheck,
@@ -31,12 +32,13 @@ import {
   UsersRound,
   Workflow,
 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CommandIntakeSheet } from '../components/CommandIntakeSheet';
+import { AiCenterApiError, authenticateAiReviewer, getAiRuntime, submitAiReview, type AiReviewUser, type AiRuntimeSnapshot } from '../lib/ai-center-api';
 import { demoIntakeEvents } from '../lib/intake-demo-data';
 import { useAlarmIntake } from '../lib/use-alarm-intake';
 
-type DomainNavigate = (view: 'platform' | 'command' | 'case' | 'community' | 'ai-center' | 'duty-plan' | 'admin') => void;
+type DomainNavigate = (view: 'platform' | 'command' | 'command-workbench' | 'case' | 'community' | 'ai-center' | 'duty-plan' | 'admin') => void;
 type Tone = 'blue' | 'green' | 'orange' | 'purple' | 'red';
 
 export type DomainOverview = {
@@ -66,27 +68,6 @@ type DomainPageProps = {
   apiOnline: boolean;
   navigate: DomainNavigate;
   refresh?: () => void | Promise<void>;
-};
-
-type AIResultContract = {
-  result: string;
-  confidence: number;
-  evidence?: string[];
-  evidenceTime?: string | null;
-  explanation?: string;
-  humanReviewRequired: boolean;
-  reviewStatus: 'pending' | 'confirmed' | 'rejected' | 'not_required';
-  fallbackAction?: string;
-  auditId: string;
-};
-
-type AiRuntimeSnapshot = {
-  model: { name: string; status: string; providers: string[] };
-  capabilities: Array<{ name: string; scope: string; status: string }>;
-  agents: Array<{ name: string; status: string; currentTask: string; latency: string }>;
-  skills: Array<{ name: string; status: string; trigger: string; confidence: number }>;
-  mcpConnectors: Array<{ name: string; status: string; scope: string; lastSync: string; writeAllowed: boolean }>;
-  sampleResult?: AIResultContract;
 };
 
 const AI_CENTER_API = (import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.DEV ? 'http://127.0.0.1:8010/api' : `${window.location.origin}/api`)).replace(/\/$/, '');
@@ -540,11 +521,12 @@ function CircleDotIcon({ size }: { size?: number }) {
   return <Target size={size} />;
 }
 
-function ProcessSteps({ label, steps, active, onSelect, doneUntil = 0 }: { label: string; steps: ProcessStep[]; active: number; onSelect: (index: number) => void; doneUntil?: number }) {
+function ProcessSteps({ label, steps, active, onSelect, doneUntil = 0, navigationOnly = false }: { label: string; steps: ProcessStep[]; active: number; onSelect: (index: number) => void; doneUntil?: number; navigationOnly?: boolean }) {
   return (
     <nav className="domain-process-steps" aria-label={label + '处置链'}>
       {steps.map((step, index) => {
-        const state = index < doneUntil || index < active ? 'done' : index === active ? 'active' : '';
+        const complete = !navigationOnly && (index < doneUntil || index < active);
+        const state = complete ? 'done' : index === active ? 'active' : '';
         return (
           <button
             aria-label={step.label}
@@ -554,7 +536,7 @@ function ProcessSteps({ label, steps, active, onSelect, doneUntil = 0 }: { label
             onClick={() => onSelect(index)}
             type="button"
           >
-            <span>{index < doneUntil || index < active ? <CheckCircle2 size={14} /> : String(index + 1).padStart(2, '0')}</span>
+            <span>{complete ? <CheckCircle2 size={14} /> : String(index + 1).padStart(2, '0')}</span>
             <strong>{step.label}</strong>
             <small>{step.detail}</small>
           </button>
@@ -606,30 +588,32 @@ const workbenchEventChains: Record<string, EventChainItem> = {
 
 function DomainEventChain({ chain, navigate }: { chain: EventChainItem; navigate: DomainNavigate }) {
   const [reviewStatus, setReviewStatus] = useState<'pending' | 'confirmed' | 'rejected'>('pending');
-  const [feedback, setFeedback] = useState('高风险 AI 建议已进入人工确认队列，等待处置。');
+  const [feedback, setFeedback] = useState('本页演示：待模拟复核，未创建业务待办。');
   const review = (decision: 'confirmed' | 'rejected') => {
+    if (reviewStatus !== 'pending') return;
     setReviewStatus(decision);
     setFeedback(decision === 'confirmed'
-      ? '人工确认已记录到审计链；业务状态保持不变，等待业务 API 回传。'
-      : '建议已拒绝并回退人工处理；业务状态保持不变。');
+      ? '本页已标记模拟确认；未写入审计，也未改变业务状态。'
+      : '本页已标记模拟回退；未写入审计，也未创建人工任务。');
   };
 
   return (
-    <section className="domain-event-chain" aria-label="统一事件链与人工确认">
-      <div className="domain-event-chain-heading"><span>关联记录与复核</span><strong>当前节点：{chain.current}</strong><b>{chain.auditId}</b></div>
+    <section className="domain-event-chain" aria-label="关联记录与复核演示" data-source="demo">
+      <div className="domain-event-chain-heading"><span>本页演示 · 关联记录与复核</span><strong>示例节点：{chain.current}</strong><b>示例引用：{chain.auditId}</b></div>
       <dl>
         <div><dt>前一节点摘要</dt><dd>{chain.previous}</dd></div>
         <div><dt>下一节点动作</dt><dd>{chain.nextView ? <button type="button" className="domain-text-button" onClick={() => { if (chain.nextView) navigate(chain.nextView); }}>{chain.next}<ArrowRight size={14} /></button> : <span>{chain.next}</span>}</dd></div>
       </dl>
       <div className="domain-review-queue">
-        <div><span>高风险 AI 建议</span><strong>任务队列：人工确认队列</strong><small>置信度 92% · 依据：当前业务对象与关联事件 · 数据时间：2026-09-05 09:30</small></div>
+        <div><span>AI 建议样例</span><strong>本页模拟复核</strong><small>固定示例，不代表实际研判结果或业务待办。</small></div>
         <div className="domain-review-actions">
-          <button type="button" className="domain-primary-button" onClick={() => review('confirmed')} disabled={reviewStatus !== 'pending'}>人工确认</button>
-          <button type="button" className="domain-secondary-button" onClick={() => review('rejected')} disabled={reviewStatus !== 'pending'}>回退人工处理</button>
+          <button type="button" className="domain-primary-button" onClick={() => review('confirmed')} disabled={reviewStatus !== 'pending'}>模拟确认</button>
+          <button type="button" className="domain-secondary-button" onClick={() => review('rejected')} disabled={reviewStatus !== 'pending'}>模拟回退</button>
+          <button type="button" className="domain-secondary-button" onClick={() => { setReviewStatus('pending'); setFeedback('本页演示已重置；未写入审计。'); }} disabled={reviewStatus === 'pending'}>重置演示</button>
         </div>
       </div>
       <p className="domain-review-feedback" aria-live="polite">{feedback}</p>
-      <small className="domain-review-safety">确认仅更新人工确认队列，不直接改变业务状态。</small>
+      <small className="domain-review-safety">仅本页会话有效，离开或刷新后清空；未发送业务请求，未写入审计。</small>
     </section>
   );
 }
@@ -652,6 +636,7 @@ export function CommandOperationsPage({ navigate }: DomainPageProps) {
   return (
     <section className="domain-page command-operations-page" data-source={playback ? 'demo' : intake.online ? 'api' : 'offline'}>
       <DomainHeader eyebrow="接处警系统 / DISPATCH OPERATIONS" title="接处警工作台" description={playback ? '演示回放 · 警情受理、分级研判与派警确认' : '警情受理、分级研判与派警确认'} icon={Radio} apiOnline={!playback && intake.online} navigate={navigate} showFlow={false} />
+      <div className="domain-button-row"><button type="button" className="domain-secondary-button" onClick={() => navigate('command-workbench')}>业务办理 <ArrowRight size={15} /></button></div>
       {!playback && <div className="intake-sync-status" role="status">
         <span>{intake.loading ? '正在连接报警接收服务' : intake.online ? `报警接收在线 · ${events.length} 条警情` : '报警接收离线'}</span>
         {intake.notice && <strong>{intake.notice}</strong>}
@@ -668,6 +653,10 @@ export function CaseHandlingPage({ overview, apiOnline, navigate }: DomainPagePr
   const [query, setQuery] = useState('盗窃案件 · 夜间 · 多次作案');
   const [checks, setChecks] = useState([true, true, false, false]);
   const [documentReady, setDocumentReady] = useState(false);
+  const [searchedQuery, setSearchedQuery] = useState('');
+  const [checksConfirmed, setChecksConfirmed] = useState(false);
+  const [transferReady, setTransferReady] = useState(false);
+  const [caseFeedback, setCaseFeedback] = useState('本页演示：未执行法律检索、入卷或移送。');
   const activeModule = caseModules.find((module) => module.id === activeTool) ?? caseModules[0];
   const caseCount = overview.stats?.open_cases ?? 0;
   const eventCount = overview.stats?.today_events ?? 0;
@@ -678,32 +667,55 @@ export function CaseHandlingPage({ overview, apiOnline, navigate }: DomainPagePr
     { label: '程序节点', detail: '文书审核与移送归档', tool: 'document' },
   ];
   const selectProcess = (index: number) => {
+    if (!processSteps[index]) return;
     setActiveProcess(index);
     setActiveTool(processSteps[index].tool ?? activeTool);
+  };
+  const selectTool = (tool: string) => {
+    if (!caseModules.some((module) => module.id === tool)) return;
+    setActiveTool(tool);
+    setActiveProcess(tool === 'document' || tool === 'transfer' ? 3 : tool === 'evidence' || tool === 'rule-check' ? 1 : 2);
+  };
+  const searchCase = () => {
+    if (!query.trim()) return;
+    setSearchedQuery(query.trim());
+    setCaseFeedback('已在本页整理检索词；未查询法律数据库，以下仅为演示核对项。');
+  };
+  const toggleCheck = (index: number) => {
+    setChecks((state) => state.map((value, cursor) => cursor === index ? !value : value));
+    setChecksConfirmed(false);
+    setTransferReady(false);
+    setCaseFeedback('本页清单已修改，需重新模拟确认；未写入卷宗。');
+  };
+  const confirmEvidence = () => {
+    if (!checks.every(Boolean)) return;
+    setChecksConfirmed(true);
+    setCaseFeedback('本页取证清单已模拟确认；未提交审核队列或写入卷宗。');
   };
 
   const renderCaseTool = () => {
     if (activeTool === 'evidence' || activeTool === 'rule-check') {
-      return <><div className="domain-check-list">{['现场勘验记录与照片', '涉案物品来源及保管链', '关键人员询问笔录', '调取手续与审批回执'].map((item, index) => <label key={item}><input type="checkbox" checked={checks[index]} onChange={() => setChecks((state) => state.map((value, cursor) => cursor === index ? !value : value))} /><span>{item}</span><small>{checks[index] ? '已具备' : '待补齐'}</small></label>)}</div><div className="domain-warning"><AlertTriangle size={15} /><span>{checks.filter(Boolean).length < checks.length ? '还有 ' + (checks.length - checks.filter(Boolean).length) + ' 项材料需要补齐，暂不建议提交审核。' : '当前清单已满足提交前自检条件。'}</span></div><button type="button" className="domain-primary-button">确认取证清单</button><small className="domain-action-safety">取证清单仅提交人工确认队列，不直接写入卷宗。</small></>;
+      return <><div className="domain-check-list">{['现场勘验记录与照片', '涉案物品来源及保管链', '关键人员询问笔录', '调取手续与审批回执'].map((item, index) => <label key={item}><input type="checkbox" checked={checks[index]} onChange={() => toggleCheck(index)} /><span>{item}</span><small>{checks[index] ? '演示勾选' : '未勾选'}</small></label>)}</div><div className="domain-warning"><AlertTriangle size={15} /><span>{checks.filter(Boolean).length < checks.length ? '还有 ' + (checks.length - checks.filter(Boolean).length) + ' 项演示材料未勾选。' : '演示清单已全部勾选，不代表证据质量审核通过。'}</span></div><button type="button" className="domain-primary-button" onClick={confirmEvidence} disabled={!checks.every(Boolean) || checksConfirmed}>{checksConfirmed ? '本页清单已确认' : '模拟确认取证清单'}</button><small className="domain-action-safety">仅本页记录，未提交业务队列。</small></>;
     }
     if (activeTool === 'document' || activeTool === 'transfer') {
-      return <><div className="domain-document-preview"><div className="domain-document-line long" /><div className="domain-document-line" /><div className="domain-document-line medium" /><div className="domain-document-line" /><span><CheckCircle2 size={14} />{documentReady ? '卷宗草稿已生成，待签发' : '发现 2 处待人工确认'}</span></div><div className="domain-button-row"><button type="button" className="domain-primary-button" onClick={() => setDocumentReady(true)}>确认文书草稿</button><button type="button" className="domain-secondary-button" onClick={() => setActiveTool('transfer')}>确认移送材料</button></div><small className="domain-action-safety">文书与移送材料必须由办案民警确认，法律与量刑建议附法条/判例出处。</small></>;
+      return <><div className="domain-document-preview"><div className="domain-document-line long" /><div className="domain-document-line" /><div className="domain-document-line medium" /><div className="domain-document-line" /><span><FileText size={14} />{documentReady ? '本页文书样例已标记确认' : '文书结构示意，非正式文书'}</span></div><div className="domain-button-row"><button type="button" className="domain-primary-button" disabled={documentReady} onClick={() => { setDocumentReady(true); setCaseFeedback('本页文书样例已模拟确认；未生成正式文书或签发。'); }}>模拟确认文书</button><button type="button" className="domain-secondary-button" disabled={!documentReady || !checksConfirmed || transferReady} onClick={() => { selectTool('transfer'); setTransferReady(true); setCaseFeedback('本页移送材料已模拟核对；未向其他部门发送。'); }}>{transferReady ? '本页材料已核对' : '模拟核对移送材料'}</button></div><small className="domain-action-safety">移送演示须先确认清单与文书；未入卷、未签发、未发送材料。</small></>;
     }
     if (activeTool === 'similar' || activeTool === 'linkage') {
-      return <><div className="domain-similar-list"><div><span>2026-0421</span><strong>同区域、同作案手段</strong><b>建议区间：待核定</b></div><div><span>2026-0318</span><strong>多次盗窃、证据链完整</strong><b>差异点：涉案金额</b></div><div><span>2025-1186</span><strong>夜间连续作案类案</strong><b>需补：主观故意材料</b></div></div><button className="domain-text-button" type="button">打开类案与线索图谱 <ArrowRight size={14} /></button></>;
+      return <><div className="domain-similar-list"><div><span>样例 A</span><strong>示例关联：区域与时间</strong><b>未核实</b></div><div><span>样例 B</span><strong>示例差异：材料完整度</strong><b>待人工核对</b></div><div><span>样例 C</span><strong>示例关联：事件描述</strong><b>不构成串并结论</b></div></div>{activeTool === 'linkage' && <div className="ops-result-card"><strong>本页线索关联示意</strong><span>当前样例 → 区域 / 时间核对 → 样例 A、C</span><small>仅固定演示关联，未检索真实案件。</small></div>}<button className="domain-text-button" type="button" onClick={() => selectTool(activeTool === 'linkage' ? 'similar' : 'linkage')}>{activeTool === 'linkage' ? '返回类案样例' : '查看线索关联示意'} <ArrowRight size={14} /></button></>;
     }
-    return <><div className="domain-search-row"><input value={query} onChange={(event) => setQuery(event.target.value)} aria-label="案件检索内容" /><button type="button"><ScanSearch size={15} />检索</button></div><div className="domain-citation-list"><div><strong>《中华人民共和国刑法》第二百六十四条</strong><small>盗窃罪 · 需结合数额、次数、主观故意判断</small><b>依据 0.96</b></div><div><strong>最高人民法院相关指导案例</strong><small>夜间连续作案 · 同类案件量刑区间待人工确认</small><b>类案 12 条</b></div><div><strong>内部执法指引 / 2026 版</strong><small>{query} · 已关联到当前案件卷宗</small><b>已引用</b></div></div></>;
+    return <><form className="domain-search-row" onSubmit={(event) => { event.preventDefault(); searchCase(); }}><input value={query} onChange={(event) => setQuery(event.target.value)} aria-label="案件检索内容" /><button type="submit" disabled={!query.trim()}><ScanSearch size={15} />演示检索</button></form>{searchedQuery && <div className="domain-citation-list"><div><strong>本页检索词：{searchedQuery}</strong><small>未连接法律或类案数据库，无已核验引用。</small><b>演示</b></div><div><strong>待核对：事实与材料</strong><small>法条版本、适用条件、案例出处须另行核验。</small><b>未检索</b></div></div>}</>;
   };
 
   return (
     <section className="domain-page case-domain-page">
-      <DomainHeader eyebrow="执法办案系统 / CASE INTELLIGENCE" title="执法办案工作台" description="案件卷宗、证据校验与程序审核" icon={FileCheck2} apiOnline={apiOnline} navigate={navigate} />
-      <div className="domain-metrics"><DomainMetric label="在办案件" value={caseCount} note="案件主数据目录" icon={FileCheck2} tone="purple" /><DomainMetric label="待校验证据" value={checks.filter((item) => !item).length} note="提交前质量检查" icon={ClipboardCheck} tone="orange" /><DomainMetric label="今日关联警情" value={eventCount} note="统一事件链" icon={Radio} tone="blue" /><DomainMetric label="人工责任链" value="100%" note="审批与签发留痕" icon={ShieldCheck} tone="green" /></div>
+      <DomainHeader eyebrow="执法办案系统 / CASE INTELLIGENCE" title="执法办案工作台" description="本页演示 · 案件卷宗、证据校验与程序审核" icon={FileCheck2} apiOnline={apiOnline} navigate={navigate} showFlow={false} />
+      <ContractNote>本页演示操作仅在当前页面会话中保留，离开或刷新后清空；未检索真实案件，未入卷、签发、移送或写入审计。</ContractNote>
+      <div className="domain-metrics"><DomainMetric label="在办案件" value={caseCount} note="平台概览统计" icon={FileCheck2} tone="purple" /><DomainMetric label="未勾选材料" value={checks.filter((item) => !item).length} note="本页演示清单" icon={ClipboardCheck} tone="orange" /><DomainMetric label="今日警情" value={eventCount} note="平台概览统计" icon={Radio} tone="blue" /><DomainMetric label="操作模式" value="演示" note="未连接办理接口" icon={ShieldCheck} tone="green" /></div>
       <ObjectWorkbench
         className="case-dossier-workbench"
         navigate={navigate}
-        objectPanel={<><CurrentObjectCard label="当前案件卷宗" title="盗窃案件 · 夜间多次作案" status="证据补强中" details={[{ label: '案件编号', value: 'CASE-2026-0428' }, { label: '主办民警', value: '办案民警 07' }, { label: '案件阶段', value: '证据校验' }, { label: '关联警情', value: eventCount || '待同步' }]} /><section className="domain-panel"><PanelHeading kicker="EVIDENCE CHAIN" title="证据链状态" icon={ClipboardCheck} /><div className="domain-check-list">{['现场物证', '视频资料', '询问笔录', '调取手续'].map((item, index) => <label key={item}><span>{item}</span><small>{checks[index] ? '已入卷' : '待补充'}</small></label>)}</div></section><AiAssistMenu label="办案 AI 助手" modules={caseModules} activeId={activeTool} onSelect={setActiveTool} /></>}
-        processPanel={<><section className="domain-panel"><PanelHeading kicker="CASE PROCESS" title="案件卷宗—证据链台" icon={Workflow} description="卷宗、证据、法条和程序节点在同一案件对象下流转。"/><ProcessSteps label="案件" steps={processSteps} active={activeProcess} onSelect={selectProcess} doneUntil={checks.filter(Boolean).length > 1 ? 1 : 0} /></section><section className="domain-panel domain-active-process"><PanelHeading kicker="CURRENT CASE ACTION" title={activeModule.title} icon={activeModule.icon} description={activeModule.detail} />{renderCaseTool()}<ContractNote>法律检索、证据校验和文书草稿均为辅助结果，由办案民警确认后进入案件卷宗。</ContractNote></section></>}
+        objectPanel={<><CurrentObjectCard label="案件卷宗样例" title="盗窃案件 · 夜间多次作案" status="本页演示" details={[{ label: '示例编号', value: 'CASE-2026-0428' }, { label: '示例角色', value: '办案民警 07' }, { label: '示例阶段', value: '证据校验' }, { label: '业务关联', value: '未建立' }]} /><section className="domain-panel"><PanelHeading kicker="EVIDENCE CHAIN" title="演示清单状态" icon={ClipboardCheck} /><div className="domain-check-list">{['现场物证', '视频资料', '询问笔录', '调取手续'].map((item, index) => <label key={item}><span>{item}</span><small>{checks[index] ? '演示勾选' : '未勾选'}</small></label>)}</div></section><AiAssistMenu label="办案 AI 助手" modules={caseModules} activeId={activeTool} onSelect={selectTool} /></>}
+        processPanel={<><section className="domain-panel"><PanelHeading kicker="CASE PROCESS" title="案件卷宗—证据链台" icon={Workflow} description="本页演示步骤，不代表业务办理进度。"/><ProcessSteps label="案件" steps={processSteps} active={activeProcess} onSelect={selectProcess} navigationOnly /></section><section className="domain-panel domain-active-process"><PanelHeading kicker="CURRENT CASE ACTION" title={activeModule.title} icon={activeModule.icon} description={activeModule.detail} />{renderCaseTool()}<p className="domain-review-feedback" role="status">{caseFeedback}</p><ContractNote>仅演示辅助流程，所有材料与关联均未写入业务系统。</ContractNote></section></>}
       />
     </section>
   );
@@ -726,8 +738,24 @@ export function CommunityPolicingPage({ overview, apiOnline, navigate }: DomainP
     { label: '走访回传', detail: '回填结果并进入闭环复核', tool: 'closure' },
   ];
   const selectProcess = (index: number) => {
+    if (!processSteps[index]) return;
     setActiveProcess(index);
     setActiveTool(processSteps[index].tool ?? activeTool);
+  };
+  const selectTool = (tool: string) => {
+    const index = processSteps.findIndex((step) => step.tool === tool);
+    if (index >= 0) selectProcess(index);
+  };
+  const createPlan = () => {
+    setPlanCreated(true);
+  };
+  const saveVisit = () => {
+    if (!planCreated || !visitNote.trim() || visitReturned) return;
+    setVisitReturned(true);
+  };
+  const updateVisitNote = (value: string) => {
+    setVisitNote(value);
+    setVisitReturned(false);
   };
 
   const renderCommunityProcess = () => {
@@ -738,20 +766,21 @@ export function CommunityPolicingPage({ overview, apiOnline, navigate }: DomainP
       return <div className="community-risk-list">{risks.map((risk, index) => <button key={risk} type="button" className={selectedRisk === index ? 'active' : ''} onClick={() => setSelectedRisk(index)}><span className={'community-risk-index ' + (index === 0 ? 'high' : 'medium')}>{index === 0 ? '高' : '中'}</span><div><strong>{risk}</strong><small>{selectedRisk === index ? '当前查看：已关联警情、地址和责任网格' : '关联警情、地址和责任网格'}</small></div><ArrowRight size={14} /></button>)}</div>;
     }
     if (activeProcess === 2) {
-      return <><div className="community-task-list">{tasks.map((task, index) => <div key={task}><span>{String(index + 1).padStart(2, '0')}</span><div><strong>{task}</strong><small>{index % 2 ? '社区民警 · 今日 16:00 前' : '网格员 · 今日 14:30 前'}</small></div><b>{planCreated || index < 2 ? '已派发' : '待领取'}</b></div>)}</div><button type="button" className="domain-primary-button" onClick={() => setPlanCreated(true)}>{planCreated ? '走访计划已派发' : '生成并派发走访计划'}</button></>;
+      return <><div className="community-task-list">{tasks.map((task, index) => <div key={task}><span>{String(index + 1).padStart(2, '0')}</span><div><strong>{task}</strong><small>{index % 2 ? '示例角色：社区民警' : '示例角色：网格员'}</small></div><b>{planCreated ? '本页已编排' : '计划样例'}</b></div>)}</div><div className="domain-button-row"><button type="button" className="domain-primary-button" onClick={createPlan} disabled={planCreated}>{planCreated ? '本页计划已生成' : '生成本页走访计划'}</button><button type="button" className="domain-secondary-button" onClick={() => selectProcess(3)} disabled={!planCreated}>填写演示记录 <ArrowRight size={14} /></button></div><small className="domain-action-safety">未向网格员发送任务，也未产生业务派单。</small></>;
     }
-    return <><div className="ops-capability-body"><label className="ops-field-label">走访回传记录</label><textarea value={visitNote} onChange={(event) => { setVisitNote(event.target.value); setVisitReturned(false); }} placeholder="记录走访对象、现场情况、整改证据和下一步安排" rows={4} /><button type="button" className="domain-primary-button" onClick={() => setVisitReturned(Boolean(visitNote.trim()))}>{visitReturned ? '走访回传已进入闭环复核' : '提交走访回传'}</button></div>{visitReturned && <div className="ops-result-card"><strong>闭环复核任务已创建</strong><span>责任网格：站前网格 · 复核时限：24 小时内</span><small>审计编号：COMMUNITY-VISIT-0001</small></div>}</>;
+    return <><div className="ops-capability-body"><label className="ops-field-label" htmlFor="community-visit-note">本页走访演示记录</label><textarea id="community-visit-note" value={visitNote} onChange={(event) => updateVisitNote(event.target.value)} placeholder="填写虚构的走访记录" rows={4} />{!planCreated && <div className="domain-button-row"><button type="button" className="domain-secondary-button" onClick={() => selectProcess(2)}>返回计划编排 <ArrowLeft size={14} /></button></div>}<button type="button" className="domain-primary-button" disabled={!planCreated || !visitNote.trim() || visitReturned} onClick={saveVisit}>{visitReturned ? '本页记录已暂存' : '暂存本页演示记录'}</button></div><p className="domain-review-feedback" role="status">{visitReturned ? '本页记录已暂存；未上传、未创建复核任务、未写入审计。' : !planCreated ? '请先生成本页走访计划；已输入的草稿会保留。' : visitNote.trim() ? '演示草稿未暂存。' : '演示记录不能为空。'}</p>{visitReturned && <div className="ops-result-card"><strong>本页演示记录</strong><span style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{visitNote}</span><small>仅当前页面会话有效，离开或刷新后清空。</small></div>}</>;
   };
 
   return (
     <section className="domain-page community-domain-page">
-      <DomainHeader eyebrow="社区警务系统 / COMMUNITY OPERATIONS" title="社区警务工作台" description="辖区档案、风险线索与走访任务" icon={MapPinned} apiOnline={apiOnline} navigate={navigate} />
-      <div className="domain-metrics"><DomainMetric label="辖区网格" value="—" note="组织与地址目录" icon={MapPinned} tone="blue" /><DomainMetric label="待办走访" value={overview.stats?.community_tasks ?? '—'} note="按风险自动排序" icon={UsersRound} tone="green" /><DomainMetric label="风险线索" value={risks.length} note="重复警情与隐患" icon={AlertTriangle} tone="orange" /><DomainMetric label="闭环率" value={(overview.stats?.completion_rate ?? 0) + '%'} note="任务回访结果" icon={CheckCircle2} tone="purple" /></div>
+      <DomainHeader eyebrow="社区警务系统 / COMMUNITY OPERATIONS" title="社区警务工作台" description="本页演示 · 辖区档案、风险线索与走访任务" icon={MapPinned} apiOnline={apiOnline} navigate={navigate} showFlow={false} />
+      <ContractNote>本页演示仅保留当前页面会话中的计划与记录，离开或刷新后清空；未派发任务、未上传材料、未写入审计。</ContractNote>
+      <div className="domain-metrics"><DomainMetric label="辖区网格" value="—" note="未同步目录" icon={MapPinned} tone="blue" /><DomainMetric label="待办走访" value={overview.stats?.community_tasks ?? '—'} note="平台概览统计" icon={UsersRound} tone="green" /><DomainMetric label="风险样例" value={risks.length} note="本页固定演示" icon={AlertTriangle} tone="orange" /><DomainMetric label="平台完成率" value={overview.stats?.completion_rate == null ? '—' : overview.stats.completion_rate + '%'} note="平台概览统计" icon={CheckCircle2} tone="purple" /></div>
       <ObjectWorkbench
         className="community-territory-workbench"
         navigate={navigate}
-        objectPanel={<><CurrentObjectCard label="当前辖区对象" title="站前网格 · 东湖街道" status="持续建档中" details={[{ label: '重点地址', value: 3 }, { label: '今日风险事件', value: risks.length }, { label: '待办走访', value: overview.stats?.community_tasks ?? 4 }, { label: '当前责任', value: '社区民警 17' }]} /><section className="domain-panel community-object-contract"><PanelHeading kicker="COMMUNITY OBJECTS" title="辖区对象与走访账本" icon={MapPinned} /><p>辖区、网格、地址、重点人地事物画像</p><p>走访任务和隐患清单</p><p>重复警情聚合与风险热力</p><p>走访回传、照片/文字证据和闭环复核</p><p>与接处警、移动勤务、训练复盘的关联入口</p></section><section className="domain-panel"><PanelHeading kicker="RISK EVENT" title="风险事件" icon={AlertTriangle} /><div className="community-risk-list">{risks.map((risk, index) => <button key={risk} type="button" className={selectedRisk === index ? 'active' : ''} onClick={() => { setSelectedRisk(index); setActiveProcess(1); }}><span className={'community-risk-index ' + (index === 0 ? 'high' : 'medium')}>{index === 0 ? '高' : '中'}</span><div><strong>{risk}</strong><small>进入风险研判</small></div><ArrowRight size={14} /></button>)}</div></section><AiAssistMenu label="社区 AI 助手" modules={communityModules} activeId={activeTool} onSelect={setActiveTool} /></>}
-        processPanel={<><section className="domain-panel"><PanelHeading kicker="COMMUNITY CLOSED LOOP" title="辖区对象—风险任务台" icon={Workflow} description="辖区档案、风险事件、任务派发和走访回传围绕同一个网格对象闭环。"/><ProcessSteps label="社区警务" steps={processSteps} active={activeProcess} onSelect={selectProcess} doneUntil={planCreated ? 2 : 0} /></section><section className="domain-panel domain-active-process"><PanelHeading kicker="CURRENT COMMUNITY ACTION" title={processSteps[activeProcess].label} icon={activeModule.icon} description={activeModule.detail} />{renderCommunityProcess()}<ContractNote>风险研判和任务建议由社区民警确认，走访材料与复核结果完整留痕。</ContractNote></section></>}
+        objectPanel={<><CurrentObjectCard label="辖区对象样例" title="站前网格 · 东湖街道" status="本页演示" details={[{ label: '示例地址', value: 3 }, { label: '风险样例', value: risks.length }, { label: '走访样例', value: tasks.length }, { label: '示例角色', value: '社区民警 17' }]} /><section className="domain-panel"><PanelHeading kicker="RISK EVENT" title="风险样例" icon={AlertTriangle} /><div className="community-risk-list">{risks.map((risk, index) => <button key={risk} type="button" className={selectedRisk === index ? 'active' : ''} onClick={() => { setSelectedRisk(index); selectProcess(1); }}><span className={'community-risk-index ' + (index === 0 ? 'high' : 'medium')}>{index === 0 ? '高' : '中'}</span><div><strong>{risk}</strong><small>查看风险样例</small></div><ArrowRight size={14} /></button>)}</div></section><AiAssistMenu label="社区 AI 助手" modules={communityModules} activeId={activeTool} onSelect={selectTool} /></>}
+        processPanel={<><section className="domain-panel"><PanelHeading kicker="COMMUNITY CLOSED LOOP" title="辖区对象—风险任务台" icon={Workflow} description="本页演示步骤，不代表任务派发或闭环进度。"/><ProcessSteps label="社区警务" steps={processSteps} active={activeProcess} onSelect={selectProcess} navigationOnly /></section><section className="domain-panel domain-active-process"><PanelHeading kicker="CURRENT COMMUNITY ACTION" title={processSteps[activeProcess].label} icon={activeModule.icon} description={activeModule.detail} />{renderCommunityProcess()}<ContractNote>计划与记录均为本页演示，不构成业务派发、回传或复核。</ContractNote></section></>}
       />
     </section>
   );
@@ -1557,31 +1586,147 @@ export function TrainingOperationsPage({ overview, apiOnline, navigate, refresh 
   );
 }
 
-export function AICenterPage({ overview, apiOnline, navigate }: DomainPageProps) {
+export function AICenterPage({ apiOnline, navigate }: DomainPageProps) {
   const [runtime, setRuntime] = useState<AiRuntimeSnapshot | null>(null);
-  const [reviewedResult, setReviewedResult] = useState<AIResultContract | null>(null);
-  const [reviewState, setReviewState] = useState('正在读取本地 AI 运行态…');
+  const [runtimeLoading, setRuntimeLoading] = useState(false);
+  const [runtimeError, setRuntimeError] = useState<string | null>(null);
+  const [reviewState, setReviewState] = useState('尚未提交人工决定。');
+  const [reviewPending, setReviewPending] = useState(false);
+  const [reviewReason, setReviewReason] = useState('');
+  const [reviewDraftAuditId, setReviewDraftAuditId] = useState('');
+  const [tokenInput, setTokenInput] = useState('');
+  const [reviewer, setReviewer] = useState<AiReviewUser | null>(null);
+  const [authPending, setAuthPending] = useState(false);
+  const [authState, setAuthState] = useState('未登录业务账号。');
+  const tokenRef = useRef('');
+  const runtimeController = useRef<AbortController | null>(null);
+  const loginController = useRef<AbortController | null>(null);
+  const reviewController = useRef<AbortController | null>(null);
+  const result = runtime?.sampleResult;
+  const canReview = Boolean(reviewer?.permissions.includes('review'));
+  const updateReviewReason = (value: string) => {
+    setReviewReason(value);
+    setReviewDraftAuditId(result?.auditId ?? '');
+  };
 
-  useEffect(() => {
-    let active = true;
-    void fetch(`${AI_CENTER_API}/ai-center/runtime`)
-      .then((response) => response.ok ? response.json() as Promise<AiRuntimeSnapshot> : Promise.reject(new Error('runtime unavailable')))
-      .then((snapshot) => {
-        if (!active) return;
-        setRuntime(snapshot);
-        setReviewState('运行态已同步；高风险建议等待人工确认。');
-      })
-      .catch(() => {
-        if (active) setReviewState('运行态暂不可用，当前展示本地受控目录。');
-      });
-    return () => { active = false; };
+  const refreshRuntime = useCallback(async () => {
+    if (reviewController.current) return;
+    runtimeController.current?.abort();
+    const controller = new AbortController();
+    runtimeController.current = controller;
+    setRuntimeLoading(true);
+    setRuntimeError(null);
+    try {
+      const snapshot = await getAiRuntime(controller.signal);
+      if (controller.signal.aborted || runtimeController.current !== controller) return;
+      setRuntime(snapshot);
+    } catch (error) {
+      if (controller.signal.aborted || runtimeController.current !== controller) return;
+      setRuntimeError(error instanceof AiCenterApiError ? error.message : '运行态同步失败，请重试。');
+    } finally {
+      if (runtimeController.current === controller) {
+        runtimeController.current = null;
+        setRuntimeLoading(false);
+      }
+    }
   }, []);
 
+  const login = async () => {
+    if (!tokenInput.trim() || loginController.current || reviewController.current) return;
+    const token = tokenInput.trim();
+    const controller = new AbortController();
+    loginController.current = controller;
+    tokenRef.current = '';
+    setReviewer(null);
+    setTokenInput('');
+    setAuthPending(true);
+    setAuthState('正在核验业务账号与权限…');
+    try {
+      const user = await authenticateAiReviewer(token, controller.signal);
+      if (controller.signal.aborted || loginController.current !== controller) return;
+      tokenRef.current = token;
+      setReviewer(user);
+      setAuthState(user.permissions.includes('review') ? '业务账号已验证，可提交 AI 审核。' : '业务账号已验证，但没有 review 权限，当前仅可查看。');
+    } catch (error) {
+      if (controller.signal.aborted || loginController.current !== controller) return;
+      setAuthState(error instanceof AiCenterApiError ? error.message : '业务账号验证失败，请重试。');
+    } finally {
+      if (loginController.current === controller) {
+        loginController.current = null;
+        setAuthPending(false);
+      }
+    }
+  };
+
+  const logout = () => {
+    loginController.current?.abort();
+    loginController.current = null;
+    if (reviewController.current) {
+      reviewController.current.abort();
+      reviewController.current = null;
+      setRuntimeError('审核请求已取消，服务端结果待核对，请刷新运行态。');
+      setReviewState('未收到审核成功回执；取消请求不代表服务端撤销。');
+    }
+    tokenRef.current = '';
+    setTokenInput('');
+    setReviewer(null);
+    setAuthPending(false);
+    setReviewPending(false);
+    setAuthState('已退出本页业务登录，令牌已从本页内存清除。');
+  };
+
+  const submitReview = async (decision: 'confirmed' | 'rejected') => {
+    if (!result || result.reviewStatus !== 'pending' || !canReview || !tokenRef.current
+      || !reviewReason.trim() || reviewDraftAuditId !== result.auditId || runtimeController.current || runtimeLoading || runtimeError
+      || loginController.current || reviewController.current) return;
+    const controller = new AbortController();
+    reviewController.current = controller;
+    setReviewPending(true);
+    setReviewState('正在提交人工决定…');
+    try {
+      const next = await submitAiReview(tokenRef.current, result.auditId, decision, reviewReason, controller.signal);
+      if (controller.signal.aborted || reviewController.current !== controller) return;
+      setRuntime((current) => current?.sampleResult?.auditId === next.auditId ? { ...current, sampleResult: next } : current);
+      setReviewState(decision === 'confirmed' ? '服务端已返回人工确认回执；未执行后续业务办理。' : '服务端已返回驳回回执；未执行后续业务办理。');
+    } catch (error) {
+      if (controller.signal.aborted || reviewController.current !== controller) return;
+      if (error instanceof AiCenterApiError && error.status === 401) {
+        tokenRef.current = '';
+        setReviewer(null);
+        setAuthState('业务登录已失效，请重新登录。');
+      }
+      if (error instanceof AiCenterApiError && error.status === 403) {
+        setReviewer((current) => current ? { ...current, permissions: [] } : null);
+        setAuthState('当前账号无审核权限，请联系管理员后重新验证。');
+      }
+      setReviewState('未收到审核成功回执。' + (error instanceof AiCenterApiError ? error.message : '请刷新运行态核对结果。'));
+      setRuntimeError('审核结果待核对，请刷新运行态后再操作；审核意见已保留。');
+    } finally {
+      if (reviewController.current === controller) {
+        reviewController.current = null;
+        setReviewPending(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    void refreshRuntime();
+    return () => {
+      runtimeController.current?.abort();
+      loginController.current?.abort();
+      reviewController.current?.abort();
+      runtimeController.current = null;
+      loginController.current = null;
+      reviewController.current = null;
+      tokenRef.current = '';
+    };
+  }, [refreshRuntime]);
+
   const fallbackAgents = [
-    { name: '接处警协同 Agent', status: 'active', currentTask: '警情摘要与分级建议', latency: '240ms' },
-    { name: '执法办案助手 Agent', status: 'active', currentTask: '法条与证据规则检索', latency: '310ms' },
-    { name: '勤务训练教官 Agent', status: 'active', currentTask: '模拟评分、动作识别、短板画像', latency: '260ms' },
-    { name: '移动勤务伴随 Agent', status: 'running', currentTask: '现场指引与核验提示', latency: '180ms' },
+    { name: '接处警协同 Agent', status: 'pending', currentTask: '目录样例 · 警情摘要与分级建议', latency: '未同步' },
+    { name: '执法办案助手 Agent', status: 'pending', currentTask: '目录样例 · 法条与证据规则检索', latency: '未同步' },
+    { name: '勤务训练教官 Agent', status: 'pending', currentTask: '目录样例 · 训练评分建议', latency: '未同步' },
+    { name: '移动勤务伴随 Agent', status: 'pending', currentTask: '目录样例 · 现场指引', latency: '未同步' },
   ];
   const fallbackSkills = [
     { name: '警情结构化抽取', status: 'active', trigger: '接警语音进入', confidence: 96 },
@@ -1590,9 +1735,9 @@ export function AICenterPage({ overview, apiOnline, navigate }: DomainPageProps)
     { name: '移动现场指引', status: 'active', trigger: '民警签收现场任务后', confidence: 90 },
   ];
   const fallbackConnectors = [
-    { name: '公安主数据目录 MCP', status: '在线', scope: '组织 / 人员 / 地点 / 车辆（只读）', lastSync: '刚刚', writeAllowed: false },
-    { name: '法律与类案知识库 MCP', status: '在线', scope: '法条 / 判例 / 内部制度（只读）', lastSync: '刚刚', writeAllowed: false },
-    { name: '统一事件链 MCP', status: '在线', scope: '警情 / 案件 / 训练 / 移动（只读）', lastSync: '刚刚', writeAllowed: false },
+    { name: '公安主数据目录 MCP', status: '待同步', scope: '组织 / 人员 / 地点 / 车辆（只读）', lastSync: '未同步', writeAllowed: false },
+    { name: '法律与类案知识库 MCP', status: '待同步', scope: '法条 / 判例 / 内部制度（只读）', lastSync: '未同步', writeAllowed: false },
+    { name: '统一事件链 MCP', status: '待同步', scope: '警情 / 案件 / 训练 / 移动（只读）', lastSync: '未同步', writeAllowed: false },
   ];
   const model = runtime?.model ?? { name: '国产大模型（内网部署）', status: '待同步', providers: ['DeepSeek', 'Qwen3'] };
   const capabilities = runtime?.capabilities ?? [
@@ -1601,55 +1746,51 @@ export function AICenterPage({ overview, apiOnline, navigate }: DomainPageProps)
     { name: '视觉与动作识别', scope: '训练动作、目标复核', status: '按权限启用' },
     { name: '知识库与类案检索', scope: '法条、判例、内部制度', status: '待接入' },
   ];
-  const agents = runtime?.agents ?? (overview.ai_copilot?.agents?.length ? overview.ai_copilot.agents : fallbackAgents);
-  const skills = runtime?.skills ?? (overview.ai_copilot?.skills?.length ? overview.ai_copilot.skills : fallbackSkills);
+  const agents = runtime?.agents ?? fallbackAgents;
+  const skills = runtime?.skills ?? fallbackSkills;
   const connectors = runtime?.mcpConnectors ?? fallbackConnectors;
-  const result = reviewedResult ?? runtime?.sampleResult;
-
-  const submitReview = async (decision: 'confirmed' | 'rejected') => {
-    if (!result || result.reviewStatus !== 'pending') return;
-    setReviewState('正在提交人工决定…');
-    const authToken = window.localStorage.getItem('public-security-ai-auth-token')?.trim();
-    try {
-      const response = await fetch(`${AI_CENTER_API}/ai-center/review`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-        },
-        body: JSON.stringify({ auditId: result.auditId, decision, reason: decision === 'confirmed' ? '人工核验通过' : '人工核验后不采纳该建议' }),
-      });
-      if (response.status === 401) {
-        setReviewState('当前未登录或登录已过期，请重新登录后再提交人工决定。');
-        return;
-      }
-      if (response.status === 403) {
-        setReviewState('当前账号不具备 AI 人工审核（review）权限，请由管理员配置后重试。');
-        return;
-      }
-      if (!response.ok) throw new Error('review unavailable');
-      const next = await response.json() as AIResultContract;
-      setReviewedResult(next);
-      setReviewState(decision === 'confirmed' ? '已记录人工确认；业务状态仍需由业务系统另行办理。' : '已驳回建议并保留人工回退流程。');
-    } catch {
-      setReviewState('人工决定未写入，请在权限恢复后重试。');
-    }
-  };
+  const reviewDisabled = !canReview || authPending || reviewPending || runtimeLoading || Boolean(runtimeError) || !result || result.reviewStatus !== 'pending' || !reviewReason.trim() || reviewDraftAuditId !== result.auditId;
 
   return (
     <section className="domain-page ai-center-page">
       <DomainHeader eyebrow="统一 AI 能力中心 / AI RUNTIME" title="AI 能力中心" description="模型运行、智能体服务与结果审核" icon={BrainCircuit} apiOnline={apiOnline} navigate={navigate} backLabel="返回平台总览" />
+      <div className="domain-button-row" aria-busy={runtimeLoading}>
+        <button type="button" className="domain-secondary-button" onClick={() => void refreshRuntime()} disabled={runtimeLoading || reviewPending}><RefreshCw size={15} />{runtimeLoading ? '正在刷新' : runtimeError ? '重试运行态' : '刷新运行态'}</button>
+        <span role="status">{runtimeLoading ? '正在读取 AI 运行态…' : runtimeError ? `${runtimeError} ${runtime ? '当前保留上次快照。' : '当前仅展示本地目录样例。'}` : runtime ? '服务目录已同步；目录状态不代表模型或数据源已验证接通。' : '等待运行态同步。'}</span>
+      </div>
       <div className="domain-metrics"><DomainMetric label="国产模型" value={model.providers.length} note={model.providers.join(' / ')} icon={BrainCircuit} tone="blue" /><DomainMetric label="Agent" value={agents.length} note="按业务角色编排" icon={Workflow} tone="purple" /><DomainMetric label="Skill" value={skills.length} note="可审计策略" icon={Target} tone="green" /><DomainMetric label="MCP" value={connectors.length} note="白名单只读连接器" icon={Network} tone="orange" /></div>
       <div className="ai-center-grid">
-        <section className="domain-panel ai-model-panel"><PanelHeading kicker="MODEL RUNTIME" title="统一 AI 智算引擎" icon={BrainCircuit} /><div className="ai-model-hero"><div className="ai-model-orb"><BrainCircuit size={25} /></div><div><strong>{model.name}</strong><small>公安内网部署 · 统一推理网关 · 结果可追溯</small></div><b>{model.status}</b></div><div className="ai-capability-list">{capabilities.map((item, index) => <div key={item.name}><span className={'ai-capability-dot ' + (index === 0 ? 'ready' : 'pending')} /><strong>{item.name}</strong><small>{item.scope} · {item.status}</small></div>)}</div><ContractNote>所有高风险建议默认进入人工确认队列，不直接执行。</ContractNote></section>
+        <section className="domain-panel ai-model-panel"><PanelHeading kicker="MODEL RUNTIME" title="统一 AI 智算引擎" icon={BrainCircuit} /><div className="ai-model-hero"><div className="ai-model-orb"><BrainCircuit size={25} /></div><div><strong>{model.name}</strong><small>{runtime ? '服务返回目录' : '本地目录样例'}</small></div><b>{runtimeError ? '同步失败' : model.status}</b></div><div className="ai-capability-list">{capabilities.map((item) => <div key={item.name}><span className={'ai-capability-dot ' + (runtime && !runtimeError && item.status === '可用' ? 'ready' : 'pending')} /><strong>{item.name}</strong><small>{item.scope} · {item.status}</small></div>)}</div><ContractNote>当前结果为运行态样例；人工审核不会执行派警、办案或审批。</ContractNote></section>
         <section className="domain-panel ai-contract-panel"><PanelHeading kicker="AI OUTPUT CONTRACT" title="统一输出规范" icon={ShieldCheck} /><div className="ai-contract-list">{['结果：给出可执行建议', '置信度：展示模型把握程度', '依据：法条、制度、数据时间', '解释：说明关键判断要点', '人工确认：明确责任人和动作', '回退：保留人工处理入口', '审计：生成唯一审计编号'].map((item, index) => <div key={item}><span>{String(index + 1).padStart(2, '0')}</span><strong>{item}</strong><CheckCircle2 size={14} /></div>)}</div></section>
       </div>
       <div className="ai-runtime-grid">
-        <section className="domain-panel"><PanelHeading kicker="AGENT REGISTRY" title="业务智能体" icon={Workflow} /><div className="ai-runtime-list">{agents.map((agent) => <div key={agent.name}><span className={'ai-status-dot ' + agent.status} /><div><strong>{agent.name}</strong><small>{agent.currentTask}</small></div><b>{agent.latency}</b></div>)}</div></section>
-        <section className="domain-panel"><PanelHeading kicker="SKILL POLICY" title="技能策略" icon={Target} /><div className="ai-runtime-list">{skills.map((skill) => <div key={skill.name}><span className="ai-status-dot active" /><div><strong>{skill.name}</strong><small>{skill.trigger}</small></div><b>{skill.confidence}%</b></div>)}</div></section>
-        <section className="domain-panel"><PanelHeading kicker="MCP CONNECTORS" title="工具与数据连接器" icon={Network} /><div className="ai-runtime-list">{connectors.map((connector) => <div key={connector.name}><span className="ai-status-dot active" /><div><strong>{connector.name}</strong><small>{connector.scope} · {connector.writeAllowed ? '可写入' : '只读白名单'}</small></div><b>{connector.lastSync}</b></div>)}</div></section>
+        <section className="domain-panel"><PanelHeading kicker="AGENT REGISTRY" title="业务智能体" icon={Workflow} /><div className="ai-runtime-list">{agents.map((agent) => <div key={agent.name}><span className={'ai-status-dot ' + (runtime && !runtimeError ? agent.status : 'pending')} /><div><strong>{agent.name}</strong><small>{agent.currentTask}</small></div><b>{runtimeError ? '上次快照' : agent.latency}</b></div>)}</div></section>
+        <section className="domain-panel"><PanelHeading kicker="SKILL POLICY" title="技能策略" icon={Target} /><div className="ai-runtime-list">{skills.map((skill) => <div key={skill.name}><span className={'ai-status-dot ' + (runtime && !runtimeError ? skill.status : 'pending')} /><div><strong>{skill.name}</strong><small>{skill.trigger}</small></div><b>{runtimeError ? '上次快照' : runtime ? `${skill.confidence}%` : '未同步'}</b></div>)}</div></section>
+        <section className="domain-panel"><PanelHeading kicker="MCP CONNECTORS" title="工具与数据连接器" icon={Network} /><div className="ai-runtime-list">{connectors.map((connector) => <div key={connector.name}><span className={'ai-status-dot ' + (runtime && !runtimeError && connector.status === '在线' ? 'active' : 'pending')} /><div><strong>{connector.name}</strong><small>{connector.scope} · {connector.writeAllowed ? '可写入' : '只读白名单'}</small></div><b>{runtimeError ? '上次快照' : connector.lastSync}</b></div>)}</div></section>
       </div>
-      <section className="domain-panel ai-contract-panel" aria-live="polite"><PanelHeading kicker="AI RESULT RESPONSIBILITY" title="AI 结果责任链" icon={ShieldCheck} description={reviewState} />{result ? <div className="ai-runtime-list"><div><span className="ai-status-dot active" /><div><strong>{result.result}</strong><small>置信度 {result.confidence}% · {result.evidence?.join('；') || result.evidenceTime || '暂无依据'} · 审计编号 {result.auditId}</small></div><b>{result.reviewStatus === 'pending' ? '待人工确认' : result.reviewStatus === 'confirmed' ? '已确认' : '已驳回'}</b></div><div><span className="ai-status-dot pending" /><div><strong>回退说明</strong><small>{result.fallbackAction || '转人工处理，不自动改变业务状态'}</small></div><b>{result.humanReviewRequired ? '人工确认' : '无需复核'}</b></div></div> : <ContractNote>AI 结果正在等待运行态返回；不可用时应转人工处理。</ContractNote>}<div className="domain-button-row"><button type="button" className="domain-primary-button" onClick={() => void submitReview('confirmed')} disabled={!result || result.reviewStatus !== 'pending'}><CheckCircle2 size={15} />人工确认</button><button type="button" className="domain-secondary-button" onClick={() => void submitReview('rejected')} disabled={!result || result.reviewStatus !== 'pending'}><AlertTriangle size={15} />驳回并回退</button></div><ContractNote>审核请求携带 Bearer token；审核人由 token 对应用户确定，operatorId 不由前端传入。账号需具备 review 权限；确认或驳回均不直接改变派警、案件、审批或档案状态。</ContractNote></section>
+      <section className="domain-panel ai-contract-panel">
+        <PanelHeading kicker="AI REVIEW ACCOUNT" title="业务账号登录" icon={ShieldCheck} />
+        <form className="domain-button-row" onSubmit={(event) => { event.preventDefault(); void login(); }} aria-busy={authPending}>
+          <label htmlFor="ai-business-token">业务访问令牌</label>
+          <input id="ai-business-token" type="password" value={tokenInput} onChange={(event) => setTokenInput(event.target.value)} autoComplete="off" spellCheck={false} disabled={authPending || reviewPending} style={{ minWidth: 0, maxWidth: '100%' }} />
+          <button type="submit" className="domain-primary-button" disabled={!tokenInput.trim() || authPending || reviewPending}>{authPending ? '正在验证' : '验证并登录'}</button>
+          <button type="button" className="domain-secondary-button" onClick={logout} disabled={!reviewer && !authPending && !tokenInput}>退出本页登录</button>
+        </form>
+        <p role="status">{authState}{reviewer ? ` 当前账号：${reviewer.displayName || reviewer.role || '业务用户'}` : ''}</p>
+        <ContractNote>仅接受已签发的业务 Bearer 令牌，不使用管理令牌。令牌仅保留在本页内存中，退出或离开页面后清除；权限以服务端验证为准。</ContractNote>
+      </section>
+      <section className="domain-panel ai-contract-panel" aria-busy={reviewPending}>
+        <PanelHeading kicker="AI RESULT RESPONSIBILITY" title="AI 结果样例审核" icon={ShieldCheck} />
+        <p role="status">{reviewState}</p>
+        {result ? <div className="ai-runtime-list"><div><span className="ai-status-dot pending" /><div><strong>{result.result}</strong><small>置信度 {result.confidence}% · {result.evidence?.join('；') || result.evidenceTime || '暂无依据'} · 服务端审计引用 {result.auditId}</small></div><b>{{ pending: '待人工确认', confirmed: '已确认', rejected: '已驳回', not_required: '无需复核' }[result.reviewStatus]}</b></div><div><span className="ai-status-dot pending" /><div><strong>回退说明</strong><small>{result.fallbackAction || '转人工处理，不自动改变业务状态'}</small></div><b>{result.humanReviewRequired ? '人工确认' : '无需复核'}</b></div></div> : <ContractNote>{runtimeLoading ? '正在等待运行态结果。' : '暂无可审核结果。'}</ContractNote>}
+        <div className="ops-capability-body">
+          <label htmlFor="ai-review-reason" className="ops-field-label">审核意见</label>
+          <textarea id="ai-review-reason" rows={3} value={reviewReason} onChange={(event) => updateReviewReason(event.target.value)} disabled={reviewPending} />
+          {result && reviewReason.trim() && reviewDraftAuditId !== result.auditId && <p role="status">审核结果已变更，原意见仍保留但未关联当前结果。<button type="button" className="domain-text-button" disabled={runtimeLoading || reviewPending} onClick={() => updateReviewReason(reviewReason)}>将意见用于当前结果</button></p>}
+        </div>
+        <div className="domain-button-row"><button type="button" className="domain-primary-button" onClick={() => void submitReview('confirmed')} disabled={reviewDisabled}><CheckCircle2 size={15} />{reviewPending ? '正在提交' : '人工确认'}</button><button type="button" className="domain-secondary-button" onClick={() => void submitReview('rejected')} disabled={reviewDisabled}><AlertTriangle size={15} />驳回并回退</button></div>
+        <ContractNote>账号须具备 review 权限；审核人由服务端令牌确定。确认或驳回均不直接改变派警、案件、审批或档案状态。</ContractNote>
+      </section>
     </section>
   );
 }

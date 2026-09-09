@@ -65,7 +65,9 @@
 .cr-nightmarket-heading > div { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
 .cr-nightmarket-heading h3 { font-size: 15px; }
 .cr-nightmarket-heading > div > svg { color: #317bb2; }
-.cr-nightmarket-heading > div > span { color: #82919f; font-size: 12px; }
+.cr-nightmarket-heading > div:not(.cr-nightmarket-heading-actions) > span { color: #82919f; font-size: 12px; }
+.cr-nightmarket-heading .cr-nightmarket-heading-actions { flex-wrap: nowrap; margin-left: auto; }
+.cr-nightmarket-heading-actions .ui-icon-button { width: 32px; height: 32px; flex: 0 0 32px; }
 .cr-nightmarket-map-viewport { width: 100%; border: 1px solid #dce5e8; border-radius: 4px; background: #edf1f3; }
 .cr-gait-map { position: relative; width: min(100%, max(650px, calc((100dvh - 330px) * 1.5))); margin: 0 auto; aspect-ratio: 3 / 2; overflow: hidden; background: #eff3ef; }
 .cr-nightmarket-map-surface { position: absolute; inset: 0; }
@@ -124,6 +126,6 @@
 }
 @media (max-width: 440px) {
   .cr-gait-map { grid-template-columns: minmax(0, 1fr); }
-  .cr-nightmarket-heading > div > span { flex-basis: 100%; }
+  .cr-nightmarket-heading > div:not(.cr-nightmarket-heading-actions) > span { flex-basis: 100%; }
   .cr-nightmarket-anchor { width: 20px; height: 20px; font-size: 11px; }
 }

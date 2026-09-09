@@ -47,6 +47,32 @@ class ConfigurationTests(unittest.TestCase):
                 module.configure(path)
             self.assertEqual((path / ".env").read_text(), "POSTGRES_PASSWORD=example\n")
 
+    def test_detector_credentials_are_generated_once_and_preserved(self):
+        module = self.load_module()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            module.configure(root)
+            module.configure_detector(root)
+            before = (root / "detector.env").read_bytes()
+            values = module.read_config(root / "detector.env")
+            self.assertEqual(values["ADMIN_USERNAME"], "xiaoan-admin")
+            for key in ("ADMIN_PASSWORD", "API_KEY", "JWT_SECRET"):
+                self.assertGreaterEqual(len(values[key]), 32)
+            module.configure_detector(root)
+            self.assertEqual((root / "detector.env").read_bytes(), before)
+
+    def test_detector_does_not_replace_restored_credentials(self):
+        module = self.load_module()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            module.configure(root)
+            original = 'ADMIN_USERNAME="original"\nADMIN_PASSWORD="original-password"\n'
+            (root / "detector.env").write_text(original)
+            module.configure_detector(root)
+            after = (root / "detector.env").read_text()
+            self.assertTrue(after.startswith(original))
+            self.assertEqual(after.count("ADMIN_PASSWORD="), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

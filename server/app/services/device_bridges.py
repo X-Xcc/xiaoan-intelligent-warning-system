@@ -562,6 +562,8 @@ class BridgeManager:
     def startup(self) -> None:
         with self._operations:
             self._shutting_down = False
+            if os.getenv("CICSIC_BRIDGE_AUTOSTART", "true").lower() not in {"1", "true", "yes", "on"}:
+                return
             for row in self.list_devices():
                 if row["autoStart"]:
                     try:

@@ -14,7 +14,7 @@ import {
 import { demoTrainingSelection, trainingDemo } from '../lib/training-demo';
 import { useTrainingDraft } from '../lib/use-training-draft';
 import { readTrainingSelection, rememberTrainingSelection } from '../lib/training-navigation';
-import { routePath } from '../lib/presentation';
+import { appBasePath, routePath } from '../lib/presentation';
 import { XiaoanVoiceControls, useXiaoanVoice } from '../components/XiaoanVoice';
 import { trainingPassKey } from '../lib/xiaoan-voice-rules';
 import { getTrainingRecommendations } from '../lib/training-recommendations';
@@ -434,7 +434,7 @@ export function OfficerTrainingPage({ onSituation }: { onSituation: () => void }
 
   return <main className="officer-training-workspace">
     <header className="ot-topbar">
-      <div className="ot-brand"><img src="/yanhuo-shaobing-mark.png" alt="" /><span>公安 AI<span className="ot-brand-divider">/</span><b>训练中心</b></span></div>
+      <div className="ot-brand"><img src={`${appBasePath}/yanhuo-shaobing-mark.png`} alt="" /><span>公安 AI<span className="ot-brand-divider">/</span><b>训练中心</b></span></div>
       <nav className="ot-top-actions" aria-label="训练工作区导航">
         <XiaoanVoiceControls />
         <button type="button" className="ot-button" onClick={() => leave(onSituation)} disabled={interactionLocked}><ArrowLeft size={16} /><span>返回勤务态势</span></button>

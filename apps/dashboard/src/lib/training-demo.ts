@@ -30,7 +30,8 @@ export function demoTrainingSelection(selection: { taskId: string; officerId: st
     : officerIds.includes(`DEMO-${requestedOfficer}`) ? `DEMO-${requestedOfficer}` : officerIds[1];
   return {
     officerId,
-    taskId: /^TRAIN-DEMO-01[789]-[\w-]+$/.test(selection.taskId) ? selection.taskId : `TRAIN-DEMO-${officerId.slice(-3)}-01`,
+    taskId: /^TRAIN-DEMO-01[789]-[\w-]+$/.test(selection.taskId) ? selection.taskId
+      : `TRAIN-DEMO-${officerId.slice(-3)}-0${readiness?.[1] ?? '1'}`,
   };
 }
 

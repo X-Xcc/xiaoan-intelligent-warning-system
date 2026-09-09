@@ -1773,7 +1773,13 @@ def overview() -> dict[str, Any]:
     try:
         from app.services.security_ops import summary as security_ops_summary
 
-        ops = security_ops_summary()
+        ops = dict(security_ops_summary())
+        # This overview is public; archive records stay behind the admin routes.
+        ops.pop("identityProfiles", None)
+        identity = ops.get("identity") or {}
+        ops["identity"] = {
+            key: identity[key] for key in ("profiles", "tracks", "locks") if key in identity
+        } | {"items": []}
     except Exception:
         ops = {}
     try:

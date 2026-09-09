@@ -7,9 +7,9 @@ robot movement commands.
 ## Run on Windows
 
 For a new installation, follow the root `README.md` and double-click `start.cmd`.
-The complete Docker deployment includes this console at `/admin/bridges`.
-The native launcher below is for developers who already configured Python,
-Node.js and PostgreSQL; it is not a second required installation step.
+The complete Windows-native deployment includes this console at `/admin/bridges`.
+The launcher below is for developers who already configured Python, Node.js and
+PostgreSQL; it is not a second required installation step.
 
 Use the existing project Python environment with `server/requirements.txt`
 installed. The backend still needs the project's PostgreSQL `DATABASE_URL`.

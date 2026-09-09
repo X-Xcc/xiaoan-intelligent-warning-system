@@ -8,15 +8,18 @@ import { dashboardTheme } from './theme';
 import './styles.css';
 import './styles/xiaoan-voice.css';
 import { XiaoanVoiceProvider } from './components/XiaoanVoice';
+import { loadDeploymentConfig } from './lib/deployment-config';
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <ConfigProvider theme={dashboardTheme} locale={zhCN}>
-      <AntApp>
-        <XiaoanVoiceProvider>
-          <DashboardApp />
-        </XiaoanVoiceProvider>
-      </AntApp>
-    </ConfigProvider>
-  </React.StrictMode>,
-);
+void loadDeploymentConfig().then(() => {
+  ReactDOM.createRoot(document.getElementById('root')!).render(
+    <React.StrictMode>
+      <ConfigProvider theme={dashboardTheme} locale={zhCN}>
+        <AntApp>
+          <XiaoanVoiceProvider>
+            <DashboardApp />
+          </XiaoanVoiceProvider>
+        </AntApp>
+      </ConfigProvider>
+    </React.StrictMode>,
+  );
+});
