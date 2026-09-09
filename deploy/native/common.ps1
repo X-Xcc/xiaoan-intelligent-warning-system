@@ -165,6 +165,17 @@ function Test-NativeEmptyDirectory {
     }
 }
 
+function Test-NativeRestoreRuntimeDirectory {
+    param([string]$Path)
+    if (-not (Test-Path -LiteralPath $Path)) { return }
+    foreach ($item in @(Get-ChildItem -LiteralPath $Path -Force)) {
+        if ($item.Name -ne 'node' -or -not $item.PSIsContainer -or
+            -not (Test-Path -LiteralPath (Join-Path $item.FullName 'node.exe'))) {
+            throw 'Target runtime directory contains deployment data. Use a new extracted project folder.'
+        }
+    }
+}
+
 function Wait-NativeHttp {
     param([string]$Url, [int]$Seconds = 90)
     $deadline = [DateTime]::UtcNow.AddSeconds($Seconds)

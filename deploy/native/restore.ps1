@@ -57,7 +57,8 @@ try {
     $root = Get-NativeProjectRoot
     $native = Get-NativeDirectory
     if (Test-Path -LiteralPath (Join-Path $native '.env')) { throw 'Use a NEW extracted project folder. Existing native deployment settings cannot be overwritten.' }
-    foreach ($relative in @('data/postgres', '.runtime', 'logs', 'run')) { Test-NativeEmptyDirectory (Join-Path $native $relative) }
+    foreach ($relative in @('data/postgres', 'logs', 'run')) { Test-NativeEmptyDirectory (Join-Path $native $relative) }
+    Test-NativeRestoreRuntimeDirectory (Join-Path $native '.runtime')
     foreach ($relative in @('server/data/event-evidence', 'server/.secrets/device-bridges', 'server/security-data',
             'integrations/detector/server/data', 'integrations/detector/runtime', 'integrations/detector/models',
             'integrations/detector/detection/datasets', 'integrations/detector/runs', 'integrations/detector/results')) {

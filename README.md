@@ -50,6 +50,8 @@
 4. 看到“Prerequisite installers were started or completed”后，关闭这个黑色窗口。
 5. 重新打开项目文件夹。
 
+如果这一步已经下载了 Node.js，那么项目里的 `deploy\native\.runtime\node` 是正常的安装依赖，不是业务数据。新版 `restore.cmd` 会保留它并继续恢复。
+
 如果电脑没有 `winget`，请让电脑管理员安装下列官方软件后再双击一次 `install-prerequisites.cmd`：Python 3.12、Eclipse Temurin JDK 21、PostgreSQL 18。Node.js 会由项目脚本下载，不需要单独找版本。
 
 ### 第 3 步：恢复完整业务副本
@@ -96,7 +98,7 @@
 | 现象 | 处理方法 |
 | --- | --- |
 | `install-prerequisites.cmd` 提示缺少软件 | 按窗口提示安装 Python 3.12、Java 21 或 PostgreSQL 18；安装后关闭窗口，再重新双击。 |
-| `restore.cmd` 说目标目录已有数据 | 不要删除原内容。重新下载并解压一份代码到新的空文件夹。 |
+| `restore.cmd` 说目标目录已有数据 | 如果目录里只有 `deploy\native\.runtime\node`，请下载 GitHub 最新版本后重新运行；新版会保留这个正常的 Node.js 运行时。如果还有 `data`、`logs`、`run`、数据库或虚拟环境等内容，请重新下载并解压一份代码到新的空文件夹。 |
 | 恢复校验失败 | 保留迁移包、密钥和错误窗口，检查磁盘空间、迁移包是否完整、密钥是否配对。不要换用其他来源的密钥。 |
 | 网页打不开 | 先双击 `start.cmd`，再确认 `http://127.0.0.1:8010/api/health/ready` 是否可访问。日志在 `deploy\native\logs`。 |
 | 检测服务启动失败 | 先确保 Java 21 已安装。首次构建会下载 Maven 依赖，网络中断后重新双击 `start.cmd`。 |

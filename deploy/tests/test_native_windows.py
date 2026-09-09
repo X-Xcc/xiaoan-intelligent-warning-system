@@ -52,6 +52,13 @@ class NativeDeploymentTests(unittest.TestCase):
         self.assertIn("go2rtc.exe", start)
         self.assertIn("go2rtc.yaml", start)
 
+    def test_restore_allows_bootstrapped_node_runtime_but_rejects_other_runtime_data(self):
+        common = (NATIVE / "common.ps1").read_text(encoding="utf-8-sig")
+        restore = (NATIVE / "restore.ps1").read_text(encoding="utf-8-sig")
+        self.assertIn("Test-NativeRestoreRuntimeDirectory", common)
+        self.assertIn("Test-NativeRestoreRuntimeDirectory (Join-Path $native '.runtime')", restore)
+        self.assertNotIn("Test-NativeEmptyDirectory (Join-Path $native '.runtime')", restore)
+
     def test_static_server_keeps_assets_and_spa_routes_distinct(self):
         import importlib.util
         import tempfile
