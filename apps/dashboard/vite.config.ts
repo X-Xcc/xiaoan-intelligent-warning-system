@@ -9,6 +9,7 @@ export default defineConfig({
       '/api': {
         target: process.env.CICSIC_PROXY_TARGET || 'http://127.0.0.1:8010',
         changeOrigin: true,
+        ws: true,
       },
     },
   },

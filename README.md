@@ -1,348 +1,274 @@
 # 小安智能预警系统
 
-这是一个安全预警系统原型，包含电脑网页后台、后端服务和小程序。
+本仓库提供**完整本机部署**所需的网页后台、FastAPI 后端、PostgreSQL 数据库配置、设备视频桥接源码、运行资源和启动脚本。不是只有页面的展示包。
 
-**第一次安装，先按照下面的“第一部分”在 Windows 电脑上打开网页。** 不需要买服务器、买域名，也不需要准备摄像头或微信小程序账号。
+**第一次使用，按下面 5 步操作。只需要安装 Docker Desktop，不用自己安装 Python、Node.js 或数据库。**
 
-> **当前版本提醒（2026 年 9 月 9 日核对）**
->
-> `main` 的后端引用了 `server/app/services/device_bridges.py`，但这个文件尚未提交到仓库，会阻止后端启动。因此，当前不能把本仓库称为“下载后即可完整部署”的版本。
->
-> 第一部分用于预览网页。没有后端时，部分页面会显示演示数据、离线状态或请求失败，不能保存或处理真实业务。第二部分是后端安装参考，**请等缺失代码补齐并通过验证后再做，避免白白安装数据库。** 这个问题不是你的电脑操作错了。
+摄像头、微信账号和 AI 服务密钥不是打开系统的前提。没有设备时，视频显示未接入；演示数据不代表真实业务或真实监控。小程序发布、真实设备和外网访问见后面的可选章节。
 
-## 第一部分：先把网页打开
+## 第 1 步：安装 Docker Desktop
 
-以下步骤适用于 Windows 10/11 的普通 64 位电脑。建议使用 Edge 或 Chrome 浏览器。安装软件、下载代码和安装依赖时需要联网。
+Docker 可以把系统需要的软件一起运行，你不需要分别配置它们。
 
-### 第 1 步：安装两个软件
+1. 准备一台支持 Docker Desktop 的 Windows 电脑。本教程面向普通 Intel/AMD 64 位电脑，建议至少 8 GB 内存、20 GB 空闲空间，首次安装需要联网。
+2. 打开 [Docker Desktop Windows 安装说明](https://docs.docker.com/desktop/setup/install/windows-install/)，按页面的当前系统要求下载 Windows 安装包。ARM 电脑不要下载 x86_64 安装包。
+3. 运行安装包，保留使用 WSL 2 的默认选项。如果安装程序要求重启电脑，先重启。
+4. 从开始菜单打开 **Docker Desktop**，等待它显示引擎已经运行，再继续下一步。保持 Linux containers 模式。
 
-已经安装过的可以跳过。
-
-| 软件 | 去哪里下载 | 安装时怎么选 |
-| --- | --- | --- |
-| Git：用来下载项目 | [Git 官方下载页](https://git-scm.com/downloads/win) | 普通 Intel/AMD 电脑选择 x64 安装包。大部分选项保持默认；出现 PATH 选项时，保留允许命令行和第三方软件使用 Git 的选项。 |
-| Node.js：用来运行网页 | [Node.js 官方下载页](https://nodejs.org/en/download) | 选择 **22.x，且不低于 22.13**，Windows、x64、`.msi` 安装包。保留 npm 和添加到 PATH 的默认选项。 |
-
-ARM 电脑需要选择与电脑架构对应的安装包，不要照搬 x64。
-
-安装完后，**关闭之前打开的终端窗口，再重新打开**：
-
-1. 点击 Windows 开始菜单。
-2. 搜索 `PowerShell`，打开它。后面提到的“终端”就是这个窗口，不需要以管理员身份运行。
-3. 把下面三行命令逐行粘贴进去，每粘贴一行就按一次回车。
+如果提示需要更新 WSL，打开开始菜单，搜索 PowerShell，右键“以管理员身份运行”，输入：
 
 ```powershell
-git --version
-node --version
-npm.cmd --version
+wsl --update
 ```
 
-**成功标志：** 三行都能显示版本号，没有“无法识别”之类的报错。Node.js 显示的版本应符合上表要求。
+按提示重启电脑，再打开 Docker Desktop。如果提示系统没有开启虚拟化，需要按电脑厂商说明启用；这不是项目代码报错。
 
-后面的命令框只复制框内内容，不要复制 `PS C:\...>` 这样的终端提示符。
+Docker Desktop 的使用许可由 Docker 提供，企业使用前请确认适用条款。
 
-### 第 2 步：下载项目
+## 第 2 步：下载并解压项目
 
-继续在刚才的 PowerShell 中，逐行运行：
+仓库地址：[小安智能预警系统](https://github.com/X-Xcc/xiaoan-intelligent-warning-system)。
+
+**仓库目前是私有仓库。** 接收方需要先登录已被邀请的 GitHub 账号；未获授权时看到 404 不代表地址失效。也可以由仓库所有者下载 ZIP 后私下交付，不必把仓库改成公开。
+
+1. 打开上面的仓库，确认左上角分支是 **`main`**。
+2. 点击绿色 **Code** 按钮，再点击 **Download ZIP**。
+3. 找到下载的 ZIP 文件，右键选择“全部解压缩”。
+4. 打开解压后的文件夹，找到 **`start.cmd`**。
+
+**一定要先解压，不能在压缩包里直接双击运行。** 文件夹里应该同时有 `README.md`、`compose.yaml`、`start.cmd`、`apps`、`server` 和 `deploy`。
+
+熟悉 Git 的人也可以用：
 
 ```powershell
-cd $HOME
 git clone --branch main https://github.com/X-Xcc/xiaoan-intelligent-warning-system.git
-cd xiaoan-intelligent-warning-system
 ```
 
-下载可能需要几分钟，等上一条命令完成，再运行下一条。
+## 第 3 步：双击 start.cmd
 
-项目会放在你的 Windows 用户文件夹里，例如：
+确认 Docker Desktop 已运行，然后双击项目文件夹里的 **`start.cmd`**。
+
+它会自动完成：
+
+- 生成这台部署独有的数据库密码和管理令牌。
+- 下载运行环境，安装网页与后端依赖。
+- 构建网页，启动数据库、后端和网页服务。
+- 等待数据库、API 和网页代理的健康检查通过。
+
+首次需要下载较多内容，请耐心等待。出现下载进度或英文日志是正常的，不要连续双击多次。
+
+**成功标志：** 窗口最后显示：
 
 ```text
-C:\Users\你的用户名\xiaoan-intelligent-warning-system
+READY: http://127.0.0.1:8080
 ```
 
-命令中的 `$HOME` 会自动找到你的用户文件夹，不用把它改成自己的名字。
+只有显示 `READY` 才表示启动检查通过。如果显示 `Startup failed`，先看下方“遇到问题怎么办”，不要继续反复安装。
 
-**成功标志：** 运行下面的命令，能看到 `package.json`：
+后端设备管理只运行一个进程，避免多进程争用视频桥接配置。数据库和 API 不直接开放宿主机端口；默认只有本机可以访问网页。
+
+## 第 4 步：打开系统
+
+打开 Edge 或 Chrome，把下面的地址输入浏览器顶部地址栏，按回车：
+
+```text
+http://127.0.0.1:8080
+```
+
+不要输入到百度等搜索框。
+
+再打开这个地址，检查后端和数据库：
+
+```text
+http://127.0.0.1:8080/api/health/ready
+```
+
+返回内容中应同时包含顶层 `"status":"ready"` 和数据库的 `"status":"ready"`、`"engine":"postgresql"`。看到网页本身，不等于数据库已经正常。
+
+**启动成功后可以关闭黑色命令窗口，但不要退出 Docker Desktop。** 服务在后台运行，不需要一直开着 PowerShell。
+
+## 第 5 步：进入管理页面
+
+系统默认开启管理鉴权，没有统一的默认密码。
+
+1. 在项目文件夹中打开 `deploy` 文件夹。
+2. 用记事本打开里面的 **`.env`** 文件。它是在第 3 步生成的；若没有生成，说明启动步骤未完成。
+3. 找到 `CICSIC_ADMIN_TOKEN=` 这一行，复制等号后面的整段内容，不包含等号和换行。
+4. 打开管理页，把它粘贴到“管理令牌”框，点击“验证”：
+
+```text
+http://127.0.0.1:8080/admin
+```
+
+设备管理使用同一个令牌，进入后也需要验证：
+
+```text
+http://127.0.0.1:8080/admin/bridges
+```
+
+**`deploy/.env` 里面有密码，不要上传 GitHub、不要发到群里、不要截图给别人。** 管理令牌只用于管理授权，不等于微信登录或处警人员账号。刷新管理页面后可能需要重新输入。
+
+## 以后怎么开、怎么关？
+
+**下次打开：** 先打开 Docker Desktop，再双击同一个项目文件夹里的 `start.cmd`，然后访问 `http://127.0.0.1:8080`。已有密码和数据会继续使用，不会重新生成。
+
+**停止系统：**
+
+1. 在项目文件夹的空白处右键，选择“在终端中打开”，使用 PowerShell。
+2. 输入下面这一行，按回车：
 
 ```powershell
-Get-Item .\package.json
+docker compose --env-file deploy/.env stop
 ```
 
-如果提示项目文件夹已经存在，先不要删除它。以前按本教程下载过的，直接运行下面这行进入文件夹，然后继续第 3 步：
+这只停止服务，不删除数据。再次启动仍然双击 `start.cmd`。
+
+不要运行带 **`down -v`** 的命令，也不要在 Docker Desktop 中删除本项目的数据卷；那会删除数据库和持久文件。不要把 `deploy/.env` 删掉“重新生成”，旧数据库仍使用原来的密码。
+
+## 遇到问题怎么办？
+
+| 看到的问题 | 怎么处理 |
+| --- | --- |
+| GitHub 页面是 404 | 确认登录了被邀请的账号，并接受仓库邀请；或请所有者交付 ZIP。 |
+| 找不到 `start.cmd` | 确认下载的是 `main`，已经全部解压，且打开的是含 `compose.yaml` 的那一层文件夹。 |
+| `Docker was not found` | 安装 Docker Desktop，打开一次；关闭当前命令窗口，再双击 `start.cmd`。 |
+| `Docker is not running` | 打开 Docker Desktop，等引擎启动。 |
+| 下载超时、连接失败、TLS 报错 | 检查网络及 Docker Desktop 的代理设置。首次需访问镜像仓库、npm、PyPI 和系统软件源；网络恢复后再次运行，不要关闭证书校验。 |
+| 端口 `8080` 已被占用 | 用记事本打开 `deploy/.env`，只把 `WEB_PORT=8080` 改成 `WEB_PORT=8088`，保存后重新运行。以后打开 `http://127.0.0.1:8088`。密码两行不要改。 |
+| `Configuration failed` | 检查 `deploy/.env` 是否被错误修改。不要删除它；从自己的备份恢复原文件。配置检测不通过时，脚本不会覆盖已有密码。 |
+| 网页打不开 | 检查 Docker Desktop 是否仍在运行、启动窗口是否出现 `READY`，以及自己是否改过端口。 |
+| 管理接口返回 `401` | 重新复制 `CICSIC_ADMIN_TOKEN=` 后面的完整内容；不要复制数据库密码，不要关闭鉴权。 |
+| 视频没有画面 | 默认没有连接你的设备。在设备管理中添加实际设备并测试；不能把无设备状态当成部署失败。 |
+| Windows 提示内存或磁盘不足 | 为 Docker 分配足够资源并释放磁盘空间，再重新启动。 |
+
+需要查看运行状态时，在项目文件夹打开 PowerShell，执行：
 
 ```powershell
-cd "$HOME\xiaoan-intelligent-warning-system"
+docker compose --env-file deploy/.env ps
+docker compose --env-file deploy/.env logs --tail=80 api
 ```
 
-### 第 3 步：安装项目需要的依赖
+应有 `db`、`api`、`web` 三个服务。提供错误信息时，先遮住令牌、密码、设备地址和个人信息。不要提供 `docker compose config` 或 `docker inspect` 的完整输出，它们可能包含密码。
 
-“依赖”就是系统运行时需要的软件包。保持当前目录不变，运行：
+## 换一台电脑、备份和更新
+
+**另一台电脑独立安装：** 按上面的 5 步重新操作即可。新安装会创建独立数据库，不会自动带上原电脑的数据。
+
+**让别的电脑访问这一台：** 这是联网部署，不是独立安装。`127.0.0.1` 只指当前电脑，把这个地址发给别人是打不开的。不要为了访问方便就把开发或管理接口直接暴露到公网。
+
+持久数据在 Docker 的数据卷中，不在 GitHub：
+
+| 默认数据卷 | 保存什么 |
+| --- | --- |
+| `xiaoan_database` | PostgreSQL 业务数据 |
+| `xiaoan_evidence` | 上传的证据与业务文件 |
+| `xiaoan_bridge-secrets` | 加密设备配置及其解密密钥，必须一起备份 |
+| `xiaoan_detection-data` | 外部检测结果 |
+
+还要单独备份项目中的 `deploy/.env`。保留代码或下载 ZIP **不等于备份业务数据**。跨电脑迁移应先停写，使用 PostgreSQL 的 `pg_dump` / `pg_restore` 备份恢复数据库，并备份恢复上述文件卷；不要复制正在运行的 PostgreSQL 数据目录。
+
+Git 安装方式更新前先备份。在原项目目录运行：
+
+```powershell
+git pull --ff-only
+```
+
+成功后双击 `start.cmd`。ZIP 安装方式需要在备份后更新源码并保留原来的 `deploy/.env` 和数据卷；不要同时启动新旧两份。涉及数据库结构变化时，应先查看对应版本的迁移说明。
+
+## 可选：小程序、设备和 AI
+
+### 微信/支付宝小程序
+
+小程序源码位于 `apps/miniprogram`。Docker 默认部署电脑网页后台和 API，不会替你注册小程序或上传微信/支付宝平台。
+
+需要：自己的平台账号、AppID、开发者工具，以及指向这套 API 的固定 HTTPS 域名。后端微信登录还要配置私有的 `WECHAT_APPID` 和 `WECHAT_APP_SECRET`，不能把 AppSecret 写入前端。
+
+将后端变量以 `变量名=值` 的形式追加到私有的 `deploy/.env`，然后重新运行 `start.cmd`。不要改动原有数据库密码。
+
+在另外安装 Node.js 22.13+ 后，从项目根目录运行以下命令。把示例域名改成自己实际部署的域名：
 
 ```powershell
 npm.cmd ci
+$env:TARO_APP_API_BASE_URL="https://你的域名/api"
+npm.cmd --workspace apps/miniprogram run build:weapp:release
 ```
 
-这一步通常比下载代码更久。窗口持续输出内容时请耐心等待，不要关闭，也不要重复运行。
-
-**成功标志：** 安装结束，窗口重新出现可以输入命令的提示符，没有以 `npm error` 结束。
-
-黄色的 `warn` 或漏洞数量提示不一定代表安装失败，但也不代表已经通过安全检查。先不要执行网上的 `npm audit fix --force`，它可能改变项目需要的版本。
-
-### 第 4 步：启动网页
-
-在同一个窗口运行：
+微信开发者工具导入 `apps/miniprogram/dist`。支付宝构建命令为：
 
 ```powershell
-npm.cmd run dashboard:dev
+npm.cmd --workspace apps/miniprogram run build:alipay:release
 ```
 
-**成功标志：** 窗口出现 Vite 启动信息，以及类似下面的地址：
+支付宝输出目录是 `apps/miniprogram/dist-alipay`。缺少可用的生产 API 地址时，发布构建会拒绝继续，避免误连旧服务器。真实平台登录、真机访问和发布审核需要部署者用自己的账号验收。
 
-```text
-Local: http://127.0.0.1:5177/
+### 摄像头与 Go2
+
+设备桥接包含 RTSP、HTTP 快照/MJPEG、Go2 和本机 USB 的相关源码。容器里带视频解码所需依赖，但**有依赖不代表设备已接通**。
+
+- RTSP/HTTP 设备：在 `/admin/bridges` 填写你的地址、账号和视频路径，先测试，再启动和绑定视频槽位。
+- 容器里的 `127.0.0.1` 指容器自己。访问 Windows 主机上的视频服务时，Docker Desktop 通常使用 `host.docker.internal`；访问局域网设备使用设备实际地址。
+- Go2：还需设备网络可达；WebRTC/UDP 在 Docker Desktop 下可能需要额外网络配置。
+- USB：默认容器没有接入 Windows USB 摄像头，需要设备透传或原生 Python 运行方式，不能直接照搬本机设备编号。
+
+这些设备能力必须使用实际硬件单独验收，不会自动复制原电脑的设备账号。
+
+### AI 复核与外网部署
+
+云端 AI 复核需要自己的服务密钥；外部 YOLO 检测服务也需要另行接入。模型文件和 API 源码已经包含在仓库中，但默认启动不代表已有真实 AI 识别或告警。
+
+可在私有 `deploy/.env` 追加 `SECURITY_VLM_API_KEY`、`SECURITY_VLM_BASE_URL`、`SECURITY_VLM_MODEL` 或 `SECURITY_VIDEO_BASE_URL`，然后重新启动。这些变量会传给 API 容器，不会打包到网页。不要在网页中填写服务密钥。
+
+本教程以**本机完整运行**为验收范围，不是公网安全认证。对外提供服务前还需要 HTTPS、访问控制、防火墙、依赖安全更新、日志与备份策略，以及真实业务权限审查。不要直接把 `WEB_BIND` 改为对外地址就投入生产。
+
+## Linux 部署
+
+安装 Docker Engine、Compose v2 和 Python 3 后，在项目根目录运行：
+
+```bash
+python3 deploy/configure.py
+docker compose --env-file deploy/.env up -d --build --wait --wait-timeout 180
 ```
 
-**这个窗口要一直开着。** 没有重新出现输入提示符是正常的，表示网页服务正在运行。
+然后在部署机器上访问 `http://127.0.0.1:8080`。远程服务器需由部署人员另行配置 HTTPS 与受控访问。Windows 启动脚本与这里使用同一份 `compose.yaml`，不是两套不同的系统。
 
-### 第 5 步：用浏览器打开
+## 仓库内容与验收
 
-打开 Edge 或 Chrome，把这个地址输入浏览器顶部的地址栏，按回车：
-
-```text
-http://127.0.0.1:5177
-```
-
-不要输入到百度等搜索框里。如果终端显示的是其他端口，以终端的 `Local` 地址为准。
-
-**看到系统页面，就完成了网页预览。** 页面里的演示画面、统计数字不等于真实设备已经接入；真实数据保存、接口调用还需要后端和数据库。
-
-### 下次怎么打开？怎么关闭？
-
-**以后不用重复安装，也不用重新下载项目。**
-
-重启电脑后，打开 PowerShell，只运行这两行：
-
-```powershell
-cd "$HOME\xiaoan-intelligent-warning-system"
-npm.cmd run dashboard:dev
-```
-
-再用浏览器打开终端显示的地址。
-
-不用时，回到运行网页的终端，按键盘上的 `Ctrl+C`。如果询问是否终止，输入 `Y` 后回车，再关闭窗口。
-
-## 第二部分：完整本机部署（当前先不要操作）
-
-完整系统需要三个部分一起运行：
-
-```text
-网页：你在浏览器里看到的界面
-  ↓
-后端：处理请求和业务
-  ↓
-数据库：保存数据
-```
-
-**当前 `main` 存在开头说明的缺失模块问题。下面保留安装参考，不代表已经完成新电脑端到端验证。** 后续补齐源码后，还需要实际验证后端启动、数据库读写和页面业务操作。
-
-<details>
-<summary>展开后端安装参考：仅在缺失代码补齐并验证后继续</summary>
-
-### 第 1 步：检查下载的版本
-
-先完成第一部分。在新的 PowerShell 窗口中运行：
-
-```powershell
-cd "$HOME\xiaoan-intelligent-warning-system"
-git ls-files server/app/services/device_bridges.py
-```
-
-如果没有任何文件路径输出，说明你下载的版本仍缺少这个模块，**到这里停止**。不要尝试用 `pip install device_bridges` 修复，它是项目自己的文件。
-
-即使显示了文件路径，也只代表这个文件已提交，不代表整套系统已经验证通过，请以维护者的后续验收结果为准。
-
-### 第 2 步：安装 Python
-
-本项目后端依赖版本较旧，本机兼容性参考采用 **Python 3.11**，不要直接选最新版 Python。
-
-1. 打开 [Python 3.11.9 官方页面](https://www.python.org/downloads/release/python-3119/)，在页面下方的 Files 中选择 `Windows installer (64-bit)`。
-2. 打开安装包，勾选 `Add python.exe to PATH`，保留 Python Launcher 的安装选项，然后安装。
-3. 安装后重新打开 PowerShell，运行：
-
-```powershell
-py -3.11 --version
-```
-
-显示 `Python 3.11.x` 后继续。这是本机兼容性参考，不是公网服务器的安全版本建议。
-
-### 第 3 步：安装 PostgreSQL 数据库
-
-1. 打开 [PostgreSQL Windows 官方下载页](https://www.postgresql.org/download/windows/)，进入页面提供的安装包下载入口，选择 PostgreSQL **16.x** 的 Windows 64 位安装包。
-2. 安装时保留 `PostgreSQL Server`、`pgAdmin 4` 和 `Command Line Tools`。
-3. 设置安装程序要求的 `postgres` 管理员密码，记在自己的密码管理器里，后面需要输入。不要发给别人。
-4. 端口保留 `5432`，其他设置一般保持默认。
-5. 安装结束时如有 Stack Builder 附加组件提示，可以取消，不影响本教程。
-
-如果电脑已经安装并使用 PostgreSQL，不要重装或覆盖已有数据库，先确认已有实例的端口和管理密码。
-
-### 第 4 步：创建系统专用数据库
-
-1. 从开始菜单打开 `pgAdmin 4`。如果它要求设置自己的主密码，按提示设置；这与数据库的 `postgres` 密码不是一回事。
-2. 展开左侧 `Servers`，连接本机的 PostgreSQL，输入安装时设置的 `postgres` 密码。
-3. 展开 `Databases`，右键数据库 `postgres`，点击 `Query Tool`。
-4. 在查询编辑区粘贴下面的第一条 SQL。把 `替换为你的数据库密码` 改成你自己生成的、至少 20 位的随机字母和数字，再点击执行按钮或按 `F5`。
-
-```sql
-CREATE USER xiaoan WITH PASSWORD '替换为你的数据库密码';
-```
-
-这里创建的是给系统使用的 `xiaoan` 账号，不是刚才的 `postgres` 管理员账号。为简化连接配置，本教程的应用数据库密码先只用字母和数字，避免 `@`、`:`、`/` 等字符需要额外编码。
-
-**第一条执行成功后，清空编辑区，再单独粘贴并执行第二条。不要把两条一起执行。**
-
-```sql
-CREATE DATABASE xiaoan OWNER xiaoan;
-```
-
-执行成功后，右键左侧 `Databases`，选择刷新，应该能看到 `xiaoan` 数据库。
-
-### 第 5 步：安装后端依赖
-
-打开 PowerShell，逐行运行。每条命令成功结束后，再运行下一条：
-
-```powershell
-cd "$HOME\xiaoan-intelligent-warning-system"
-py -3.11 -m venv server\.venv
-.\server\.venv\Scripts\python.exe -m pip install --upgrade pip
-.\server\.venv\Scripts\python.exe -m pip install -r server\requirements.txt
-```
-
-`.venv` 是项目自己的 Python 环境。这里直接使用它里面的 Python，**不需要执行激活脚本，也不需要修改 PowerShell 执行策略**。
-
-依赖较多，需要联网下载；出现红色错误并停止时，不要继续启动后端，先看后面的常见问题。
-
-### 第 6 步：填写数据库连接
-
-在同一个终端运行：
-
-```powershell
-notepad .\server\.env
-```
-
-如果提示创建文件，选择创建。填入以下三行，记得把密码改成第 4 步给 `xiaoan` 用户设置的那个密码：
-
-```dotenv
-APP_ENV=development
-DATABASE_URL=postgresql://xiaoan:替换为你的数据库密码@127.0.0.1:5432/xiaoan
-CICSIC_ADMIN_AUTH_ENABLED=false
-```
-
-保存位置必须是项目的 `server` 文件夹，文件名必须是 **`.env`**，不是 `.env.txt` 或 `.env.local`。记事本“另存为”时选“所有文件”和 UTF-8 编码。
-
-回到 PowerShell 检查：
-
-```powershell
-Get-Item .\server\.env
-```
-
-能够显示该文件才算保存正确。这个文件含密码，不要上传 GitHub，也不要截图发给别人。
-
-**以上配置仅用于自己电脑上、监听 `127.0.0.1` 的本地测试。** `false` 表示关闭管理接口鉴权，不能原样用于局域网、公网或正式部署。
-
-### 第 7 步：启动后端，再启动网页
-
-准备两个 PowerShell 窗口。
-
-**窗口一：后端。**
-
-```powershell
-cd "$HOME\xiaoan-intelligent-warning-system"
-.\server\.venv\Scripts\python.exe scripts\dev_server.py --no-reload
-```
-
-缺失模块修复且环境配置正确后，预期出现 `Application startup complete`，没有随后报错退出。首次正常启动会创建所需业务表，无需复制原电脑的数据库文件夹。
-
-用浏览器打开下面的地址：
-
-```text
-http://127.0.0.1:8010/api/health/ready
-```
-
-**成功标志：** 返回内容中的顶层 `status` 和 `database.status` 都是 `ready`。只看到网页，或者只看到 `/api/health` 的 `ok`，都不足以证明数据库正常。
-
-**窗口二：网页。** 如果第一部分的网页窗口还在运行，不要再启动一份，直接刷新浏览器即可；否则运行：
-
-```powershell
-cd "$HOME\xiaoan-intelligent-warning-system"
-npm.cmd run dashboard:dev
-```
-
-浏览器打开 `http://127.0.0.1:5177`，两个终端窗口都保持开启。先只使用虚构数据测试；健康检查通过后，还要确认实际的保存、刷新和查询操作正常，才能验收业务功能。
-
-**以后重启电脑：** 确认 PostgreSQL 服务已启动，只需要重新执行本步骤的两组启动命令，不用再创建数据库、安装依赖或填写密码。停止时，在两个窗口分别按 `Ctrl+C`。
-
-</details>
-
-## 卡住了，先查这里
-
-| 遇到的问题 | 先这样处理 |
+| 路径 | 用途 |
 | --- | --- |
-| `git`、`node` 或 `py` “无法识别” | 安装对应软件后，关闭所有终端再重新打开；仍不行时检查安装时是否添加了 PATH。 |
-| 提示 `npm.ps1` 禁止运行 | 使用本教程的 `npm.cmd`，不需要修改系统执行策略。 |
-| 找不到 `package.json`，或出现 `ENOENT` | 先执行 `cd "$HOME\xiaoan-intelligent-warning-system"`，再重试。 |
-| 下载很久，出现连接超时 | 确认浏览器能访问相应下载网站；恢复网络后重试失败的步骤，不要删除整个项目。 |
-| `npm.cmd ci` 报 Node 版本不符合要求 | 用 `node --version` 检查，按第一部分安装符合要求的 Node.js 22.x，再重新开终端。 |
-| 网页打不开 | 先看网页终端是否还在运行；把它显示的 `Local` 地址完整复制到浏览器地址栏。默认端口是 `5177`，不是 `5173`。 |
-| 页面显示演示、离线或接口失败 | 只运行网页时可能出现。完整业务需要后端和数据库，不能靠反复刷新解决。 |
-| `No module named 'app.services.device_bridges'` | 当前仓库缺少自身模块，不是漏装第三方软件。停止后端安装，等待代码补齐。 |
-| `DATABASE_URL must be configured` | 检查 `server\.env` 是否存在、有无保存成 `.env.txt`，以及是否填写了 `DATABASE_URL`。 |
-| 数据库连接失败或密码错误 | 在 Windows“服务”中检查 PostgreSQL 是否运行，再核对端口、数据库名 `xiaoan`、用户 `xiaoan` 及其密码。不要误填 `postgres` 的密码。 |
-| SQL 提示用户或数据库已存在 | 不要删除它，可能之前已创建成功。确认是本项目的数据库后，继续下一步。 |
-| 后端提示端口 `8010` 已占用 | 检查是否已经开了一个后端窗口；先停止自己重复启动的进程，不要随意结束不认识的服务。 |
-| 接口返回 `401` | 表示需要授权。检查当前运行模式和管理令牌配置，不要为了绕过报错关闭正式环境的鉴权。 |
+| `start.cmd`、`deploy/start.ps1` | Windows 启动入口 |
+| `compose.yaml`、`deploy/docker` | 网页、API、数据库的一体化部署 |
+| `deploy/configure.py` | 为每次新安装生成独立密码，重启时保留原密码 |
+| `apps/dashboard` | 网页源码、页面与资源 |
+| `apps/miniprogram` | 小程序源码、构建配置与测试 |
+| `server/app` | 后端、数据库模型、业务接口与完整设备桥接模块 |
+| `server/models` | 模型资源 |
+| `package-lock.json`、`server/requirements.txt`、`server/requirements-deploy.lock` | 依赖清单及经过验证的 Linux 容器依赖版本 |
+| `deploy/verify.py` | 针对隔离测试部署的真实读写及重建后持久化验收 |
+| `server/tests`、`deploy/tests` | 后端与部署测试 |
 
-仍解决不了时，提供：卡在哪一步、最后几行报错、使用的软件版本。**请先遮住密码、Token、密钥、设备地址和个人信息。**
+依赖、编译输出、数据库、密码、日志和本机缓存不上传 GitHub，也不会复制进部署镜像。它们会在接收方电脑上重新安装或生成。
 
-## 换一台电脑怎么办？
+`deploy/verify.py` 会写入明确标注的合成测试记录，只能用于隔离测试实例，不能随意对现有业务库运行。健康检查、真实数据库读写和容器重建后的持久化，需要分别通过，不能只用“网页编译成功”代替。
 
-- **只是打开网页看看：** 在新电脑重新做第一部分，不用从原电脑复制 `node_modules`。
-- **独立部署整套系统：** 等后端问题修复并验证后，在新电脑完成两部分。新建数据库不会自动带上原电脑的业务数据。
-- **还要迁移已有数据：** 需要单独备份并恢复 PostgreSQL，以及业务需要的上传文件和设备配置。不要直接复制正在运行的数据库数据目录，也不要把这些内容上传到代码仓库。
-- **让另一台电脑访问同一套系统：** 这与独立安装不同。`127.0.0.1` 只表示当前电脑，把这个地址发给别人打不开你的服务。本教程没有开放外网访问。
+### 本次实际验证结果
 
-仓库文件看起来少，不一定是漏了系统：依赖会在安装时下载，数据库和密码由部署者自己创建。但开头提到的后端模块缺失是实际问题，不能归为“正常省略”。
+2026 年 9 月 9 日，从准备提交的 Git 文件生成干净副本，在隔离的 WSL Ubuntu 24.04 / Linux Docker 环境中安装依赖、构建并启动，使用全新 PostgreSQL 数据卷，不读取原电脑的环境文件或业务数据库。
 
-## 小程序、摄像头和正式上线
-
-这些不是第一部分的必做步骤，新手可以先跳过。
-
-| 需要做什么 | 还需要准备什么 |
+| 检查 | 结果 |
 | --- | --- |
-| 微信或支付宝小程序 | 对应开发者工具、自己的 AppID，以及可访问的后端。构建前显式设置 `TARO_APP_API_BASE_URL`，不要依赖历史默认地址；正式使用需按平台要求配置 HTTPS 和合法域名。 |
-| 摄像头、Go2、视频检测或 AI 复核 | 对应设备、网络、模型或服务密钥，并逐项验证真实链路。网页里的演示画面不能当作接入成功。Go2 的补充说明在 `tools/README-go2-video.md`。 |
-| 长期运行或开放给别人访问 | 先解决缺失源码并验收完整功能，再配置正式服务、鉴权、HTTPS、防火墙、数据库备份和依赖安全更新。不应直接把本教程的开发服务暴露出去。 |
+| 网页与 API 镜像构建、三个服务健康检查 | 通过 |
+| PostgreSQL 事件写入、证据文件上传与读取 | 通过 |
+| 加密设备配置、视频槽位、管理设置保存 | 通过 |
+| 重建全部容器后，再读取上述数据 | 通过，数据保留 |
+| 浏览器管理登录、错误令牌拒绝、退出、手机宽度布局 | 通过 |
+| 管理配置尚未加载时禁止保存 | 通过，避免默认值覆盖已有设置 |
+| Nginx 转发 WebSocket 握手与发送 | 通过 |
+| 后端测试 | 176 项中 172 项通过，4 项按条件跳过 |
+| 前端管理及设备接口测试、小程序测试、配置生成测试 | 分别 32、124、3 项通过 |
+| 网页、微信与支付宝生产构建 | 通过，仍有包体积与 Sass 弃用警告 |
 
-`deploy/production` 里保留了 Linux 的 Nginx、systemd 和环境变量参考模板，其中路径、用户和端口需要按实际机器调整。**它们不是双击就能安装的一键部署包，也不能修复缺失的源码。**
+4 个跳过项包括 1 个仅适用于 Windows 的底层句柄测试，以及 3 个需要额外 FFmpeg/MediaMTX 的 RTSP 测试。HTTP 视频测试使用合成素材，不代表真实摄像头验收。Windows 启动脚本已检查语法，**尚未在另一台物理 Windows 电脑上完成双击安装验收**。真实摄像头、Go2、微信/支付宝真机登录、云端 AI 与公网访问也不在本次已通过范围内。
 
-网页的生产构建命令是：
+这些结果说明仓库具备独立构建和启动整套网页、后端及数据库的必要内容，不依赖把原电脑的缓存、密码和数据库一并上传。接收方仍需要满足系统要求，并能访问依赖下载服务。
 
-```powershell
-npm.cmd run dashboard:build
-```
-
-输出目录为 `apps/dashboard/dist`。这个目录只有网页，不包含后端和数据库；不要把它单独复制给别人就称为完整系统。
-
-## 仓库里各目录是做什么的？
-
-| 目录或文件 | 用途 |
-| --- | --- |
-| `apps/dashboard` | 电脑网页后台源码和资源 |
-| `apps/miniprogram` | 小程序源码和资源 |
-| `server/app` | 后端源码；当前缺失模块见开头提醒 |
-| `server/models` | 本地检测模型资源 |
-| `server/requirements.txt` | Python 依赖清单 |
-| `package.json`、`package-lock.json` | 网页/小程序命令及依赖版本清单 |
-| `scripts/dev_server.py` | 本地后端启动入口 |
-| `deploy/production` | 正式部署参考模板 |
-| `tools` | 可选设备接入工具 |
-
-数据库、`.env` 密码配置、日志、缓存、`node_modules` 和 Python 虚拟环境不应提交到仓库。演示数据和画面仅用于原型展示，不代表真实监控证据；系统不能替代正式报警和急救渠道。地图及其他第三方资源仍需保留相应署名和许可信息。
+演示素材仅用于原型展示，不代表真实监控证据；系统不能替代正式报警和急救渠道。第三方地图、模型和依赖应保留各自署名与许可信息。

@@ -58,7 +58,13 @@ def _admin_auth_enabled(config: dict[str, Any] | None = None) -> bool:
 
 def _environment_admin_token() -> str | None:
     token = os.getenv("CICSIC_ADMIN_TOKEN", "")
-    if 16 <= len(token) <= 256:
+    allow_short_local = (
+        _environment_name() == "local"
+        and _env_flag("CICSIC_ALLOW_SHORT_LOCAL_ADMIN_TOKEN") is True
+    )
+    allow_short = allow_short_local or _env_flag("CICSIC_ALLOW_SHORT_ADMIN_TOKEN") is True
+    minimum_length = 4 if allow_short else 16
+    if minimum_length <= len(token) <= 256:
         return token
     return None
 

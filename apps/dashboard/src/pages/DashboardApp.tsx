@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   BrainCircuit,
   Building2,
+  Cable,
   CheckCircle2,
   ChevronRight,
   Clock3,
@@ -26,6 +27,7 @@ import { Tooltip } from 'antd';
 import { appBasePath, routePath, viewForPath, type PlatformView } from '../lib/presentation';
 import { trainingEntryPath } from '../lib/training-navigation';
 import { AdminConsolePage } from './AdminConsolePage';
+import { DeviceBridgesPage } from './DeviceBridgesPage';
 import { PublicSecurityPlatformPage } from './PublicSecurityPlatformPage';
 import { VideoLinkagePage } from './VideoLinkagePage';
 import { NightMarketCommandPage } from './NightMarketCommandPage';
@@ -103,7 +105,7 @@ export type PlatformOverview = {
   governance?: Record<string, string>;
 };
 
-const PRODUCT_NAME = '公安大数据与 AI 平台';
+const PRODUCT_NAME = '小安智能预警系统';
 const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.DEV ? 'http://127.0.0.1:8010/api' : `${window.location.origin}/api`)).replace(/\/$/, '');
 const BUSINESS_ROUTE_ALIASES = {
   alarm: 'command',
@@ -121,6 +123,7 @@ const systemNavItems: Array<{ view: PlatformView; label: string; shortLabel: str
   { view: 'night-market-command', label: '夜市指挥', shortLabel: '夜市指挥', icon: MapPinned, section: '业务工作台' },
   { view: 'ai-center', label: 'AI能力中心', shortLabel: 'AI 中心', icon: BrainCircuit, section: '平台能力' },
   { view: 'admin', label: '平台治理中心', shortLabel: '平台治理', icon: ShieldCheck, section: '平台能力' },
+  { view: 'device-bridges', label: '设备桥接管理', shortLabel: '设备桥接', icon: Cable, section: '平台能力' },
 ];
 
 const demoOverview: PlatformOverview = {
@@ -246,7 +249,7 @@ function ShellNav({ view, navigate, open, close, online }: { view: PlatformView;
     <aside id="platform-control-sidebar" className={`platform-control-sidebar ${open ? 'open' : ''}`} aria-label="平台主导航">
       <button className="platform-control-brand" type="button" onClick={() => navigate('platform')}>
         <img className="platform-control-brand-mark" src={`${appBasePath}/public-security-mark.svg`} alt="" />
-        <span><strong>公安大数据与 AI</strong><small>统一警务工作台</small></span>
+        <span><strong>小安智能预警系统</strong><small>智能预警工作台</small></span>
       </button>
       <button type="button" className="platform-control-nav-close ui-icon-button" aria-label="关闭导航" onClick={close}><X size={18} /></button>
       <div className="platform-control-context"><span>当前组织</span><strong>市公安局</strong><small>指挥中心 · 综合值守</small></div>
@@ -367,6 +370,8 @@ export function DashboardApp() {
         ? <CaseHandlingPage overview={overview} apiOnline={apiOnline} navigate={navigate} />
         : view === 'community'
           ? <CommunityPolicingPage overview={overview} apiOnline={apiOnline} navigate={navigate} />
+          : view === 'device-bridges'
+            ? <DeviceBridgesPage />
           : view === 'ai-center'
                 ? <AICenterPage overview={overview} apiOnline={apiOnline} navigate={navigate} />
                 : <AdminConsolePage apiOnline={apiOnline} refresh={loadOverview} navigate={navigate} />;
@@ -383,12 +388,12 @@ export function DashboardApp() {
         <div className="platform-control-topbar-right">
           <XiaoanVoiceControls />
           <span className="platform-control-clock"><Clock3 size={14} />{formattedDate} {formattedTime}</span>
-              <span className={`platform-control-sync ${apiOnline ? 'online' : 'demo'}`} aria-live="polite"><span />{apiOnline ? '内网数据在线' : hasLiveData.current ? '离线快照' : '演示数据'}</span>
+              {view !== 'device-bridges' && <span className={`platform-control-sync ${apiOnline ? 'online' : 'demo'}`} aria-live="polite"><span />{apiOnline ? '内网数据在线' : hasLiveData.current ? '离线快照' : '演示数据'}</span>}
           <Tooltip title="刷新平台数据"><button className="platform-control-refresh ui-icon-button" type="button" onClick={() => void loadOverview()} disabled={refreshing} aria-label="刷新平台运行态"><RefreshCw size={16} className={refreshing ? 'spin' : undefined} /></button></Tooltip>
           <span className="platform-control-user" title="市公安局 · 指挥中心"><span>值</span><b>值班席</b></span>
         </div>
           </header>
-          {!apiOnline && <p className="platform-control-status-message" role="status"><AlertTriangle size={15} />{statusMessage}</p>}
+          {!apiOnline && view !== 'device-bridges' && <p className="platform-control-status-message" role="status"><AlertTriangle size={15} />{statusMessage}</p>}
       <div id="workspace-content" tabIndex={-1} className="platform-control-content">{page}</div>
       <footer className="platform-control-footer"><span><ShieldCheck size={14} />高风险 AI 建议需人工确认</span><span><Database size={14} />操作留痕 · 分级授权</span><span>最近同步 {lastSync ? lastSync.toLocaleTimeString('zh-CN', { hour12: false }) : '尚未连接'}</span></footer>
     </div>

@@ -10,13 +10,9 @@ npm run server:dev
 
 默认监听：`http://127.0.0.1:8010`
 
-当前云服务器临时 HTTPS 调试地址：
-
-```text
-https://undergraduate-ears-powell-roots.trycloudflare.com/api
-```
-
-该地址由 Cloudflare Quick Tunnel 提供，适合临时测试；服务或隧道重启后地址可能变化。正式上线小程序仍建议绑定自己的域名和 HTTPS 证书。
+首次完整安装请按照仓库根目录的 `README.md` 使用 Docker 部署。
+下文用于原生 Python 开发或已有服务器维护，地址与密码必须由部署者自行配置，
+不应连接原开发电脑或历史临时隧道。
 
 ## 数据库配置
 
@@ -97,6 +93,8 @@ APP_ENV=production
 CICSIC_ADMIN_TOKEN=<由密码管理器生成的高熵随机值>
 ```
 
+如部署负责人明确要求保留 4 至 15 位短令牌，需在同一私有环境文件中显式设置 `CICSIC_ALLOW_SHORT_ADMIN_TOKEN=true`，并重启 API。该兼容开关不关闭鉴权；未设置时仍要求至少 16 位。短令牌容易被猜中，不建议用于公网环境。
+
 环境文件权限应限制为服务账户可读，修改后重启 API 服务。管理请求通过 `X-Admin-Token` 请求头携带 Token；服务不会把 Token 写入响应、审计记录或启动日志。若生产环境尚未配置有效 Token，服务仍可提供非管理接口，但所有受保护的后台接口保持 `401` 锁定；补充环境变量并重启即可完成初始化。
 
 本机开发或自动化测试如需匿名管理接口，必须同时显式声明非生产环境和关闭开关，并只监听回环地址：
@@ -104,7 +102,7 @@ CICSIC_ADMIN_TOKEN=<由密码管理器生成的高熵随机值>
 ```powershell
 $env:APP_ENV="development"
 $env:CICSIC_ADMIN_AUTH_ENABLED="false"
-& 'D:\CICSIC\server\.venv-runtime\Scripts\python.exe' -m uvicorn app.main:app --app-dir server --host 127.0.0.1 --port 8010
+.\server\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir server --host 127.0.0.1 --port 8010
 ```
 
 共享开发机、联调环境和任何对外监听环境仍应配置 `CICSIC_ADMIN_TOKEN`，不得使用匿名模式。

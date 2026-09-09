@@ -8,6 +8,7 @@ export const routePaths = {
   'contact-review': '/contact-review',
   'ai-center': '/ai-center',
   admin: '/admin',
+  'device-bridges': '/admin/bridges',
   video: '/video',
   'night-market-command': '/night-market/command',
 } as const;

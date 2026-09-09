@@ -14,7 +14,7 @@ import type {
 } from '@/types/events'
 import { getErrorMessage, resetGuestReceiptSession } from '@/utils/event-state'
 
-const CONFIGURED_API_BASE = (process.env.TARO_APP_API_BASE_URL || 'http://120.26.137.173/api').replace(/\/+$/, '')
+const CONFIGURED_API_BASE = (process.env.TARO_APP_API_BASE_URL || 'http://127.0.0.1:8010/api').replace(/\/+$/, '')
 const H5_ORIGIN = process.env.TARO_ENV === 'h5' && typeof window !== 'undefined'
   ? window.location?.origin || ''
   : ''

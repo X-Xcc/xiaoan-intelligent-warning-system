@@ -59,7 +59,7 @@ admin = [Depends(require_admin_token)]
 class DeviceInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
     name: str = Field(min_length=1, max_length=100)
-    kind: Literal["go2", "hikvision", "dahua", "rtsp"]
+    kind: Literal["go2", "hikvision", "dahua", "rtsp", "usb", "http_snapshot", "http_mjpeg"]
     host: str = Field(default="", max_length=253)
     port: int = Field(default=554, ge=1, le=65535, strict=True)
     username: str = Field(default="", max_length=128)
@@ -69,12 +69,15 @@ class DeviceInput(BaseModel):
     stream: Literal["main", "sub"] = "main"
     go2Mode: Literal["LocalSTA", "LocalAP"] = "LocalSTA"
     autoStart: bool = Field(default=False, strict=True)
+    httpScheme: Literal["http", "https"] = "http"
+    httpPath: str = Field(default="", max_length=2048)
+    usbIndex: int = Field(default=0, ge=0, le=15, strict=True)
 
 
 class DeviceUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     name: str | None = Field(default=None, min_length=1, max_length=100)
-    kind: Literal["go2", "hikvision", "dahua", "rtsp"] | None = None
+    kind: Literal["go2", "hikvision", "dahua", "rtsp", "usb", "http_snapshot", "http_mjpeg"] | None = None
     host: str | None = Field(default=None, max_length=253)
     port: int | None = Field(default=None, ge=1, le=65535, strict=True)
     username: str | None = Field(default=None, max_length=128)
@@ -84,6 +87,9 @@ class DeviceUpdate(BaseModel):
     stream: Literal["main", "sub"] | None = None
     go2Mode: Literal["LocalSTA", "LocalAP"] | None = None
     autoStart: bool | None = Field(default=None, strict=True)
+    httpScheme: Literal["http", "https"] | None = None
+    httpPath: str | None = Field(default=None, max_length=2048)
+    usbIndex: int | None = Field(default=None, ge=0, le=15, strict=True)
 
 
 class BindingInput(BaseModel):
@@ -126,6 +132,7 @@ def preview_session(request: Request, response: Response, x_admin_token: str | N
     key = secrets.token_urlsafe(32)
     with _session_lock:
         now = time.monotonic()
+        _sessions.pop(request.cookies.get(COOKIE_NAME, ""), None)
         for expired in [value for value, entry in _sessions.items() if entry[0] <= now]:
             _sessions.pop(expired, None)
         while len(_sessions) >= 128:
@@ -201,20 +208,28 @@ def snapshot(device_id: str):
     return Response(image, media_type="image/jpeg", headers={"Cache-Control": "no-store"})
 
 
+def _stream_frames(manager, device_id: str, cookie: str | None, token: str | None):
+    next_check = 0.0
+    for image in manager.frames(device_id):
+        now = time.monotonic()
+        if now >= next_check:
+            if not (system_control.verify_admin_token(token) or _preview_authorized(cookie)):
+                return
+            next_check = now + 0.5
+        yield (b"--frame\r\nContent-Type: image/jpeg\r\nContent-Length: "
+               + str(len(image)).encode("ascii") + b"\r\n\r\n" + image + b"\r\n")
+
+
 @router.get("/{device_id}/feed", dependencies=[Depends(require_preview)])
-def feed(device_id: str):
+def feed(device_id: str, request: Request, x_admin_token: str | None = Header(default=None)):
     manager = get_manager()
     manager.get_device(device_id)
     if manager.snapshot(device_id) is None:
         raise HTTPException(status_code=503, detail="设备尚未提供新鲜视频帧")
 
-    def stream():
-        for image in manager.frames(device_id):
-            yield (b"--frame\r\nContent-Type: image/jpeg\r\nContent-Length: "
-                   + str(len(image)).encode("ascii") + b"\r\n\r\n" + image + b"\r\n")
-
     return StreamingResponse(
-        stream(), media_type="multipart/x-mixed-replace; boundary=frame",
+        _stream_frames(manager, device_id, request.cookies.get(COOKIE_NAME), x_admin_token),
+        media_type="multipart/x-mixed-replace; boundary=frame",
         headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
     )
 

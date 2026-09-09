@@ -151,7 +151,7 @@ export function CommandVoice({ snapshot, events, stage, playback, online, eventI
   };
   return <section className="command-voice" aria-label="小安瑶瑶语音">
     <Volume2 size={18} /><strong>小安 · 瑶瑶</strong>
-    <Switch aria-label="启用小安语音" checked={enabled} loading={pending} onChange={(on) => on ? enable() : disable()} />
+    <Switch aria-label="启用小安语音" checked={enabled} loading={pending} onChange={(on: boolean) => on ? enable() : disable()} />
     <Tooltip title={paused ? '继续播报' : '暂停播报'}><Button aria-label={paused ? '继续播报' : '暂停播报'}
       disabled={!playing} icon={paused ? <Play size={16} /> : <Pause size={16} />} onClick={() => {
         if (!audio.current) return;
