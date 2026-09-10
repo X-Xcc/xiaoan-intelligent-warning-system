@@ -30,6 +30,8 @@ class NativeDeploymentTests(unittest.TestCase):
             "static_server.py", "CICSIC_BRIDGE_AUTOSTART", "DETECTOR_AUTOSTART",
             "GO2RTC_AUTOSTART", "PIP_CONFIG_FILE", "https://pypi.org/simple", "127.0.0.1",
             "--encoding=UTF8", "--locale=C", "postmaster.pid", "icacls.exe", "Test-NativePostgresConnection",
+            r"HKLM:\SOFTWARE\Node.js", r"HKLM:\SOFTWARE\PostgreSQL\Installations",
+            r"Eclipse Adoptium/*/bin/java.exe", r"JAVA_HOME", r".jdks/*/bin/java.exe",
         ):
             self.assertIn(required, text)
 

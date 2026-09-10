@@ -108,8 +108,19 @@ function Get-NativePython {
 }
 
 function Get-NativePostgresBin {
-    $candidates = @($env:XIAOAN_POSTGRES_BIN, 'C:\Program Files\PostgreSQL\18\bin', 'D:\PostgreSQL\18\bin') |
-        Where-Object { $_ }
+    $candidates = @($env:XIAOAN_POSTGRES_BIN, 'C:\Program Files\PostgreSQL\18\bin', 'D:\PostgreSQL\18\bin')
+    foreach ($registryPath in @(
+        'HKLM:\SOFTWARE\PostgreSQL\Installations',
+        'HKLM:\SOFTWARE\WOW6432Node\PostgreSQL\Installations'
+    )) {
+        try {
+            foreach ($installation in Get-ChildItem -LiteralPath $registryPath -ErrorAction Stop) {
+                $location = (Get-ItemProperty -LiteralPath $installation.PSPath -Name Base Directory -ErrorAction SilentlyContinue).'Base Directory'
+                if ($location) { $candidates += (Join-Path $location 'bin') }
+            }
+        } catch { }
+    }
+    $candidates = $candidates | Where-Object { $_ }
     foreach ($candidate in $candidates) {
         if (Test-Path -LiteralPath (Join-Path $candidate 'initdb.exe')) {
             return (Resolve-Path -LiteralPath $candidate).Path
@@ -119,19 +130,68 @@ function Get-NativePostgresBin {
 }
 
 function Get-NativeJava {
-    $command = Get-Command java.exe -ErrorAction SilentlyContinue
-    if (-not $command) { $command = Get-Command java -ErrorAction SilentlyContinue }
-    if (-not $command) { throw 'Java 21 JDK was not found. Run deploy\\native\\bootstrap.ps1 -InstallMissing, then open a new PowerShell window.' }
-    return $command.Source
+    $candidates = @()
+    foreach ($name in @('java.exe', 'java')) {
+        $command = Get-Command $name -ErrorAction SilentlyContinue
+        if ($command -and $command.Path) { return $command.Path }
+    }
+    if ($env:JAVA_HOME) { $candidates += (Join-Path $env:JAVA_HOME 'bin/java.exe') }
+    $candidates += @(
+        (Join-Path ${env:ProgramFiles} 'Java/*/bin/java.exe'),
+        (Join-Path ${env:ProgramFiles} 'Eclipse Adoptium/*/bin/java.exe'),
+        (Join-Path ${env:ProgramFiles} 'Microsoft/*/bin/java.exe'),
+        (Join-Path ${env:USERPROFILE} '.jdks/*/bin/java.exe')
+    )
+    foreach ($candidate in ($candidates | Where-Object { $_ } | Select-Object -Unique)) {
+        foreach ($resolved in @(Resolve-Path -Path $candidate -ErrorAction SilentlyContinue)) {
+            try {
+                $javaPath = $resolved.Path
+                $reported = [string]::Concat([object[]]@(& $javaPath -version 2>&1)).Trim()
+                if ($reported -match 'version\s+"21(\.|")') {
+                    return $javaPath
+                }
+            } catch { }
+        }
+    }
+    throw 'Java 21 JDK was not found. Run deploy\\native\\bootstrap.ps1 -InstallMissing, then open a new PowerShell window.'
 }
 
 function Get-NativeNodeDirectory {
     $bundled = Join-Path (Get-NativeDirectory) '.runtime/node'
     if (Test-Path -LiteralPath (Join-Path $bundled 'node.exe')) { return $bundled }
-    $command = Get-Command node.exe -ErrorAction SilentlyContinue
-    if (-not $command) { $command = Get-Command node -ErrorAction SilentlyContinue }
-    if (-not $command) { throw 'Node.js 22 was not found. Run deploy\\native\\bootstrap.ps1 -InstallMissing.' }
-    return (Split-Path -Parent $command.Source)
+    $candidates = @()
+    foreach ($name in @('node.exe', 'node')) {
+        $command = Get-Command $name -ErrorAction SilentlyContinue
+        if ($command) { $candidates += $command.Source }
+    }
+    $candidates += @(
+        (Join-Path ${env:ProgramFiles} 'nodejs/node.exe'),
+        (Join-Path ${env:ProgramFiles(x86)} 'nodejs/node.exe'),
+        (Join-Path ${env:LOCALAPPDATA} 'Programs/nodejs/node.exe'),
+        (Join-Path ${env:APPDATA} 'npm/node.exe'),
+        'D:\Dev\DevTools\NodeJS\node-v22.11.0-win-x64\node.exe'
+    )
+    foreach ($registryPath in @(
+        'HKLM:\SOFTWARE\Node.js',
+        'HKLM:\SOFTWARE\WOW6432Node\Node.js',
+        'HKCU:\Software\Node.js'
+    )) {
+        try {
+            $installPath = (Get-ItemProperty -LiteralPath $registryPath -Name InstallPath -ErrorAction Stop).InstallPath
+            if ($installPath) { $candidates += (Join-Path $installPath 'node.exe') }
+        } catch { }
+    }
+    foreach ($candidate in $candidates | Where-Object { $_ } | Select-Object -Unique) {
+        if (-not (Test-Path -LiteralPath $candidate)) { continue }
+        try {
+            $reported = [string]::Concat([object[]]@(& $candidate --version 2>$null)).Trim()
+            $match = [regex]::Match($reported, 'v?(\d+)\.\d+\.\d+')
+            if ($LASTEXITCODE -eq 0 -and $match.Success -and [int]$match.Groups[1].Value -eq 22) {
+                return (Split-Path -Parent (Resolve-Path -LiteralPath $candidate).Path)
+            }
+        } catch { }
+    }
+    throw 'Node.js 22 was not found. Run deploy\\native\\bootstrap.ps1 -InstallMissing.'
 }
 
 function Get-NativeNpm {
