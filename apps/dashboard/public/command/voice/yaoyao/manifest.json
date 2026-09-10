@@ -1,0 +1,16 @@
+{
+  "voice": "Microsoft Yaoyao",
+  "playbackRate": 1.1,
+  "cues": [
+    {
+      "id": "portrait-ready",
+      "text": "画像已生成",
+      "source": "9.5 A1 逐界面详细需求"
+    },
+    {
+      "id": "training-passed",
+      "text": "全体科目达标",
+      "source": "9.5 A3 逐界面详细需求"
+    }
+  ]
+}

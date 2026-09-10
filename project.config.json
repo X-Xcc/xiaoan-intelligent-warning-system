@@ -1,0 +1,38 @@
+{
+  "miniprogramRoot": "apps/miniprogram/dist",
+  "projectname": "小安智能预警系统",
+  "description": "小安智能预警系统群众服务小程序",
+  "setting": {
+    "es6": false,
+    "postcss": false,
+    "minified": false,
+    "uglifyFileName": false,
+    "enhance": false,
+    "packNpmRelationList": [],
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    },
+    "useCompilerPlugins": false,
+    "minifyWXML": true,
+    "compileWorklet": false,
+    "uploadWithSourceMap": true,
+    "packNpmManually": false,
+    "minifyWXSS": true,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "condition": false,
+    "swc": false,
+    "disableSWC": true
+  },
+  "compileType": "miniprogram",
+  "simulatorPluginLibVersion": {},
+  "packOptions": {
+    "ignore": [],
+    "include": []
+  },
+  "appid": "wxdd3f448369e6ca9f",
+  "editorSetting": {},
+  "libVersion": "3.17.0"
+}

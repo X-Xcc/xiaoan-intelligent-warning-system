@@ -1,0 +1,56 @@
+.command-scene { color: var(--ui-text); min-width: 0; }
+.scene-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 16px 20px; background: var(--ui-surface); border-bottom: 1px solid var(--ui-line); }
+.scene-heading h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 20px; line-height: 1.5; scroll-margin-top: 80px; }
+.scene-heading p { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 6px; color: var(--ui-muted); font-size: 12px; }
+.scene-heading p span { padding-left: 8px; border-left: 1px solid var(--ui-line); }
+.scene-tools { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.scene-next { display: flex; justify-content: flex-end; padding-top: 16px; }
+.scene-next .domain-primary-button { min-width: 112px; min-height: 40px; }
+.scene-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(250px, .85fr); background: var(--ui-surface); }
+.scene-camera, .scene-identity { min-width: 0; padding: 16px; border-right: 1px solid var(--ui-line); }
+.scene-identity { border-right: 0; }
+.scene-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 36px; margin-bottom: 12px; }
+.scene-section-heading h3 { display: flex; align-items: center; gap: 7px; font-size: 16px; font-weight: 650; margin: 0; }
+.scene-heading h2 svg, .scene-section-heading h3 svg { color: var(--ui-primary); flex-shrink: 0; }
+.scene-tools .ui-icon-button { width: 28px; height: 32px; flex-basis: 28px; }
+.scene-feed-frame { position: relative; width: 100%; aspect-ratio: 4 / 3; overflow: hidden; background: #20252b; }
+.scene-feed-frame img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.scene-feed-code, .scene-feed-state { position: absolute; left: 8px; padding: 3px 6px; background: #161a20d9; color: white; font-size: 11px; border-radius: 3px; }
+.scene-feed-code { top: 8px; }
+.scene-feed-state { bottom: 8px; }
+.scene-feed-state.connected { background: #106a4dea; }
+.scene-feed-caption { padding-top: 10px; color: var(--ui-muted); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.scene-person-select { display: grid; gap: 6px; font-size: 12px; color: var(--ui-muted); }
+.scene-person-select select { font-size: 13px; }
+.scene-person-details { margin: 12px 0 0; border-top: 1px solid var(--ui-line); }
+.scene-person-details > div { display: grid; grid-template-columns: 78px minmax(0, 1fr); gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--ui-line); font-size: 13px; line-height: 1.6; }
+.scene-person-details dt { color: var(--ui-muted); white-space: nowrap; }
+.scene-person-details dd { margin: 0; overflow-wrap: anywhere; }
+.scene-person-details .scene-person-name { font-size: 17px; font-weight: 650; }
+.scene-recommendations { background: var(--ui-surface); border-top: 1px solid var(--ui-line); padding: 14px 20px 20px; }
+.scene-note { font-size: 12px; color: var(--ui-muted); }
+.scene-recommendation-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.scene-recommendation { display: flex; align-items: flex-start; gap: 10px; position: relative; cursor: pointer; min-width: 0; }
+.scene-recommendation input { margin: 5px 0 0; }
+.scene-recommendation-number { display: grid; place-items: center; width: 24px; height: 24px; flex-shrink: 0; background: var(--ui-primary-soft); color: var(--ui-primary); border-radius: 4px; font-size: 12px; }
+.scene-recommendation strong { display: block; font-size: 14px; margin-bottom: 5px; }
+.scene-recommendation > span:last-child > span { display: block; color: var(--ui-muted); font-size: 13px; line-height: 1.7; }
+.scene-recommendation.reviewed .scene-recommendation-number { color: var(--ui-success); background: #eef9f3; }
+.scene-video-dialog { width: min(960px, calc(100vw - 32px)); max-height: calc(100dvh - 40px); overflow: auto; padding: 16px; border: 1px solid var(--ui-line); border-radius: 8px; background: var(--ui-surface); }
+.scene-video-dialog::backdrop { background: #151c2b99; }
+.scene-video-dialog .scene-feed-frame { aspect-ratio: 16 / 9; }
+@media (min-width: 761px) and (max-height: 850px) {
+  .scene-feed-frame { aspect-ratio: 16 / 10; }
+  .scene-camera, .scene-identity { padding-top: 12px; padding-bottom: 12px; }
+  .scene-recommendations { padding-top: 12px; padding-bottom: 8px; }
+  .scene-person-details > div { padding: 5px 0; }
+  .scene-next { padding-top: 12px; }
+}
+@media (max-width: 760px) {
+  .scene-heading { align-items: flex-start; flex-direction: column; padding: 16px; }
+  .scene-columns { grid-template-columns: minmax(0, 1fr); }
+  .scene-camera, .scene-identity { border-right: 0; border-bottom: 1px solid var(--ui-line); }
+  .scene-feed-frame { aspect-ratio: 16 / 9; }
+  .scene-recommendation-list { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .scene-recommendations { padding: 16px; }
+}

@@ -1,0 +1,28 @@
+{
+  "name": "@public-security-ai/dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "predev": "node scripts/prepare-pose-assets.mjs",
+    "dev": "vite --host 127.0.0.1",
+    "prebuild": "node scripts/prepare-pose-assets.mjs",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host 0.0.0.0"
+  },
+  "dependencies": {
+    "@mediapipe/tasks-vision": "1.0.1",
+    "antd": "^6.6.2",
+    "lucide-react": "^1.28.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@types/web": "^0.0.354",
+    "@vitejs/plugin-react": "^4.7.0",
+    "typescript": "^7.0.2",
+    "vite": "^6.4.3"
+  }
+}

@@ -1,0 +1,8 @@
+# Qwen2.5-VL AI Vision Analysis - optional dependencies
+# Install: pip install -r requirements-qwen.txt
+flask>=3.0.0
+flask-cors>=4.0.0
+requests>=2.31.0
+transformers>=4.49.0,<5
+accelerate>=0.28.0
+qwen-vl-utils>=0.0.8

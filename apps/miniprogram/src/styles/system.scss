@@ -1,0 +1,82 @@
+page { background: #f5f8fc; color: #20354d; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 28px; }
+view, text, button, image, map, input, textarea, scroll-view { box-sizing: border-box; letter-spacing: 0; }
+button { margin: 0; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; line-height: 1.5; border-radius: 0; }
+button::after { border: 0; }
+image { display: block; }
+.mini-app { min-height: 100vh; padding-bottom: calc(148px + env(safe-area-inset-bottom)); color: #20354d; background: #f5f8fc; }
+.mini-page-header { background: #cbe5ff; padding: 30px 40px 76px; position: relative; }
+.mini-header-row { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.mini-header-copy { min-width: 0; flex: 1; }
+.mini-page-title { display: block; color: #1b3c5f; font-size: 52px; font-weight: 750; line-height: 1.3; word-break: break-all; }
+.mini-header-subtitle { display: block; color: #50789c; font-size: 24px; line-height: 1.7; margin-top: 12px; }
+.mini-eyebrow { display: block; color: #537da2; font-size: 24px; margin-bottom: 18px; line-height: 1.5; }
+.mini-brand-mark { width: 150px; height: 166px; flex-shrink: 0; }
+.mini-header-back { display: flex; gap: 10px; align-items: center; margin: -12px 0 20px; min-height: 70px; width: auto; font-size: 24px; }
+.mini-icon { display: inline-block; flex-shrink: 0; vertical-align: middle; }
+.mini-surface { position: relative; margin-top: -40px; padding: 32px 36px; border-radius: 48px 48px 0 0; background: #fff; min-height: 420px; }
+.mini-page-content { padding: 0 36px 36px; }
+.mini-section { margin-top: 36px; }
+.mini-section:first-child { margin-top: 0; }
+.mini-section-head { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 22px; min-height: 52px; }
+.mini-section-title { display: block; font-size: 32px; font-weight: 700; }
+.mini-text-action { display: flex; align-items: center; gap: 4px; min-height: 72px; font-size: 24px; color: #6c8199; flex-shrink: 0; }
+.mini-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 24px 0; border-bottom: 1px solid #e8eef5; min-height: 90px; }
+.mini-muted { color: #75889e; font-size: 24px; line-height: 1.7; }
+.mini-blue { color: #086fd9; }
+.mini-success { color: #168266; }
+.mini-error { display: block; color: #b94550; font-size: 25px; line-height: 1.7; padding: 18px 0; word-break: break-all; }
+.mini-warning { display: block; color: #97701f; font-size: 24px; line-height: 1.7; padding: 16px 0; }
+.mini-primary, .mini-secondary, .mini-danger { min-height: 88px; padding: 20px 26px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 28px; font-weight: 600; line-height: 1.5; }
+.mini-primary { color: #fff; background: #0d7ff9; }
+.mini-secondary { color: #446c96; border: 1px solid #d5e3f2; background: #fff; }
+.mini-danger { color: #fff; background: #e9434e; }
+.mini-primary[disabled], .mini-danger[disabled], .mini-secondary[disabled] { opacity: .58; }
+.mini-block { width: 100%; margin-top: 24px; }
+.mini-label { display: block; margin: 30px 0 15px; font-size: 27px; font-weight: 600; color: #45627f; }
+.mini-input, .mini-textarea { width: 100%; min-height: 90px; border: 1px solid #dce6f0; border-radius: 12px; background: #f6f9fd; color: #20354d; padding: 22px 24px; font-size: 28px; line-height: 1.6; }
+.mini-textarea { height: 220px; }
+.mini-field { margin-bottom: 24px; }
+.mini-field:first-child .mini-label { margin-top: 0; }
+.mini-tabs { display: flex; align-items: center; gap: 28px; border-bottom: 1px solid #e8eef5; margin-bottom: 24px; }
+.mini-tabs > button, .mini-tabs > view { flex: 1; text-align: center; font-size: 26px; color: #7c8ea3; padding: 22px 2px; position: relative; }
+.mini-tabs .active { color: #0875e7; font-weight: 650; }
+.mini-tabs .active::after { content: ''; position: absolute; bottom: 0; width: 38px; height: 5px; border-radius: 8px; left: calc(50% - 19px); background: #0d7ff9; }
+.mini-icon-button { width: 88px; height: 88px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.mini-empty { padding: 46px 22px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.mini-empty-icon { display: flex; justify-content: center; align-items: center; width: 96px; height: 96px; border-radius: 50%; background: #edf6ff; margin-bottom: 20px; }
+.mini-empty-title { display: block; font-size: 29px; font-weight: 650; color: #446481; line-height: 1.5; }
+.mini-empty-description { display: block; font-size: 25px; line-height: 1.8; color: #7a8ea4; margin-top: 12px; max-width: 560px; }
+.mini-empty-retry { margin-top: 24px; min-width: 230px; }
+.mini-sheet-overlay { position: fixed; inset: 0; z-index: 99; background: rgba(23, 44, 67, .42); display: flex; flex-direction: column; justify-content: flex-end; }
+.mini-sheet { background: #fff; border-radius: 44px 44px 0 0; padding: 20px 36px calc(30px + env(safe-area-inset-bottom)); max-height: 86vh; display: flex; flex-direction: column; }
+.mini-sheet-handle { width: 65px; height: 7px; background: #e2e9f0; border-radius: 10px; margin: 0 auto 18px; flex-shrink: 0; }
+.mini-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-shrink: 0; margin-bottom: 20px; }
+.mini-sheet-head > text { font-size: 35px; font-weight: 700; }
+.mini-sheet-head .mini-icon-button { margin-right: -15px; }
+.mini-sheet-scroll { flex: 1; min-height: 0; max-height: 65vh; }
+.mini-event-card { width: 100%; display: flex; align-items: center; gap: 20px; text-align: left; padding: 26px 0; border-bottom: 1px solid #e8eef5; min-height: 120px; }
+.mini-event-symbol { display: flex; align-items: center; justify-content: center; width: 76px; height: 76px; background: #edf5ff; border-radius: 16px; flex-shrink: 0; }
+.mini-event-symbol.danger { background: #fff0f1; }
+.mini-event-copy { min-width: 0; flex: 1; }
+.mini-event-title { display: block; font-size: 28px; font-weight: 650; line-height: 1.5; word-break: break-all; }
+.mini-event-meta { display: block; color: #7a8ba0; font-size: 23px; line-height: 1.7; margin-top: 7px; word-break: break-all; }
+.mini-event-state { max-width: 150px; font-size: 23px; display: flex; gap: 5px; align-items: center; text-align: right; flex-shrink: 0; }
+.mini-bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; z-index: 20; background: #fff; border-top: 1px solid #e7edf5; height: calc(126px + env(safe-area-inset-bottom)); padding: 14px 12px calc(12px + env(safe-area-inset-bottom)); display: flex; align-items: stretch; }
+.mini-nav-item { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: 23px; color: #7f90a5; }
+.mini-nav-item.active { color: #0d7ff9; font-weight: 650; }
+.mini-nav-item.alarm { color: #b54856; }
+.mini-nav-sos { width: 90px; height: 90px; border-radius: 50%; background: #e94550; border: 8px solid #fff; display: flex; align-items: center; justify-content: center; margin-top: -40px; box-shadow: 0 5px 12px rgba(213, 58, 75, .15); }
+.mini-choice-row { display: flex; flex-wrap: wrap; gap: 20px 24px; margin: 12px 0 26px; }
+.mini-choice { display: flex; align-items: center; gap: 8px; min-height: 76px; font-size: 26px; }
+.mini-choice radio, .mini-choice checkbox { transform: scale(.8); }
+.mini-check-row { display: flex; gap: 14px; align-items: center; font-size: 25px; color: #67829b; min-height: 84px; }
+.mini-two-actions { display: flex; gap: 20px; margin-top: 30px; }
+.mini-two-actions > button { flex: 1; min-width: 0; }
+.mini-tag { display: inline-block; color: #4c78a2; background: #eef6ff; border-radius: 8px; padding: 7px 14px; font-size: 22px; line-height: 1.5; }
+.mini-inline-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.mini-caption { display: block; color: #7b8da1; font-size: 23px; line-height: 1.7; margin-top: 20px; text-align: center; }
+@media (min-width: 700px) {
+  .mini-app { max-width: 920px; margin: 0 auto; }
+  .mini-bottom-nav { max-width: 920px; margin: 0 auto; }
+  .mini-sheet { width: 100%; max-width: 920px; margin: 0 auto; }
+}

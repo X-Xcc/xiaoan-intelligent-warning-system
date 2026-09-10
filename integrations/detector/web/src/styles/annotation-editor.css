@@ -1,0 +1,60 @@
+/* Annotation Editor — standalone dark theme */
+@keyframes pulse-subtle {
+  0%, 100% { border-color: rgba(58, 58, 58, 0.4); }
+  50% { border-color: rgba(0, 242, 255, 0.4); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes flicker {
+  0% { opacity: 0; }
+  10% { opacity: 0.4; }
+  20% { opacity: 0.1; }
+  30% { opacity: 0.8; }
+  40% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+@keyframes slide-in-left {
+  0% { transform: translateX(-100%); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+@keyframes slide-in-right {
+  0% { transform: translateX(100%); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+.anno-shimmer-bg {
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.05), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2.5s linear infinite;
+}
+.anno-hover-glow:hover {
+  box-shadow: 0 0 15px rgba(0, 242, 255, 0.5);
+  border-color: #00f2ff;
+}
+.anno-flicker {
+  opacity: 0;
+  animation: flicker 0.4s ease-out forwards;
+}
+.anno-flicker-d1 { animation-delay: 0.1s; }
+.anno-flicker-d2 { animation-delay: 0.2s; }
+.anno-flicker-d3 { animation-delay: 0.3s; }
+.anno-slide-left { animation: slide-in-left 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.anno-slide-right { animation: slide-in-right 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.anno-pulse-subtle { animation: pulse-subtle 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+.anno-float { animation: float 3s ease-in-out infinite; }
+
+/* Scrollbar */
+.anno-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+.anno-scroll::-webkit-scrollbar-track { background: #1a1a1a; }
+.anno-scroll::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: 3px; }
+.anno-scroll::-webkit-scrollbar-thumb:hover { background: #4a4a4a; }
+
+/* Canvas cursor */
+.anno-canvas-draw { cursor: crosshair; }
+.anno-canvas-move { cursor: move; }

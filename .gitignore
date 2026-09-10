@@ -1,0 +1,106 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+server/.venv/
+server/.venv-runtime/
+
+# Node
+node_modules/
+dist/
+.turbo/
+
+# Local env
+.env
+.env.*
+!.env.example
+
+# Generated office/temp files
+*.doc
+*.docx
+*.tmp
+
+# TypeScript / build cache
+*.tsbuildinfo
+.swc/
+apps/**/.swc/
+
+# Logs
+*.log
+server/logs/
+
+# Local runtime data
+server/data/*.db
+server/data/event-evidence/
+server/security-data/
+server/.pgdata/
+server/.secrets/
+
+# Local Codex/browser state and verification artifacts
+.codex/
+.codex-*/
+.codex-screenshots/
+.verify/
+.superpowers/
+.playwright-mcp/
+_artifact_work/
+_artifact_work/lo_*/
+
+# Local generated reports, renders, exports, and scratch files
+deliverables/
+output/
+outputs/
+lo_profile*/
+render_*/
+report_render*/
+report_word_render/
+source_render/
+ppt_analysis/
+tmp/
+*.docx
+*.pdf
+*.jpg
+*.jpeg
+*.html
+*_text.txt
+source_extract.txt
+*.pyc
+docs/
+scripts/*
+!scripts/dev_server.py
+_review2_slide-*.jpg
+project.private.config.json
+.deployment-verification.json
+.docx-requirements.txt
+
+# Private full-system transfer and restored credentials
+*.xiaoan
+*.transfer-key
+deploy/runtime.env
+deploy/detector.env
+deploy/private-accounts.json
+deploy/.restore-*/
+deploy/.restore-state.json
+deploy/native/.env
+deploy/native/runtime.env
+deploy/native/detector.env
+deploy/native/.runtime/
+deploy/native/data/
+deploy/native/logs/
+deploy/native/run/
+
+# Deployment source assets only; private detector runtime is never source.
+integrations/detector/runtime/
+!integrations/detector/**/*.html
+!integrations/detector/**/*.jpg
+!integrations/detector/**/*.jpeg
+!integrations/detector/server/bin/
+!integrations/detector/server/bin/go2rtc.exe
+!docs/
+docs/*
+!docs/deployment-full-replica.md

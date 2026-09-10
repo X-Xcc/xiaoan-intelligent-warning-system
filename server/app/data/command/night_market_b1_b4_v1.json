@@ -1,0 +1,51 @@
+{
+  "scenarioId": "night_market_b1_b4",
+  "version": "1.0",
+  "baseTime": "2026-09-05T20:15:00+08:00",
+  "title": "XX夜市消费纠纷",
+  "sourceMode": "desensitized_demo",
+  "intake": {
+    "speakerName": "张老板",
+    "transcript": "我是张老板，在XX夜市B区7号。有人说食品有问题，要求赔偿，还威胁要砸摊。现场有人围观，请你们来处理。",
+    "transcriptSource": "manual",
+    "locationText": "XX夜市B区7号",
+    "locationSource": "desensitized_demo",
+    "latitude": 28.6819,
+    "longitude": 115.8637,
+    "segments": [
+      {"startMs": 0, "endMs": 4200, "text": "我是张老板，在XX夜市B区7号。"},
+      {"startMs": 4200, "endMs": 11000, "text": "有人说食品有问题，要求赔偿，还威胁要砸摊。"},
+      {"startMs": 11000, "endMs": 15000, "text": "现场有人围观，请你们来处理。"}
+    ],
+    "audioUrl": null
+  },
+  "relatedAlerts": [
+    {"eventId": "TEACH-0829-01", "occurredAt": "2026-08-30T20:40:00+08:00", "locationText": "教学夜市A区",
+     "relation": "消费纠纷", "similarity": "medium", "basis": ["已记录食品索赔", "已记录威胁砸摊"], "personKeys": ["TEACH-CHEN"],
+     "sourceMode": "desensitized_demo"},
+    {"eventId": "TEACH-0902-02", "occurredAt": "2026-09-02T19:20:00+08:00", "locationText": "教学夜市C区",
+     "relation": "消费纠纷", "similarity": "medium", "basis": ["同类夜市场景", "已记录食品索赔"], "personKeys": ["TEACH-CHEN"],
+     "sourceMode": "desensitized_demo"}
+  ],
+  "person": {"personKey": "TEACH-CHEN", "name": "陈XX", "archiveNo": "教学档案-03",
+    "basis": ["教学档案编号对应", "两条教学警情均登记TEACH-CHEN引用"],
+    "method": "scenario_fixture", "confidence": null, "matchScore": null},
+  "route": {
+    "routeSource": "scenario_route", "groupLabel": "135快反组",
+    "notice": "教学预设路线，非道路导航；3分钟仅至入口，之后仍需步行200米。",
+    "mapUrl": "/command/night-market-map.png",
+    "segments": [
+      {"mode": "bike", "distanceMeters": 750, "estimatedSeconds": 180,
+       "points": [{"latitude": 28.678, "longitude": 115.858}, {"latitude": 28.6806, "longitude": 115.8622}]},
+      {"mode": "walk", "distanceMeters": 200, "estimatedSeconds": null,
+       "points": [{"latitude": 28.6806, "longitude": 115.8622}, {"latitude": 28.6819, "longitude": 115.8637}]}
+    ]
+  },
+  "materials": [
+    {"key": "ordinary", "name": "普通随身物品", "kind": "note", "description": "钥匙、纸巾等普通物品先行清点，不作异常定性。"},
+    {"key": "receipts", "name": "8张交易小票", "kind": "image", "url": "/command/receipts.png", "description": "教学制作的8张小票，供逐项核对。"},
+    {"key": "notebook", "name": "1本笔记本", "kind": "image", "url": "/command/notebook.png", "description": "疑似交易记录，需结合原件人工核查。"},
+    {"key": "phone", "name": "1部备用手机", "kind": "image", "url": "/command/phone.png", "description": "机身教学标签：翠花街巷。"}
+  ],
+  "watermark": "教学训练仿真系统·数据已脱敏"
+}

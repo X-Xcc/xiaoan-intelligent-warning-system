@@ -1,0 +1,19 @@
+{
+  "name": "xiaoan-warning-system",
+  "version": "0.1.0",
+  "private": true,
+  "description": "小安智能预警系统项目工作区",
+  "workspaces": [
+    "apps/dashboard",
+    "apps/miniprogram"
+  ],
+  "scripts": {
+    "server:dev": "python scripts/dev_server.py",
+    "dashboard:dev": "npm --workspace apps/dashboard run dev",
+    "dashboard:build": "npm --workspace apps/dashboard run build",
+    "miniprogram:dev:weapp": "npm --workspace apps/miniprogram run dev:weapp",
+    "miniprogram:build:weapp": "npm --workspace apps/miniprogram run build:weapp",
+    "miniprogram:dev:alipay": "npm --workspace apps/miniprogram run dev:alipay",
+    "miniprogram:build:alipay": "npm --workspace apps/miniprogram run build:alipay"
+  }
+}
