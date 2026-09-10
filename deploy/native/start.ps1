@@ -86,7 +86,7 @@ function Ensure-NativeBuild {
 try {
     $root = Get-NativeProjectRoot
     $native = Get-NativeDirectory
-    & (Join-Path $PSScriptRoot 'bootstrap.ps1')
+    & (Join-Path $PSScriptRoot 'bootstrap.ps1') -InstallMissing
     if ($LASTEXITCODE -ne 0) { throw 'Prerequisite check did not pass.' }
     $python = Get-NativePython -RequirePrivateAcl
     Ensure-NativeConfiguration $python $native

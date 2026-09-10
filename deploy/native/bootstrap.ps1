@@ -54,12 +54,10 @@ try {
         Install-Node22
     }
 
-    if ($InstallMissing) {
-        Write-Host 'Prerequisite installers were started or completed. Close this window, open a new PowerShell window, then run start.cmd or restore.cmd again.'
-        exit 0
-    }
-
     $node = Join-Path (Get-NativeNodeDirectory) 'node.exe'
+    if ($InstallMissing) {
+        Write-Host 'Existing prerequisites were reused, and any missing prerequisite installers were completed.'
+    }
     Write-Host "READY: Python $(& (Get-NativePython -RequirePrivateAcl) --version); Node $(& $node --version); Java and PostgreSQL 18 were found."
 } catch {
     Write-Host "Prerequisite check stopped: $($_.Exception.Message)"
