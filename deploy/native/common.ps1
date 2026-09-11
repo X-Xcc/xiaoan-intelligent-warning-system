@@ -263,7 +263,7 @@ function Start-NativeChild {
         if ($process) { return $process }
         Remove-Item -LiteralPath $pidPath -Force
     }
-    $process = Start-Process -FilePath $FilePath -ArgumentList $Arguments -WorkingDirectory $WorkingDirectory -PassThru `
+    $process = Start-Process -FilePath $FilePath -ArgumentList $Arguments -WorkingDirectory $WorkingDirectory -WindowStyle Hidden -PassThru `
         -RedirectStandardOutput (Join-Path $logs "$Name.out.log") -RedirectStandardError (Join-Path $logs "$Name.err.log")
     [IO.File]::WriteAllText($pidPath, $process.Id, [Text.UTF8Encoding]::new($false))
     return $process

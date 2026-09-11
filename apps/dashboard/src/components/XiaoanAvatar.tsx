@@ -13,7 +13,9 @@ function loadLayers() {
     const image = new Image();
     image.onload = () => resolve([name, image]);
     image.onerror = reject;
-    image.src = `${assetRoot}/rig/${name}.webp`;
+    image.src = name === 'mouth' || name.startsWith('eye-')
+      ? `${assetRoot}/rig/${name}.webp`
+      : `${assetRoot}/matte/rig/${name}.png`;
   }))).then(entries => Object.fromEntries(entries) as Layers).catch(error => {
     assets = undefined;
     throw error;
@@ -165,7 +167,7 @@ export function XiaoanAvatar({ phase, active }: Props) {
   }, [active]);
 
   return <span className="xiaoan-avatar">
-    {!ready && <img className="xiaoan-avatar-fallback" src={`${assetRoot}/reference-cutout.webp`} alt="" draggable={false} />}
+    {!ready && <img className="xiaoan-avatar-fallback" src={`${assetRoot}/matte/reference-cutout.png`} alt="" draggable={false} />}
     <canvas ref={canvas} className={ready ? 'is-ready' : ''} role="img" aria-label="小安卡通警务助手" data-testid="xiaoan-avatar" />
   </span>;
 }

@@ -4,7 +4,7 @@
 .scene-heading p { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 6px; color: var(--ui-muted); font-size: 12px; }
 .scene-heading p span { padding-left: 8px; border-left: 1px solid var(--ui-line); }
 .scene-tools { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-.scene-next { display: flex; justify-content: flex-end; padding-top: 16px; }
+.scene-next { display: flex; justify-content: flex-start; padding-top: 16px; }
 .scene-next .domain-primary-button { min-width: 112px; min-height: 40px; }
 .scene-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(250px, .85fr); background: var(--ui-surface); }
 .scene-camera, .scene-identity { min-width: 0; padding: 16px; border-right: 1px solid var(--ui-line); }

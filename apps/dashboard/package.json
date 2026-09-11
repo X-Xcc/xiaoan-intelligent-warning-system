@@ -8,6 +8,8 @@
     "dev": "vite --host 127.0.0.1",
     "prebuild": "node scripts/prepare-pose-assets.mjs",
     "build": "tsc -b && vite build",
+    "prebuild:native": "node scripts/prepare-pose-assets.mjs",
+    "build:native": "tsc -b && vite build --mode native",
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {

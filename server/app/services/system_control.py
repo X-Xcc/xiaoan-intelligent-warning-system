@@ -240,7 +240,10 @@ def verify_access_key(secret: str | None, scope: str) -> bool:
             return False
         if row.expiresAt:
             try:
-                expires_at = datetime.fromisoformat(row.expiresAt)
+                expires_at_text = row.expiresAt
+                if expires_at_text.endswith("Z"):
+                    expires_at_text = expires_at_text[:-1] + "+00:00"
+                expires_at = datetime.fromisoformat(expires_at_text)
                 # Legacy naive timestamps retain their server-local meaning.
                 if expires_at <= datetime.now(expires_at.tzinfo):
                     return False

@@ -11,6 +11,7 @@
     "server:dev": "python scripts/dev_server.py",
     "dashboard:dev": "npm --workspace apps/dashboard run dev",
     "dashboard:build": "npm --workspace apps/dashboard run build",
+    "dashboard:build:native": "npm --workspace apps/dashboard run build:native",
     "miniprogram:dev:weapp": "npm --workspace apps/miniprogram run dev:weapp",
     "miniprogram:build:weapp": "npm --workspace apps/miniprogram run build:weapp",
     "miniprogram:dev:alipay": "npm --workspace apps/miniprogram run dev:alipay",

@@ -1,5 +1,5 @@
 import { Modal, Tooltip } from 'antd';
-import { ArrowLeft, ArrowRight, Camera, ChevronLeft, ChevronRight, ImageOff, MapPin, UserRound, UserRoundX } from 'lucide-react';
+import { ArrowLeft, Camera, ChevronLeft, ChevronRight, ImageOff, MapPin, UserRound, UserRoundX } from 'lucide-react';
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { appBasePath } from '../lib/presentation';
 import {
@@ -132,7 +132,6 @@ function InspectionContent({ record, index, count, onPrevious, onNext }: Omit<Pr
             <IdentitySection title="居住与联系" fields={referenceResidence} />
             <IdentitySection title="本次出现记录" fields={eventFields} />
             <p className="cr-inspection-notice">资料来源：演示预设资料。性别、出生日期、国籍和地址为虚构填充值，与参考照片本人无关；未提供字段不作推断。</p>
-            <button type="button" className="ui-button cr-inspection-action" onClick={selectUnknown}><UserRoundX size={15} />查看未知人物 02</button>
           </> : <>
             <section className="cr-inspection-unknown"><h4>无法识别人物信息</h4><p>暂无可用身份资料，当前状态为演示预设。</p></section>
             <p className="cr-inspection-generated">已生成步态记录（演示）</p>
@@ -140,9 +139,6 @@ function InspectionContent({ record, index, count, onPrevious, onNext }: Omit<Pr
               ['记录编号', gaitId, true], ['关联点位', `${route.length} 个摄像头`], ['资料来源', '脚本预设'],
               ['样例时间范围', `${route[0].occurredAt} 至 ${route[route.length - 1].occurredAt}`, true],
             ]} />
-            <button type="button" className="ui-button primary cr-inspection-action" onClick={() => {
-              setCameraId(record.id); setView('route');
-            }}>查看步态记录<ArrowRight size={16} /></button>
             <p className="cr-inspection-notice">该记录仅为预设演示，不执行人脸识别、步态识别或真实人员追踪。</p>
           </>}
       </aside>}
