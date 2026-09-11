@@ -1,8 +1,11 @@
 .xiaoan-assistant-pet {
-  position: fixed; z-index: 80; width: 156px; height: 238px;
+  position: fixed; z-index: 80;
   font-family: inherit; color: #263b3a; user-select: none;
+  filter: drop-shadow(0 13px 15px rgba(33, 56, 47, .14));
+  animation: xiaoan-pet-float 5.5s ease-in-out infinite;
 }
 .xiaoan-assistant-pet.is-concealed { visibility: hidden; pointer-events: none; }
+.xiaoan-assistant-pet.is-greeting { z-index: 100; }
 .xiaoan-pet-launcher {
   display: flex; align-items: center; flex-direction: column; justify-content: flex-end;
   width: 100%; height: 100%; padding: 0; border: 0; background: none;
@@ -10,7 +13,7 @@
 }
 .xiaoan-pet-launcher:active { cursor: grabbing; }
 .xiaoan-pet-launcher:focus-visible { outline: 2px solid #208477; outline-offset: 2px; border-radius: 6px; }
-.xiaoan-avatar { display: block; position: relative; width: 156px; height: 208px; pointer-events: none; flex: 0 0 208px; }
+.xiaoan-avatar { display: block; position: relative; width: 100%; height: 179px; pointer-events: none; flex: 0 0 179px; }
 .xiaoan-avatar canvas { display: block; width: 100%; height: 100%; opacity: 0; }
 .xiaoan-avatar canvas.is-ready { opacity: 1; }
 .xiaoan-avatar-fallback { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
@@ -27,6 +30,23 @@
 .xiaoan-pet-tools button {
   display: grid; place-items: center; width: 24px; height: 24px; padding: 0;
   border: 1px solid #d9e3e1; border-radius: 50%; background: #fff; color: #607771; cursor: pointer;
+}
+.xiaoan-pet-mute {
+  position: absolute; right: 9px; top: 47px; z-index: 4; display: grid; place-items: center;
+  width: 26px; height: 26px; padding: 0; border: 1px solid #d9e3e1; border-radius: 50%;
+  background: rgba(255, 255, 255, .95); color: #557269; cursor: pointer;
+  box-shadow: 0 2px 8px rgba(34, 57, 48, .13);
+}
+.xiaoan-pet-mute:hover { color: #166957; background: #f1f8f4; }
+.xiaoan-greeting-bubble {
+  position: absolute; right: calc(100% + 8px); top: 45px; width: 198px; padding: 10px 12px;
+  border: 1px solid #cfe3d8; border-radius: 12px 12px 3px 12px; background: #fff;
+  color: #35584a; font-size: 12px; line-height: 1.55; box-shadow: 0 9px 24px rgba(37, 66, 53, .14);
+  animation: xiaoan-bubble-in .2s ease-out;
+}
+.xiaoan-greeting-bubble::after {
+  content: ''; position: absolute; right: -6px; top: 17px; width: 10px; height: 10px;
+  background: #fff; border-top: 1px solid #cfe3d8; border-right: 1px solid #cfe3d8; transform: rotate(45deg);
 }
 .xiaoan-assistant-pet[data-phase="thinking"] .xiaoan-pet-caption i { background: #c0873d; }
 .xiaoan-assistant-pet[data-phase="answering"] .xiaoan-pet-caption { border-color: #99c3b3; }
@@ -75,6 +95,12 @@
 .xiaoan-answer-author svg:last-child { margin-left: 1px; color: #378d76; }
 .xiaoan-message-answer h3 { font-size: 13px; line-height: 21px; margin: 9px 0 7px; font-weight: 600; }
 .xiaoan-message-answer p { margin: 0 0 8px; font-size: 12px; line-height: 22px; color: #5d7066; white-space: pre-wrap; }
+.xiaoan-training-links { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
+.xiaoan-training-links a { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 6px 0; color: #187d6a; font-size: 12px; line-height: 20px; text-decoration: underline; text-underline-offset: 3px; }
+.xiaoan-training-links a span { min-width: 0; overflow-wrap: anywhere; }
+.xiaoan-training-links a svg { flex: 0 0 14px; }
+.xiaoan-training-links a:hover { color: #104f44; }
+.xiaoan-training-links a:focus-visible { outline: 2px solid #258779; outline-offset: 2px; border-radius: 2px; }
 .xiaoan-message-answer[data-status="streaming"] .xiaoan-answer-text > :last-child::after {
   content: ''; display: inline-block; vertical-align: -.1em; width: 2px; height: 1em; margin-left: 3px; background: #277c61;
   animation: xiaoan-cursor .75s steps(2, end) infinite;
@@ -105,7 +131,10 @@
 @keyframes xiaoan-cursor { to { opacity: 0; } }
 @keyframes xiaoan-dot { from { opacity: .3; transform: translateY(0); } to { opacity: 1; transform: translateY(-2px); } }
 @keyframes xiaoan-panel-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes xiaoan-pet-float { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-4px) rotate(-.6deg); } }
+@keyframes xiaoan-bubble-in { from { opacity: 0; transform: translateY(4px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @media (max-width: 600px) {
+  .xiaoan-pet-mute { right: 5px; top: 42px; }
   .xiaoan-assistant-panel { max-height: calc(100dvh - 92px); height: 560px; bottom: 12px; }
   .xiaoan-panel-header { gap: 7px; }
   .xiaoan-pet-tools { opacity: 1; }
@@ -117,7 +146,7 @@
   .platform-control-topbar:has(.xiaoan-shell-entry) { gap: 4px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .xiaoan-assistant-pet *, .xiaoan-assistant-panel, .xiaoan-assistant-panel * { animation: none !important; transition: none !important; }
+  .xiaoan-assistant-pet, .xiaoan-assistant-pet *, .xiaoan-assistant-panel, .xiaoan-assistant-panel * { animation: none !important; transition: none !important; }
 }
 @media print {
   .xiaoan-assistant-pet, .xiaoan-assistant-panel, .xiaoan-shell-entry { display: none !important; }

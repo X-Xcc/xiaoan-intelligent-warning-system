@@ -117,7 +117,7 @@ const systemNavItems: Array<{ view: PlatformView; label: string; shortLabel: str
   { view: 'case', label: '执法办案系统', shortLabel: '执法办案', icon: FileCheck2, section: '业务工作台' },
   { view: 'community', label: '社区警务系统', shortLabel: '社区警务', icon: Building2, section: '业务工作台' },
   { view: 'duty-situation', label: 'A1 勤务态势大屏', shortLabel: '勤务态势', icon: Monitor, section: '业务工作台' },
-  { view: 'contact-review', label: '接触记录检索', shortLabel: '接触检索', icon: Search, section: '业务工作台' },
+  { view: 'contact-review', label: '视频筛查', shortLabel: '视频筛查', icon: Search, section: '业务工作台' },
   { view: 'video', label: '视频联动', shortLabel: '视频联动', icon: Video, section: '业务工作台' },
   { view: 'night-market-command', label: '夜市指挥', shortLabel: '夜市指挥', icon: MapPinned, section: '业务工作台' },
   { view: 'ai-center', label: 'AI能力中心', shortLabel: 'AI 中心', icon: BrainCircuit, section: '平台能力' },

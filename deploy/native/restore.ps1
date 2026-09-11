@@ -64,7 +64,7 @@ try {
             'integrations/detector/detection/datasets', 'integrations/detector/runs', 'integrations/detector/results')) {
         Test-NativeEmptyDirectory (Join-Path $root $relative)
     }
-    & (Join-Path $PSScriptRoot 'bootstrap.ps1')
+    & (Join-Path $PSScriptRoot 'bootstrap.ps1') -InstallMissing
     if ($LASTEXITCODE -ne 0) { throw 'Prerequisite check did not pass.' }
     if (-not $Bundle) { $Bundle = Select-NativeRestoreFile 'Select the encrypted XiaoAn backup' 'XiaoAn backup (*.xiaoan)|*.xiaoan' }
     if (-not $KeyFile) { $KeyFile = Select-NativeRestoreFile 'Select the separate XiaoAn backup key' 'Key files (*.transfer-key)|*.transfer-key|All files (*.*)|*.*' }

@@ -1,6 +1,6 @@
 import {
   ArrowUp, ArrowUpRight, BookOpenText, Check, ChevronDown, ClipboardList,
-  Info, MessageCircle, RotateCcw, ShieldCheck, Sparkles, Square, X,
+  Info, MessageCircle, RotateCcw, ShieldCheck, Sparkles, Square, Volume2, VolumeX, X,
 } from 'lucide-react';
 import { Popover, Tooltip } from 'antd';
 import {
@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { XiaoanAvatar } from './XiaoanAvatar';
 import { nextStreamStep, type AssistantPhase } from '../lib/xiaoan-motion';
+import { trainingEntryPath } from '../lib/training-navigation';
 import {
   ASSISTANT_PROMPTS, ASSISTANT_SIZE, ASSISTANT_STORAGE_KEY,
   clampPosition, demoReply, parsePosition, snapPosition,
@@ -31,6 +32,7 @@ const phaseLabels: Record<AssistantPhase, string> = {
 };
 const fullReply = (reply: AssistantReply) => [reply.title, ...reply.lines].join('\n\n');
 const disclosure = <p className="xiaoan-about">当前为本地交互原型。对话由预设规则模拟，未连接 AI 模型，也不读取或修改真实业务数据。</p>;
+const welcomeSpeech = '你好，我是小安，有什么可以帮您？';
 
 function initialPosition(): AssistantPosition {
   try {
@@ -54,6 +56,11 @@ export function XiaoanAssistant({ visible, onVisibilityChange }: Props) {
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
+  const [muted, setMuted] = useState(() => {
+    try { return localStorage.getItem('xiaoan-assistant:muted:v1') === '1'; } catch { return false; }
+  });
+  const mutedRef = useRef(muted);
+  const [greetingVisible, setGreetingVisible] = useState(false);
   const drag = useRef<Drag | null>(null);
   const suppressClick = useRef(false);
   const busyRef = useRef(false);
@@ -61,6 +68,7 @@ export function XiaoanAssistant({ visible, onVisibilityChange }: Props) {
   const replyGeneration = useRef(0);
   const replyTimer = useRef<number | null>(null);
   const phaseTimer = useRef<number | null>(null);
+  const welcomeSpeechTimer = useRef<number | null>(null);
   const nextId = useRef(0);
   const launcher = useRef<HTMLButtonElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
@@ -93,6 +101,22 @@ export function XiaoanAssistant({ visible, onVisibilityChange }: Props) {
       ? { ...message, status: 'stopped' } : message));
   }, []);
 
+  const cancelWelcomeSpeech = useCallback(() => {
+    if (welcomeSpeechTimer.current !== null) clearTimeout(welcomeSpeechTimer.current);
+    welcomeSpeechTimer.current = null;
+    window.speechSynthesis?.cancel();
+  }, []);
+
+  const toggleMute = useCallback(() => {
+    setMuted((current) => {
+      const next = !current;
+      mutedRef.current = next;
+      try { localStorage.setItem('xiaoan-assistant:muted:v1', next ? '1' : '0'); } catch { /* Storage is optional. */ }
+      if (next) window.speechSynthesis?.cancel();
+      return next;
+    });
+  }, []);
+
   useEffect(() => {
     const resize = () => {
       setViewport({ width: innerWidth, height: innerHeight });
@@ -106,12 +130,14 @@ export function XiaoanAssistant({ visible, onVisibilityChange }: Props) {
     replyGeneration.current++;
     if (replyTimer.current !== null) clearTimeout(replyTimer.current);
     if (phaseTimer.current !== null) clearTimeout(phaseTimer.current);
-  }, []);
+    cancelWelcomeSpeech();
+  }, [cancelWelcomeSpeech]);
 
   useEffect(() => {
     if (!visible) {
       cancelReply();
       setOpen(false);
+      setGreetingVisible(false);
       drag.current = null;
       animate('idle');
     }
@@ -120,6 +146,22 @@ export function XiaoanAssistant({ visible, onVisibilityChange }: Props) {
   useEffect(() => {
     if (open) input.current?.focus({ preventScroll: true });
   }, [open]);
+
+  useEffect(() => {
+    if (!open) { setGreetingVisible(false); cancelWelcomeSpeech(); return; }
+    welcomeSpeechTimer.current = window.setTimeout(() => {
+      welcomeSpeechTimer.current = null;
+      setGreetingVisible(true);
+      if (mutedRef.current) return;
+      if (!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) return;
+      const utterance = new SpeechSynthesisUtterance(welcomeSpeech);
+      utterance.lang = 'zh-CN';
+      utterance.rate = .95;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utterance);
+    }, 1000);
+    return cancelWelcomeSpeech;
+  }, [open, cancelWelcomeSpeech]);
 
   useEffect(() => {
     if (transcript.current) transcript.current.scrollTop = transcript.current.scrollHeight;
@@ -247,9 +289,9 @@ export function XiaoanAssistant({ visible, onVisibilityChange }: Props) {
 
   return <>
     <div
-      className={`xiaoan-assistant-pet ${open && compact ? 'is-concealed' : ''}`}
+      className={`xiaoan-assistant-pet ${open && compact ? 'is-concealed' : ''} ${greetingVisible ? 'is-greeting' : ''}`}
       data-testid="xiaoan-pet" data-phase={avatarPhase} data-artwork-mode="reference-derived-cutout-rig"
-      style={{ left: position.x, top: position.y }}
+      style={{ left: position.x, top: position.y, width: ASSISTANT_SIZE.width, height: ASSISTANT_SIZE.height }}
     >
       <div className="xiaoan-pet-tools">
         <Tooltip title="收起小安"><button type="button" aria-label="收起小安" onClick={() => onVisibilityChange(false)}><X size={13} /></button></Tooltip>
@@ -272,6 +314,12 @@ export function XiaoanAssistant({ visible, onVisibilityChange }: Props) {
         <XiaoanAvatar phase={avatarPhase} active={!(open && compact)} />
         <span className="xiaoan-pet-caption"><i /><strong>{phaseLabels[avatarPhase]}</strong><MessageCircle size={12} /></span>
       </button>
+      <Tooltip title={muted ? '打开小安语音' : '静音小安语音'}>
+        <button type="button" className="xiaoan-pet-mute" aria-label={muted ? '打开小安语音' : '静音小安语音'} aria-pressed={muted} onClick={toggleMute}>
+          {muted ? <VolumeX size={13} /> : <Volume2 size={13} />}
+        </button>
+      </Tooltip>
+      {greetingVisible && <div className="xiaoan-greeting-bubble" role="status">{welcomeSpeech}</div>}
     </div>
 
     {open && <section
@@ -310,6 +358,11 @@ export function XiaoanAssistant({ visible, onVisibilityChange }: Props) {
             <div className="xiaoan-answer-text"><h3>{title}</h3>
               {paragraphs.map((line, index) => <p key={index}>{line}</p>)}
             </div>
+            {message.status === 'complete' && message.reply.trainingLinks?.length && <nav className="xiaoan-training-links" aria-label="推荐训练课程">
+              {message.reply.trainingLinks.map(link => <a key={link.taskId} href={trainingEntryPath(link.taskId)}>
+                <span>{link.label}</span><ArrowUpRight size={14} aria-hidden="true" />
+              </a>)}
+            </nav>}
             {message.status === 'stopped' && <small className="xiaoan-stopped">已停止回复</small>}
           </article>;
         })}
@@ -318,7 +371,7 @@ export function XiaoanAssistant({ visible, onVisibilityChange }: Props) {
       </div>
 
       {messages.length > 0 && <div className="xiaoan-followups" aria-label="继续对话">
-        {['展开说说', '再简短一点', '生成值守简报'].map(prompt => <button type="button" key={prompt} disabled={busy} onClick={() => submit(prompt)}>{prompt}<ArrowUpRight size={11} /></button>)}
+        {['展开说说', '再简短一点', '今日训练方案'].map(prompt => <button type="button" key={prompt} disabled={busy} onClick={() => submit(prompt)}>{prompt}<ArrowUpRight size={11} /></button>)}
       </div>}
       <form className="xiaoan-composer" onSubmit={event => { event.preventDefault(); submit(draft); }}>
         <textarea

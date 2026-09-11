@@ -1,7 +1,7 @@
 import {
-  ArrowLeft, ArrowUpRight, Bookmark, CalendarDays, Camera, Check, ChevronLeft, ChevronRight, Download,
-  ImageOff, ImagePlus, LayoutGrid, List, Map as MapIcon, MapPin, Maximize2, RotateCcw, Save,
-  Search, ShieldCheck, UsersRound, X,
+  ArrowLeft, Bookmark, CalendarDays, Camera, Check, Download,
+  ImageOff, ImagePlus, LayoutGrid, List, Map as MapIcon, MapPin, RotateCcw,
+  Search, ShieldCheck, X,
 } from 'lucide-react';
 import { Tooltip } from 'antd';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -10,15 +10,20 @@ import { ContactAppearanceMap } from '../components/ContactAppearanceMap';
 import { ContactRecordModal } from '../components/ContactRecordModal';
 import {
   CONTACT_DEMO_DATE, CONTACT_STORAGE_KEY, contactDateWindow, contactReviewCsv,
-  contactReviewRecords, parseContactDraft, selectContactRecords,
-  type ContactFilters, type ContactReviewDraft, type ReviewStatus,
+  contactBehaviors, contactReviewRecords, parseContactDraft, selectContactRecords,
+  type ContactBehavior, type ContactFilters, type ContactReviewDraft, type ReviewStatus,
 } from '../lib/contact-review';
 
-const initialFilters: ContactFilters = { ...contactDateWindow(30), query: '', location: '', companion: '', sort: 'newest', status: 'all' };
+const initialFilters: ContactFilters = { ...contactDateWindow(30), query: '', location: '', behaviors: [...contactBehaviors], companion: '', sort: 'newest', status: 'all' };
 const statuses: Array<'all' | ReviewStatus> = ['all', '待复核', '已标记', '已排除'];
 const locations = [...new Set(contactReviewRecords.map((record) => record.location))];
 const companions = [...new Map(contactReviewRecords.map((record) => [record.companion.id, record.companion])).values()];
-const subjectPath = `${appBasePath}/contact-review-assets/query-subject.jpg`;
+
+function sameBehaviors(left?: ContactBehavior[], right?: ContactBehavior[]) {
+  const a = left ?? [];
+  const b = right ?? [];
+  return a.length === b.length && a.every((behavior) => b.includes(behavior));
+}
 
 function StatusTag({ status }: { status: ReviewStatus }) {
   return <span className={`cr-status ${status === '已标记' ? 'marked' : status === '已排除' ? 'excluded' : 'pending'}`}><i />{status}</span>;
@@ -42,8 +47,7 @@ export function ContactReviewPage({ onBack }: { onBack: () => void }) {
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState('CR-001');
   const [draft, setDraft] = useState<ContactReviewDraft>(initialDraft);
-  const [queryImage, setQueryImage] = useState(subjectPath);
-  const [uploaded, setUploaded] = useState(false);
+  const [queryImage, setQueryImage] = useState<string | null>(null);
   const [feedback, setFeedback] = useState('');
   const [formError, setFormError] = useState('');
   const [view, setView] = useState<'grid' | 'timeline'>('grid');
@@ -62,7 +66,7 @@ export function ContactReviewPage({ onBack }: { onBack: () => void }) {
     window.addEventListener('storage', syncDraft);
     return () => window.removeEventListener('storage', syncDraft);
   }, []);
-  useEffect(() => () => { if (queryImage.startsWith('blob:')) URL.revokeObjectURL(queryImage); }, [queryImage]);
+  useEffect(() => () => { if (queryImage?.startsWith('blob:')) URL.revokeObjectURL(queryImage); }, [queryImage]);
   useEffect(() => () => { uploadVersion.current += 1; }, []);
   useEffect(() => {
     if (!feedback) return;
@@ -82,33 +86,11 @@ export function ContactReviewPage({ onBack }: { onBack: () => void }) {
   const selectedIndex = selected ? filtered.findIndex((record) => record.id === selected.id) : -1;
   const chronological = useMemo(() => [...filtered].sort((a, b) => a.occurredAt.localeCompare(b.occurredAt)), [filtered]);
   const scopeRecords = useMemo(() => selectContactRecords(records, { ...filters, status: 'all', query }), [records, filters, query]);
-  const hasPendingFilters = ['from', 'to', 'location'].some((key) => pendingFilters[key as keyof ContactFilters] !== filters[key as keyof ContactFilters]);
+  const hasPendingFilters = ['from', 'to', 'location'].some((key) => pendingFilters[key as keyof ContactFilters] !== filters[key as keyof ContactFilters])
+    || !sameBehaviors(pendingFilters.behaviors, filters.behaviors);
 
   function selectRecord(id: string) {
     setSelectedId(id);
-    if (window.innerWidth <= 900) {
-      window.requestAnimationFrame(() => document.getElementById('contact-record-detail')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-    }
-  }
-
-  function showWorkspace(next: 'records' | 'map') {
-    setWorkspace(next);
-    if (window.innerWidth <= 900) {
-      window.requestAnimationFrame(() => document.getElementById('contact-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-    }
-  }
-
-  function saveReview(status?: ReviewStatus, note?: string, notify = true) {
-    if (!selected) return;
-    const next = { ...draft, [selected.id]: {
-      status: status ?? selected.status,
-      note: note ?? draft[selected.id]?.note ?? '',
-    } };
-    try {
-      localStorage.setItem(CONTACT_STORAGE_KEY, JSON.stringify({ version: 1, reviews: next }));
-      setDraft(next);
-      if (notify) setFeedback(status ? `${selected.id} 已设为${status}` : '备注已保存在本机');
-    } catch { setFeedback('本地存储不可用，修改未保存。'); }
   }
 
   async function upload(file?: File) {
@@ -124,7 +106,6 @@ export function ContactReviewPage({ onBack }: { onBack: () => void }) {
       await image.decode();
       if (version !== uploadVersion.current) { URL.revokeObjectURL(url); return; }
       setQueryImage(url);
-      setUploaded(true);
       setFeedback('参考照片已更换，下方仍是固定演示集，不执行人脸检索。');
     } catch { URL.revokeObjectURL(url); setFeedback('图片无法读取，请换一张有效图片。'); }
   }
@@ -134,11 +115,13 @@ export function ContactReviewPage({ onBack }: { onBack: () => void }) {
       setFormError('请选择有效日期，开始日期不能晚于结束日期。'); return;
     }
     setFormError('');
-    setFilters((current) => ({ ...current, from: pendingFilters.from, to: pendingFilters.to, location: pendingFilters.location }));
+    setFilters((current) => ({ ...current, from: pendingFilters.from, to: pendingFilters.to, location: pendingFilters.location, behaviors: pendingFilters.behaviors }));
   }
 
   function reset() {
     setFilters(initialFilters); setPendingFilters(initialFilters); setQuery(''); setRange('30'); setFormError('');
+    if (queryImage?.startsWith('blob:')) URL.revokeObjectURL(queryImage);
+    setQueryImage(null);
   }
 
   function exportRecords() {
@@ -150,9 +133,9 @@ export function ContactReviewPage({ onBack }: { onBack: () => void }) {
     setFeedback(`已导出 ${marked.length} 条人工标记记录`);
   }
 
-  return <section className="contact-review-page" aria-label="接触记录检索工作台">
+  return <section className="contact-review-page" aria-label="视频筛查工作台">
     <header className="contact-review-heading">
-      <div><div className="ui-eyebrow">影像资料 / 人工复核</div><h1>接触记录检索<span className="cr-heading-ref">REF-001</span></h1></div>
+      <div><div className="ui-eyebrow">影像资料 / 人工复核</div><h1>视频筛查<span className="cr-heading-ref">REF-001</span></h1></div>
       <div className="cr-heading-actions">
         <Tooltip title="返回平台总览"><button className="ui-icon-button" type="button" aria-label="返回平台总览" onClick={onBack}><ArrowLeft size={18} /></button></Tooltip>
         <button className="ui-button" type="button" disabled={!marked.length} onClick={exportRecords}><Download size={16} />导出复核清单{marked.length > 0 && ` (${marked.length})`}</button>
@@ -161,18 +144,36 @@ export function ContactReviewPage({ onBack }: { onBack: () => void }) {
     <div className="cr-source-caption"><ShieldCheck size={14} />AI 合成场景 · 时间、地点与人物关联为预设，非真实证据<span>样例截止 {CONTACT_DEMO_DATE}</span></div>
     <div className="cr-query-bar">
         <section className="cr-query-section">
-          <div className="cr-query-object"><img src={queryImage} alt="xxx 参考照片" /><div><span>参考对象</span><strong>xxx</strong><button className="ui-text-button cr-upload-button" type="button" onClick={() => uploadRef.current?.click()}><ImagePlus size={14} />更换照片</button></div></div>
+          <div className="cr-query-object">{queryImage
+            ? <img src={queryImage} alt="已上传的参考照片" />
+            : <div className="cr-query-placeholder" role="img" aria-label="参考照片待上传"><ImageOff size={20} /><span>待上传</span></div>}
+            <div><span>参考对象</span><strong>xxx</strong><button className="ui-text-button cr-upload-button" type="button" onClick={() => uploadRef.current?.click()}><ImagePlus size={14} />{queryImage ? '更换照片' : '上传照片'}</button></div></div>
           <input ref={uploadRef} className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" aria-label="上传参考照片" onChange={(event) => { void upload(event.target.files?.[0]); event.target.value = ''; }} />
-          {uploaded && <div className="cr-upload-note">当前照片不参与匹配；下方仍为原演示集。<button type="button" className="ui-text-button" onClick={() => { ++uploadVersion.current; setQueryImage(subjectPath); setUploaded(false); }}>恢复演示参考</button></div>}
+          {queryImage && <div className="cr-upload-note">当前照片不参与匹配；下方仍为原演示集。<button type="button" className="ui-text-button" onClick={() => { ++uploadVersion.current; if (queryImage.startsWith('blob:')) URL.revokeObjectURL(queryImage); setQueryImage(null); }}>清除照片</button></div>}
         </section>
         <form className="cr-filter-section" onSubmit={(event) => { event.preventDefault(); applyFilters(); }}>
-          <label className="cr-field"><span>时间范围</span><select aria-label="时间范围" value={range} onChange={(event) => {
+          <label className="cr-field cr-range-field"><span>时间范围</span><select aria-label="时间范围" value={range} onChange={(event) => {
             setRange(event.target.value);
             if (event.target.value !== 'custom') setPendingFilters((current) => ({ ...current, ...contactDateWindow(Number(event.target.value)) }));
           }}><option value="30">样例近 30 天</option><option value="7">样例近 7 天</option><option value="custom">自定义日期</option></select></label>
-          <label className="cr-field"><span>开始日期</span><input type="date" value={pendingFilters.from} onChange={(event) => { setRange('custom'); setPendingFilters((current) => ({ ...current, from: event.target.value })); }} /></label>
-          <label className="cr-field"><span>结束日期</span><input type="date" value={pendingFilters.to} onChange={(event) => { setRange('custom'); setPendingFilters((current) => ({ ...current, to: event.target.value })); }} /></label>
-          <label className="cr-field"><span>地点</span><select aria-label="地点" value={pendingFilters.location} onChange={(event) => setPendingFilters((current) => ({ ...current, location: event.target.value }))}><option value="">全部地点</option>{locations.map((location) => <option key={location}>{location}</option>)}</select></label>
+          <div className="cr-field cr-behavior-field"><span>行为类型</span><div className="cr-behavior-options" role="group" aria-label="行为类型筛选">
+            <button type="button" aria-pressed={(pendingFilters.behaviors?.length ?? 0) === contactBehaviors.length} onClick={() => setPendingFilters((current) => ({ ...current, behaviors: [...contactBehaviors] }))}>全选</button>
+            {contactBehaviors.map((behavior) => {
+              const selectedBehavior = pendingFilters.behaviors?.includes(behavior) ?? false;
+              return <button type="button" key={behavior} aria-pressed={selectedBehavior} onClick={() => setPendingFilters((current) => {
+                const next = new Set(current.behaviors ?? contactBehaviors);
+                if (next.has(behavior)) next.delete(behavior); else next.add(behavior);
+                return { ...current, behaviors: contactBehaviors.filter((item) => next.has(item)) };
+              })}>{behavior}</button>;
+            })}
+          </div></div>
+          <label className="cr-field">
+            <span>地点</span>
+            <select aria-label="地点" value={pendingFilters.location} onChange={(event) => setPendingFilters((current) => ({ ...current, location: event.target.value }))}>
+              <option value="">全部地点</option>
+              {locations.map((location) => <option key={location} value={location}>{location}</option>)}
+            </select>
+          </label>
           <div className="cr-query-actions"><button className="ui-button primary cr-search-submit" type="submit"><Search size={16} />筛选记录{hasPendingFilters && <i className="cr-change-dot" />}</button>
           <Tooltip title="重置所有筛选"><button className="ui-icon-button" type="button" aria-label="重置所有筛选" onClick={reset}><RotateCcw size={16} /></button></Tooltip></div>
           {formError && <p className="cr-form-error" role="alert">{formError}</p>}
@@ -181,7 +182,6 @@ export function ContactReviewPage({ onBack }: { onBack: () => void }) {
     <div className="cr-summary-strip" aria-label="当前结果统计">
       <div><Camera size={18} /><span>出现记录</span><strong>{filtered.length}<small> 条</small></strong></div>
       <div><MapPin size={18} /><span>出现点位</span><strong>{new Set(filtered.map(record => record.location)).size}<small> 处</small></strong></div>
-      <div><UsersRound size={18} /><span>关联角色</span><strong>{new Set(filtered.map(record => record.companion.id)).size}<small> 位</small></strong></div>
       <div><Bookmark size={18} /><span>已标记记录</span><strong>{marked.length}<small> 条</small></strong></div>
     </div>
     <div className="contact-review-grid">
@@ -220,7 +220,6 @@ export function ContactReviewPage({ onBack }: { onBack: () => void }) {
           </article>)}
         </div> : <div className="cr-map-workspace">
           <ContactAppearanceMap records={filtered} selectedId={selected?.id} onSelect={setSelectedId} />
-          {selected && <button type="button" className="ui-text-button cr-mobile-results" onClick={() => selectRecord(selected.id)}>查看当前记录详情<ArrowUpRight size={14} /></button>}
           <div className="cr-section-heading cr-sequence-heading"><h2><CalendarDays size={15} />出现时间序列</h2><span className="cr-subtle">{chronological.length} 条 · 时间正序</span></div>
           <div className="cr-appearance-sequence">{chronological.map((record, index) => <button type="button" key={record.id} aria-label={`选择时间记录 ${record.id}`} aria-pressed={selected?.id === record.id} onClick={() => selectRecord(record.id)}>
             <span className="cr-sequence-number">{String(index + 1).padStart(2, '0')}</span><span><strong>{record.occurredAt.slice(5)}</strong><small>{record.location}</small></span>
@@ -230,36 +229,6 @@ export function ContactReviewPage({ onBack }: { onBack: () => void }) {
         </div>
         <div className="cr-list-footer"><span>共 {filtered.length} 条 / 样例集 {records.length} 条</span><span>离散出现记录 · 非连续轨迹</span></div>
       </section>
-      <aside className="contact-review-detail" id="contact-record-detail" aria-label="记录详情">
-        <div className="cr-detail-heading"><h2>记录详情</h2><div className="cr-detail-pager"><span>{selectedIndex + 1} / {filtered.length}</span>
-          <Tooltip title="上一条"><button type="button" className="ui-icon-button" aria-label="上一条记录" disabled={selectedIndex <= 0} onClick={() => setSelectedId(filtered[selectedIndex - 1].id)}><ChevronLeft size={16} /></button></Tooltip>
-          <Tooltip title="下一条"><button type="button" className="ui-icon-button" aria-label="下一条记录" disabled={selectedIndex < 0 || selectedIndex >= filtered.length - 1} onClick={() => setSelectedId(filtered[selectedIndex + 1].id)}><ChevronRight size={16} /></button></Tooltip>
-        </div></div>
-        <button type="button" className="ui-text-button cr-mobile-results" onClick={() => showWorkspace(workspace)}><ArrowLeft size={14} />返回{workspace === 'map' ? '出现点位' : '抓拍记录'}</button>
-        {selected ? <>
-          <div className="cr-detail-status"><strong>{selected.id}</strong><StatusTag status={selected.status} /></div>
-          <button type="button" className="cr-detail-image" aria-label="放大现场图" onClick={() => setExpanded(true)}><RecordImage path={selected.assetPath} label={`${selected.id} 现场合成图`} thumbnail /><span><Maximize2 size={15} /></span></button>
-          <div className="cr-detail-caption"><Camera size={12} /><span>现场全景</span><span>{selected.camera}</span></div>
-          <dl className="cr-meta-list">
-            <div><dt>出现时间</dt><dd>{selected.occurredAt} <small>UTC+8</small></dd></div>
-            <div><dt>出现地点</dt><dd>{selected.location}</dd></div>
-            <div><dt>机位编号</dt><dd>{selected.camera}</dd></div>
-            <div><dt>参考对象</dt><dd>xxx · REF-001</dd></div>
-          </dl>
-          <button type="button" className="ui-text-button cr-locate-action" onClick={() => showWorkspace('map')}><MapPin size={14} />在点位图中查看<ArrowUpRight size={13} /></button>
-          <section className="cr-companion-detail">
-            <div className="cr-section-heading"><h3>关联角色</h3><span className="cr-subtle">脚本预设</span></div>
-            <div className="cr-person-heading"><span className="cr-role-avatar"><UsersRound size={18} /></span><div><strong>{selected.companion.name}</strong><small>{selected.companion.id}</small></div><span className="cr-frequency">{records.filter(record => record.companion.id === selected.companion.id).length}<small>关联记录</small></span></div>
-            <button className="ui-text-button" type="button" onClick={() => { setFilters(current => ({ ...current, companion: selected.companion.id, status: 'all' })); showWorkspace('records'); }}>查看该角色记录<ArrowUpRight size={13} /></button>
-          </section>
-          <section className="cr-review-section">
-            <div className="cr-section-heading"><h3>人工复核</h3><span className="cr-subtle">本地草稿</span></div>
-            <label className="cr-note-field"><textarea aria-label="人工复核备注" placeholder="复核备注" maxLength={2000} value={draft[selected.id]?.note ?? ''} onChange={event => saveReview(undefined, event.target.value, false)} /></label>
-            <div className="cr-review-actions"><button type="button" className="ui-button primary" onClick={() => saveReview('已标记')}><Bookmark size={14} />标记记录</button><button type="button" className="ui-button" onClick={() => saveReview('已排除')}><X size={14} />排除记录</button><Tooltip title="保存备注"><button type="button" className="ui-icon-button" aria-label="保存备注" onClick={() => saveReview()}><Save size={16} /></button></Tooltip></div>
-            {selected.status !== '待复核' && <button type="button" className="ui-text-button cr-restore" onClick={() => saveReview('待复核')}><RotateCcw size={13} />恢复待复核</button>}
-          </section>
-        </> : <div className="cr-empty"><ImageOff size={24} /><strong>暂无可复核记录</strong></div>}
-      </aside>
     </div>
     {selected && <ContactRecordModal record={selected} open={expanded} onClose={() => setExpanded(false)}
       index={selectedIndex} count={filtered.length}

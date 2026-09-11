@@ -70,6 +70,7 @@ STAFF_LOCATIONS: dict[str, dict[str, Any]] = {
 }
 
 BAY_COORDS: dict[str, dict[str, float]] = {
+    "某某夜市": {"latitude": 28.6819, "longitude": 115.8637},
     "主街烧烤区": {"latitude": 28.682, "longitude": 115.8585},
     "三号门夜食街": {"latitude": 28.684, "longitude": 115.8606},
     "后巷摊位区": {"latitude": 28.6805, "longitude": 115.8612},
@@ -84,6 +85,7 @@ SECURITY_DETECTION_EVENT_PREFIX = "VIDET-"
 LEGACY_SECURITY_DETECTION_EVENT_PREFIX = "A" "IDET-"
 
 NIGHT_MARKET_BAYS = {
+    "某某夜市",
     "主街烧烤区",
     "三号门夜食街",
     "后巷摊位区",
@@ -830,12 +832,47 @@ def _prune_unlocated_help_events(session: Session) -> None:
     session.execute(delete(SafetyEvent).where(SafetyEvent.id.in_(event_ids)))
 
 
+def _ensure_demo_placeholder_event(session: Session) -> None:
+    """Keep one clearly synthetic high-risk card visible for demonstrations."""
+    event_id = "YS-DEMO-001"
+    if session.get(SafetyEvent, event_id):
+        return
+    created_at = datetime.now().isoformat(timespec="seconds")
+    session.add(
+        SafetyEvent(
+            id=event_id,
+            kind="help",
+            title="寻衅滋事",
+            bay="某某夜市",
+            level="高风险",
+            source="群众报警",
+            status="已提交",
+            owner="待指派",
+            distance="待测距",
+            time=datetime.now().strftime("%H:%M"),
+            updatedAt=datetime.now().strftime("%H:%M"),
+            description="某某夜市现场有人持续滋扰、挑衅并影响摊位经营，已形成围观，建议附近巡防人员先期到场核实。",
+            result=None,
+            anonymous=True,
+            meta_json={
+                "locationSource": "desensitized_demo",
+                "manualLocation": "某某夜市",
+                "alarmLocation": {"latitude": 28.6819, "longitude": 115.8637, "name": "某某夜市", "source": "desensitized_demo"},
+                "demo": True,
+            },
+            createdAt=created_at,
+            updatedAtIso=created_at,
+        )
+    )
+
+
 def init_db() -> None:
     init_database()
     with DB_LOCK, SessionLocal() as session:
         _seed_staff(session)
         _prune_legacy_sample_events(session)
         _prune_unlocated_help_events(session)
+        _ensure_demo_placeholder_event(session)
         _normalize_existing_metadata(session)
         session.commit()
         count = session.scalar(select(func.count()).select_from(SafetyEvent)) or 0
@@ -1297,7 +1334,7 @@ def create_report_event(
 ) -> dict[str, Any]:
     init_db()
     label = _now_label()
-    high_risk = category in {"街霸滋扰", "打架斗殴", "持械苗头"}
+    high_risk = category in {"街霸滋扰", "寻衅滋事", "打架斗殴", "持械苗头"}
     event = {
         "id": _new_id("RPT"),
         "kind": "report",

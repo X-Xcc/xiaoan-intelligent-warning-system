@@ -60,6 +60,8 @@ class NativeDeploymentTests(unittest.TestCase):
         self.assertIn("Test-NativeRestoreRuntimeDirectory", common)
         self.assertIn("Test-NativeRestoreRuntimeDirectory (Join-Path $native '.runtime')", restore)
         self.assertNotIn("Test-NativeEmptyDirectory (Join-Path $native '.runtime')", restore)
+        self.assertIn("bootstrap.ps1') -InstallMissing", restore)
+        self.assertIn("bootstrap.ps1') -InstallMissing", (NATIVE / "start.ps1").read_text(encoding="utf-8-sig"))
 
     def test_static_server_keeps_assets_and_spa_routes_distinct(self):
         import importlib.util

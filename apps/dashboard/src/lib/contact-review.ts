@@ -14,9 +14,13 @@ export type ContactReviewRecord = {
   occurredAt: string;
   location: string;
   camera: string;
+  behavior: ContactBehavior;
   companion: CompanionProfile;
   status: ReviewStatus;
 };
+
+export type ContactBehavior = '可疑接触' | '可疑观察' | '可疑跟随';
+export const contactBehaviors: ContactBehavior[] = ['可疑接触', '可疑观察', '可疑跟随'];
 
 export const CONTACT_DEMO_DATE = '2026-09-06';
 export const CONTACT_STORAGE_KEY = 'contact-review-demo-v1';
@@ -85,6 +89,12 @@ const occurredAt = [
 ] as const;
 
 const companionSequence = [0, 0, 1, 0, 0, 2, 0, 3, 0, 4, 0, 5, 0, 6, 0, 7, 0, 8, 0, 9];
+const behaviorSequence: ContactBehavior[] = [
+  '可疑接触', '可疑观察', '可疑跟随', '可疑接触', '可疑观察',
+  '可疑跟随', '可疑接触', '可疑观察', '可疑跟随', '可疑接触',
+  '可疑观察', '可疑跟随', '可疑接触', '可疑观察', '可疑跟随',
+  '可疑接触', '可疑观察', '可疑跟随', '可疑接触', '可疑观察',
+];
 
 export const contactReviewRecords: ContactReviewRecord[] = locations.map(([location, camera], index) => ({
   id: `CR-${String(index + 1).padStart(3, '0')}`,
@@ -94,11 +104,12 @@ export const contactReviewRecords: ContactReviewRecord[] = locations.map(([locat
   occurredAt: occurredAt[index],
   location,
   camera,
+  behavior: behaviorSequence[index],
   companion: companionSequence[index] === 0 ? recurringCompanion : uniqueCompanions[companionSequence[index] - 1],
   status: '待复核',
 }));
 
-export type ContactFilterField = 'all' | 'camera' | 'location' | 'companion' | 'status';
+export type ContactFilterField = 'all' | 'camera' | 'location' | 'behavior' | 'companion' | 'status';
 
 export function filterContactRecords(
   records: ContactReviewRecord[],
@@ -112,6 +123,7 @@ export function filterContactRecords(
     const values: Record<Exclude<ContactFilterField, 'all'>, string> = {
       camera: record.camera,
       location: record.location,
+      behavior: record.behavior,
       companion: `${record.companion.id} ${record.companion.label} ${record.companion.name}`,
       status: record.status,
     };
@@ -137,6 +149,7 @@ export type ContactFilters = {
   from?: string;
   to?: string;
   location?: string;
+  behaviors?: ContactBehavior[];
   companion?: string;
   status?: 'all' | ReviewStatus;
   sort?: 'newest' | 'oldest' | 'frequency';
@@ -149,6 +162,7 @@ export function selectContactRecords(records: ContactReviewRecord[], filters: Co
     const date = record.occurredAt.slice(0, 10);
     return (!filters.from || date >= filters.from) && (!filters.to || date <= filters.to)
       && (!filters.location || record.location === filters.location)
+      && (!filters.behaviors?.length || filters.behaviors.length === contactBehaviors.length || filters.behaviors.includes(record.behavior))
       && (!filters.companion || record.companion.id === filters.companion)
       && (!filters.status || filters.status === 'all' || record.status === filters.status);
   }).sort((a, b) => {
@@ -179,9 +193,9 @@ export function contactReviewCsv(records: ContactReviewRecord[], draft: ContactR
     return `"${safe.replace(/"/g, '""')}"`;
   };
   const rows = [
-    ['数据性质', '记录编号', '演示时间 UTC+8', '演示地点', '机位编号', '同行对象编号', '虚构姓名', '状态', '人工备注', '素材路径'],
+    ['数据性质', '记录编号', '演示时间 UTC+8', '演示地点', '机位编号', '可疑行为', '同行对象编号', '虚构姓名', '状态', '人工备注', '素材路径'],
     ...records.map((record) => ['合成演示，非真实证据', record.id, record.occurredAt, record.location, record.camera,
-      record.companion.id, record.companion.name, draft[record.id]?.status ?? record.status, draft[record.id]?.note ?? '', record.assetPath]),
+      record.behavior, record.companion.id, record.companion.name, draft[record.id]?.status ?? record.status, draft[record.id]?.note ?? '', record.assetPath]),
   ];
   return '\uFEFF' + rows.map((row) => row.map(cell).join(',')).join('\r\n');
 }

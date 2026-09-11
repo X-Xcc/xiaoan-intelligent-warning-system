@@ -548,10 +548,11 @@ class DeploymentAccountsTest(unittest.TestCase):
         self.assertEqual(before, self.snapshot())
         self.assertFalse((target / "accounts.json").exists())
 
-    def test_native_windows_fails_closed_without_database_changes(self):
+    def test_mocked_windows_host_mismatch_fails_without_database_changes(self):
         before = self.snapshot()
+        # Mocking os.name on POSIX does not provide Windows filesystem support.
         with patch.object(self.module.os, "name", "nt"):
-            with self.assertRaisesRegex(self.module.DeploymentAccountsError, "Linux"):
+            with self.assertRaisesRegex(self.module.DeploymentAccountsError, "Account initialization failed"):
                 self.initialize()
         self.assertEqual(before, self.snapshot())
         self.assertFalse(self.output.exists())

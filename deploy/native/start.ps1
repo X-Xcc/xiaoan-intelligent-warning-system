@@ -46,7 +46,7 @@ function Ensure-NativeBuild {
         try {
             & $npm ci --workspace apps/dashboard --include-workspace-root --no-audit --no-fund
             $env:VITE_API_BASE_URL = 'http://127.0.0.1:8010/api'
-            & $npm run dashboard:build
+            & $npm run dashboard:build:native
             if ($LASTEXITCODE -ne 0) { throw 'Dashboard build failed.' }
         } finally { Pop-Location }
     }
@@ -86,7 +86,7 @@ function Ensure-NativeBuild {
 try {
     $root = Get-NativeProjectRoot
     $native = Get-NativeDirectory
-    & (Join-Path $PSScriptRoot 'bootstrap.ps1')
+    & (Join-Path $PSScriptRoot 'bootstrap.ps1') -InstallMissing
     if ($LASTEXITCODE -ne 0) { throw 'Prerequisite check did not pass.' }
     $python = Get-NativePython -RequirePrivateAcl
     Ensure-NativeConfiguration $python $native

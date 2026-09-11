@@ -1,18 +1,20 @@
 export type AssistantPosition = { x: number; y: number };
-export const ASSISTANT_SIZE = { width: 156, height: 238 };
+export const ASSISTANT_SIZE = { width: 128, height: 208 };
 export const ASSISTANT_STORAGE_KEY = 'xiaoan-assistant:position:v1';
-export const ASSISTANT_PROMPTS = ['今日概览', '工作台导航', '生成值守简报'] as const;
+export const ASSISTANT_PROMPTS = ['今日概览', '今日勤务预案', '今日训练方案'] as const;
 
 export type AssistantReply = {
   demo: true;
-  topic: 'overview' | 'navigation' | 'brief' | 'chat';
+  topic: 'overview' | 'navigation' | 'brief' | 'dutyPlan' | 'training' | 'chat';
   title: string;
   lines: string[];
+  trainingLinks?: { label: string; taskId: string }[];
 };
 
 export function clampPosition(position: AssistantPosition, width: number, height: number): AssistantPosition {
   const maxX = Math.max(0, width - ASSISTANT_SIZE.width - 12);
-  const maxY = Math.max(0, height - ASSISTANT_SIZE.height - 12);
+  // Keep the bottom action row clear, including after restoring or dragging.
+  const maxY = Math.max(0, height - ASSISTANT_SIZE.height - 96);
   const minX = Math.min(12, maxX);
   const minY = Math.min(76, maxY);
   return {
@@ -56,12 +58,15 @@ export function demoReply(prompt: string, previous?: AssistantReply): AssistantR
       overview: ['先看待办优先级，再核对交接信息，最后整理需要留痕的事项。', '交接时重点核对三件事：谁来跟进、何时完成、结果记在哪里。没有确认的事项单独列出。'],
       brief: ['简报可以收敛为“总体情况、重点事项、交接安排”三段。', '每项写清楚时间、事项、进展和下一步。暂未核实的信息标注“待确认”，定稿前逐项复核。'],
       navigation: ['查看全局从平台总览开始；处理接报进入接处警；查看安排进入勤务态势。', '先明确是查看信息还是处理事项，再选择对应工作台。这样可以减少来回查找。'],
+      dutyPlan: ['先核对当班时段、重点区域和待跟进事项，再安排巡查与交接节点。', '预案中保留调整空间，突发事项按实际流程处置并补充留痕。'],
+      training: ['按“课前准备、场景训练、复盘巩固”安排今日训练，并明确每项训练的负责人。', '训练结束后记录完成情况和待提升项，下一次训练优先覆盖薄弱环节。'],
       chat: ['我们先明确目标，再拆成两到三个可以执行的步骤。', '把最希望得到的结果放在第一位，补充时间范围和已有材料，我再帮你细化。'],
     };
     return {
       demo: true, topic: previous.topic,
       title: short ? '好，我说简短一点' : '接着刚才的话题',
       lines: short ? [details[previous.topic][0]] : details[previous.topic],
+      ...(previous.topic === 'training' ? { trainingLinks: previous.trainingLinks } : {}),
     };
   }
   if (/你好|您好|嗨|在吗|早上好/.test(text)) return {
@@ -71,6 +76,26 @@ export function demoReply(prompt: string, previous?: AssistantReply): AssistantR
   if (/谢谢|辛苦|不错/.test(text)) return {
     demo: true, topic: previous?.topic ?? 'chat', title: '不客气。',
     lines: ['我们接着来。需要把刚才的内容再精简一些，还是换一件事？'],
+  };
+  if (/训练/.test(text)) return {
+    demo: true, topic: 'training', title: '今日训练方案',
+    lines: [
+      '按勤务态势的推荐，今天先练下面三项。具体要求听教官安排。',
+    ],
+    trainingLinks: [
+      { label: '单警装备快速取用', taskId: 'TRAIN-READINESS-001' },
+      { label: '弱光队形转换', taskId: 'TRAIN-READINESS-002' },
+      { label: '现场警戒与人员疏散', taskId: 'TRAIN-READINESS-003' },
+    ],
+  };
+  if (/勤务预案|勤务安排/.test(text)) return {
+    demo: true, topic: 'dutyPlan', title: '今日勤务预案',
+    lines: [
+      '先确定当班时段、重点区域和需要关注的待办事项。',
+      '巡查安排：明确责任岗位、巡查节点和交接方式。',
+      '应急准备：保持联络畅通，遇到突发情况按既定流程处置。',
+      '交接留痕：把未完成事项、后续跟进人与时间点记录清楚。',
+    ],
   };
   if (/你是谁|什么功能|能做什么/.test(text)) return {
     demo: true, topic: 'chat', title: '我是小安，你的工作助手。',
