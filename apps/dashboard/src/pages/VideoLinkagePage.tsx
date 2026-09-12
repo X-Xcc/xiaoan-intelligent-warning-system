@@ -1,13 +1,12 @@
-import { App, Button, ConfigProvider, Modal, Tooltip, theme } from 'antd';
-import { ArrowLeft, BrainCircuit, Cable, Eye, LockKeyhole, Maximize2, Menu, RefreshCw, ShieldCheck, X } from 'lucide-react';
+import { Alert, App, Button, ConfigProvider, Modal, Tooltip, theme } from 'antd';
+import { ArrowLeft, BrainCircuit, Cable, Eye, Maximize2, Menu, RefreshCw, ShieldCheck, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { BridgeLogin, BridgePreview } from '../components/BridgePreview';
-import { bridgeErrorMessage, bridgeKindLabels, frameTime, hasFreshFrame, useBridgeInventory } from '../lib/device-bridges-api';
-import { appBasePath, routePath, type PlatformView } from '../lib/presentation';
+import { BridgePreview } from '../components/BridgePreview';
+import { bridgeKindLabels, frameTime, hasFreshFrame, useBridgeInventory } from '../lib/device-bridges-api';
+import { routePath, type PlatformView } from '../lib/presentation';
 import '../styles/device-bridges.css';
 
 const emptyBindings: Array<string | null> = Array(16).fill(null);
-const slotPlaceholder = (index: number) => `${appBasePath}/night-market-cam-${String(Math.max(2, index + 1)).padStart(2, '0')}.png`;
 const wallScenes = [
   { name: '东门主通道', area: '东门入口' },
   { name: '西门主通道', area: '西门入口' },
@@ -41,6 +40,7 @@ export function VideoLinkagePage({ onBack }: { onBack: () => void }) {
   const selectedScene = wallScenes[selectedChannel];
   const onlineCount = bridge.available ? cameras.filter((device) => hasFreshFrame(device, bridge.now)).length : null;
   const previewAvailable = bridge.available && !bridge.busy;
+  const readiness = bridge.readiness;
 
   useEffect(() => {
     const previous = document.title;
@@ -69,18 +69,17 @@ export function VideoLinkagePage({ onBack }: { onBack: () => void }) {
         <nav className="monitoring-desktop-nav" aria-label="工作系统">
           <button type="button" onClick={() => navigate('night-market-command')}>指挥态势</button>
           <button type="button" aria-current="page">视频监控</button>
-          <button type="button" onClick={() => navigate('device-bridges')}>设备桥接</button>
+          <button type="button" onClick={() => navigate('device-bridges')}>设备接入管理</button>
         </nav>
         <div className="monitoring-top-actions">
+          <span className={`monitoring-service ${bridge.available ? 'online' : ''}`} role="status">{bridge.available ? '设备服务已连接' : '设备服务未确认'}</span>
           {onlineCount !== null && cameras.length > 0 && <span className="monitoring-online">实时设备 {onlineCount} / {cameras.length}</span>}
           <Tooltip title="刷新视频状态"><button className="monitoring-icon-button" type="button" aria-label="刷新视频状态" disabled={bridge.refreshing || bridge.busy} onClick={bridge.refresh}><RefreshCw size={16} /></button></Tooltip>
           <Tooltip title={fullscreen ? '退出全屏' : '进入全屏'}><button className="monitoring-icon-button" type="button" aria-label={fullscreen ? '退出全屏' : '进入全屏'} onClick={() => void toggleFullscreen()}><Maximize2 size={16} /></button></Tooltip>
-          {bridge.auth?.enabled && !bridge.authRequired && <Tooltip title="锁定访问"><button className="monitoring-icon-button" type="button" aria-label="锁定访问" disabled={bridge.busy} onClick={() => void bridge.lock().catch((error) => message.error(`本地已锁定；${bridgeErrorMessage(error)}`))}><LockKeyhole size={16} /></button></Tooltip>}
           <button className="monitoring-icon-button monitoring-mobile-menu" type="button" aria-label={mobileMenuOpen ? '关闭导航' : '打开导航'} aria-expanded={mobileMenuOpen} onClick={() => setMobileMenuOpen((open) => !open)}>{mobileMenuOpen ? <X size={17} /> : <Menu size={17} />}</button>
         </div>
         {mobileMenuOpen && <nav className="monitoring-mobile-nav" aria-label="移动工作系统">
-          <button type="button" onClick={() => navigate('device-bridges')}>设备桥接</button>
-          <button type="button" onClick={() => navigate('admin')}>平台治理</button>
+          <button type="button" onClick={() => navigate('device-bridges')}>设备接入管理</button>
           <button type="button" onClick={() => navigate('night-market-command')}>指挥态势</button>
         </nav>}
       </header>
@@ -93,7 +92,9 @@ export function VideoLinkagePage({ onBack }: { onBack: () => void }) {
             <Tooltip title="当前接入仅提供视频，尚无可用的 AI 研判服务"><span><Button disabled icon={<BrainCircuit size={16} />}>AI 研判</Button></span></Tooltip>
           </div>
         </div>
-        {bridge.authRequired ? <BridgeLogin login={bridge.login} busy={bridge.busy} tokenConfigured={bridge.auth?.tokenConfigured} /> : <>
+        {<>
+          {(bridge.error || (bridge.updatedAt > 0 && !bridge.available) || (readiness && !readiness.ready)) && <Alert className="bridge-video-alert" type="warning" showIcon
+            title={bridge.error || (readiness && !readiness.ready ? `实时摄像头链路未就绪：${readiness.reasons.map((reason) => reason.message).join('；')}` : '设备状态已过期，视频预览已暂停')} />}
           <section className="monitoring-video-wall" aria-label="十六路监控视频墙">
             {bindings.map((id, index) => {
               const camera = cameras.find((device) => device.id === id);
@@ -101,7 +102,7 @@ export function VideoLinkagePage({ onBack }: { onBack: () => void }) {
               const focused = selectedChannel === index;
               const fresh = previewAvailable && camera && hasFreshFrame(camera, bridge.now);
               return <article key={`slot-${index}-${id ?? 'empty'}`} className={`monitoring-tile ${focused ? 'selected' : ''}`}>
-                <BridgePreview device={camera} available={previewAvailable} authorized={bridge.previewReady} epoch={bridge.previewEpoch} compact placeholderSrc={slotPlaceholder(index)} />
+                <BridgePreview device={camera} available={previewAvailable} authorized={bridge.previewReady} epoch={bridge.previewEpoch} compact />
                 <div className="monitoring-tile-meta">
                   <span><i className={fresh ? 'online' : ''} />{String(index + 1).padStart(2, '0')} 路</span>
                   <button className="monitoring-feed-name" type="button" aria-label={`聚焦第 ${index + 1} 路 ${camera?.name ?? scene.name}`} aria-pressed={focused} onClick={() => setSelectedChannel(index)}><strong>{camera?.name ?? scene.name}</strong></button>
@@ -125,9 +126,9 @@ export function VideoLinkagePage({ onBack }: { onBack: () => void }) {
           </section>
         </>}
       </section>
-      <Modal open={focusOpen && !bridge.authRequired} onCancel={() => setFocusOpen(false)} footer={null} width={1000} destroyOnHidden
+      <Modal open={focusOpen} onCancel={() => setFocusOpen(false)} footer={null} width={1000} destroyOnHidden
         title={`${String(selectedChannel + 1).padStart(2, '0')} 路 · ${selected?.name ?? selectedScene.name}`} className="bridge-focus-modal" getContainer={() => root.current ?? document.body}>
-        <BridgePreview device={selected} available={previewAvailable} authorized={bridge.previewReady} epoch={bridge.previewEpoch} placeholderSrc={slotPlaceholder(selectedChannel)} />
+        <BridgePreview device={selected} available={previewAvailable} authorized={bridge.previewReady} epoch={bridge.previewEpoch} />
       </Modal>
     </main>
   </ConfigProvider>;

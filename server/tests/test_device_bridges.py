@@ -39,7 +39,7 @@ class ManagerStorageTests(unittest.TestCase):
                     "channel", "stream", "go2Mode", "autoStart", "id", "hasPassword",
                     "status", "online", "fps", "width", "height", "frameCount",
                     "lastFrameAt", "lastError", "stage", "logs", "feedUrl",
-                    "snapshotUrl", "createdAt", "updatedAt", "httpScheme", "httpPath", "usbIndex"}
+                    "snapshotUrl", "createdAt", "updatedAt", "httpScheme", "httpPath", "usbIndex", "webrtc"}
         self.assertEqual(set(result), expected)
         self.assertEqual(result["port"], 554)
         self.assertFalse(result["autoStart"])

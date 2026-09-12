@@ -35,12 +35,6 @@ public class VideoStreamController {
     @Value("${app.video.no-frame-poll-interval-ms:200}")
     private int noFramePollIntervalMs;
 
-    private static final long TEST_FRAME_CACHE_MS = 5000L; // 5s cache, avoid flicker
-
-    // Test frame cache per camera
-    private final Map<String, BufferedImage> cachedTestFrames = new ConcurrentHashMap<>();
-    private final Map<String, Long> cachedTestFrameAtMs = new ConcurrentHashMap<>();
-
     /** Default camera ID */
     private static final String DEFAULT_CAM = "0";
 
@@ -198,10 +192,6 @@ public class VideoStreamController {
                                 writeFrame(outputStream, frameBytes);
                                 Thread.sleep(streamPollIntervalMs);
                             } else {
-                                byte[] testFrame = getTestFrameBytes(cam);
-                                if (testFrame.length > 0) {
-                                    writeFrame(outputStream, testFrame);
-                                }
                                 Thread.sleep(noFramePollIntervalMs);
                             }
                         } catch (IOException e) {
@@ -243,78 +233,14 @@ public class VideoStreamController {
         return result;
     }
 
-    /** Camera stats for SSE broadcasting — delegates to FrameService */
+    /** Camera stats for readiness checks and SSE broadcasting. */
+    @GetMapping(value = "/api/camera_stats", produces = MediaType.APPLICATION_JSON_VALUE)
     public Map<String, Object> getCameraStats() {
         return frameService.getCameraStats();
     }
 
     private byte[] getFrameBytes(String cam) {
         return frameService.getFrameBytes(cam);
-    }
-
-    // 无真实帧时生成模拟帧（灰色+文字），用于前端占位显示
-    private byte[] getTestFrameBytes(String cam) {
-        BufferedImage testFrame = getOrCreateCachedTestFrame(cam);
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ImageIO.write(testFrame, "jpg", baos);
-            return baos.toByteArray();
-        } catch (IOException e) {
-            return new byte[0];
-        }
-    }
-
-    private BufferedImage getOrCreateCachedTestFrame(String cam) {
-        long now = System.currentTimeMillis();
-        BufferedImage cached = cachedTestFrames.get(cam);
-        Long cachedAt = cachedTestFrameAtMs.get(cam);
-        if (cached != null && cachedAt != null && (now - cachedAt) < TEST_FRAME_CACHE_MS) {
-            return cached;
-        }
-        BufferedImage fresh = generateTestFrame(cam);
-        cachedTestFrames.put(cam, fresh);
-        cachedTestFrameAtMs.put(cam, now);
-        return fresh;
-    }
-
-    private BufferedImage generateTestFrame(String cam) {
-        int width = 1280;
-        int height = 720;
-        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-        Graphics2D g2d = image.createGraphics();
-
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-        // Background
-        g2d.setColor(new Color(12, 18, 32));
-        g2d.fillRect(0, 0, width, height);
-
-        // Grid
-        g2d.setColor(new Color(40, 60, 100));
-        for (int i = 0; i < width; i += 50) g2d.drawLine(i, 0, i, height);
-        for (int i = 0; i < height; i += 50) g2d.drawLine(0, i, width, i);
-
-        // Camera label centered
-        g2d.setColor(new Color(0, 0, 0, 150));
-        g2d.fillRect(0, height / 2 - 40, width, 80);
-
-        g2d.setColor(new Color(160, 180, 200));
-        g2d.setFont(new Font("Microsoft YaHei", Font.BOLD, 24));
-        String label = "等待视频信号 - " + getCameraLabel(cam);
-        FontMetrics fm = g2d.getFontMetrics();
-        g2d.drawString(label, (width - fm.stringWidth(label)) / 2, height / 2 + 8);
-
-        g2d.dispose();
-        return image;
-    }
-
-    private String getCameraLabel(String cam) {
-        switch (cam) {
-            case "0": return "A区-主监控";
-            case "1": return "B区-走廊";
-            case "2": return "C区-操场";
-            default: return "摄像头 " + cam;
-        }
     }
 
     // 写--frame\r\n + Content-Type + JPEG二进制，组成MJPEG multipart协议

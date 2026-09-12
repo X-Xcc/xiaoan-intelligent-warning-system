@@ -2,7 +2,7 @@ import {
   AlertCircle, ArrowLeft, ArrowRight, BookOpen, Check, CheckCircle2, ChevronRight,
   ClipboardCheck, Clock3, FileCheck2, FileText, History,
   ListChecks, LoaderCircle, Plus, RefreshCw, RotateCcw, Search, ShieldCheck,
-  Square, Timer, UserRound,
+  Timer, UserRound,
 } from 'lucide-react';
 import { Modal, Skeleton, Spin, Tooltip } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -11,7 +11,7 @@ import {
   filterTrainingSubjects, isCreatedTrainingTask, officerTasks, selectOfficerTask, taskElapsedSeconds, taskStage,
   type TrainingArchive, type TrainingAssessment, type TrainingSnapshot, type TrainingStage, type TrainingTask, type TrainingSubject,
 } from '../lib/training-api';
-import { demoTrainingSelection, trainingDemo } from '../lib/training-demo';
+import { demoTrainingSelection, isTrainingWorkspaceSubject, trainingDemo } from '../lib/training-demo';
 import { useTrainingDraft } from '../lib/use-training-draft';
 import { readTrainingSelection, rememberTrainingSelection } from '../lib/training-navigation';
 import { appBasePath, routePath } from '../lib/presentation';
@@ -34,7 +34,6 @@ const taskUrl = (taskId: string, action: string) => `/training/tasks/${encodeURI
 const officerLabel = (id: string) => `虚拟民警 ${id.replace(/^DEMO-OFFICER-/, '')}`;
 const dateLabel = (value?: string | null) => value && Number.isFinite(Date.parse(value))
   ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : '尚未记录';
-const timeLabel = (seconds: number) => `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
 
 function Status({ status }: { status: string }) {
   const tone = status === '已归档' ? 'success' : status === '训练中' ? 'active' : status === '待复训' ? 'danger' : 'pending';
@@ -72,9 +71,7 @@ export function OfficerTrainingPage({ onSituation }: { onSituation: () => void }
   const [mode, setMode] = useState<'tasks' | 'archives'>('tasks');
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [now, setNow] = useState(Date.now());
   const [reviewOpen, setReviewOpen] = useState(false);
-  const [exceptionOpen, setExceptionOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [subjects, setSubjects] = useState<TrainingSubject[]>([]);
   const [subjectIds, setSubjectIds] = useState<string[]>([]);
@@ -87,7 +84,7 @@ export function OfficerTrainingPage({ onSituation }: { onSituation: () => void }
   const allFilteredSelected = filteredSubjects.length > 0 && filteredSubjects.every((item) => subjectIds.includes(item.subjectId));
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [catalogError, setCatalogError] = useState('');
-  const [archiveTaskId, setArchiveTaskId] = useState('');
+  const [explicitTaskId, setExplicitTaskId] = useState(initial.taskId);
 
   const load = useCallback(async (afterMutation = false) => {
     if (busyRef.current && !afterMutation) return;
@@ -128,6 +125,7 @@ export function OfficerTrainingPage({ onSituation }: { onSituation: () => void }
       const selection = demoTrainingSelection(readTrainingSelection(window.location.search));
       setOfficerId(selection.officerId);
       setSelectedId(selection.taskId);
+      setExplicitTaskId(selection.taskId);
     };
     window.addEventListener('popstate', onHistory);
     return () => {
@@ -143,10 +141,12 @@ export function OfficerTrainingPage({ onSituation }: { onSituation: () => void }
   const requestedTask = snapshot.tasks.find((task) => task.taskId === selectedId);
   const missingTask = Boolean(lastSync && selectedId && !requestedTask);
   const effectiveOfficer = requestedTask?.traineeId ?? (officers.includes(officerId) ? officerId : officers[0] ?? '');
-  const ownTasks = useMemo(() => officerTasks(snapshot.tasks.filter(isCreatedTrainingTask), effectiveOfficer), [snapshot.tasks, effectiveOfficer]);
+  const workspaceTasks = useMemo(() => snapshot.tasks.filter((task) => isCreatedTrainingTask(task) && isTrainingWorkspaceSubject(task)), [snapshot.tasks]);
+  const ownTasks = useMemo(() => officerTasks(workspaceTasks, effectiveOfficer), [workspaceTasks, effectiveOfficer]);
   const visibleTasks = ownTasks.filter((task) =>
     (statusFilter === 'all' || task.status === statusFilter) && `${task.subject} ${task.taskId}`.toLowerCase().includes(query.trim().toLowerCase()));
-  const selected = missingTask ? undefined : archiveTaskId === selectedId && requestedTask
+  // Historical archives and retries can be opened even when their subject is absent from the rail.
+  const selected = missingTask ? undefined : explicitTaskId === selectedId && requestedTask
     ? requestedTask : selectOfficerTask(visibleTasks, effectiveOfficer, selectedId);
   useEffect(() => { stopVoice(); }, [selected?.taskId, stopVoice]);
   const assessment = snapshot.assessments.find((item) => item.taskId === selected?.taskId);
@@ -164,17 +164,11 @@ export function OfficerTrainingPage({ onSituation }: { onSituation: () => void }
   const archive = snapshot.archives.find((item) => item.taskId === selected?.taskId);
   const ownArchives = snapshot.archives.filter((item) => item.traineeId === effectiveOfficer);
   const [draft, updateDraft] = useTrainingDraft(selected?.taskId);
-  const { manualTime, elapsedInput, reviewer, reason, exceptionReason } = draft;
-  const setManualTime = (value: boolean) => updateDraft({ manualTime: value });
-  const setElapsedInput = (value: string) => updateDraft({ elapsedInput: value });
+  const { reviewer, reason } = draft;
   const setReviewer = (value: string) => updateDraft({ reviewer: value });
   const setReason = (value: string) => updateDraft({ reason: value });
-  const setExceptionReason = (value: string) => updateDraft({ exceptionReason: value });
   const interactionLocked = Boolean(busy);
   const completedStage = selected ? stages.findIndex((item) => item.id === taskStage(selected.status)) : 0;
-  const elapsed = selected ? taskElapsedSeconds(selected, now) : 0;
-  const submittedElapsed = manualTime ? Number(elapsedInput) : Math.max(1, elapsed);
-  const validElapsed = !manualTime || (elapsedInput.trim() !== '' && Number.isInteger(submittedElapsed) && submittedElapsed >= 1 && submittedElapsed <= 3600);
 
   useEffect(() => {
     if (!selected) return;
@@ -189,7 +183,6 @@ export function OfficerTrainingPage({ onSituation }: { onSituation: () => void }
   useEffect(() => {
     setStage(selected ? taskStage(selected.status) : 'prepare');
     setReviewOpen(Boolean(draft.reviewer || draft.reason));
-    setExceptionOpen(false);
     setFeedback('');
     setInstructorScores({});
   }, [selected?.taskId]);
@@ -203,15 +196,8 @@ export function OfficerTrainingPage({ onSituation }: { onSituation: () => void }
   useEffect(() => {
     if (reviewOpen && stage === 'assessment') reviewFormRef.current?.scrollIntoView({ block: 'center' });
   }, [reviewOpen, stage]);
-  useEffect(() => {
-    if (selected?.status !== '训练中') return;
-    setNow(Date.now());
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(timer);
-  }, [selected?.taskId, selected?.status]);
-
   const focusTask = (task: TrainingTask) => {
-    setArchiveTaskId('');
+    setExplicitTaskId(task.taskId);
     setError('');
     setSelectedId(task.taskId);
     setOfficerId(task.traineeId);
@@ -257,16 +243,15 @@ export function OfficerTrainingPage({ onSituation }: { onSituation: () => void }
     void perform('训练已开始', async () => {
       const result = await trainingRequest<{ task: TrainingTask }>(taskUrl(selected.taskId, 'start'), { method: 'POST' });
       mergeTask(result.task);
-      setNow(Date.now());
       setStage('run');
     }, '正在开始训练');
   };
 
   const finish = () => {
-    if (!selected || selected.status !== '训练中' || !validElapsed) return;
+    if (!selected || selected.status !== '训练中') return;
     void perform('训练记录已提交，考核结果待教官复核', async () => {
       const result = await trainingRequest<{ task: TrainingTask }>(taskUrl(selected.taskId, 'complete'), {
-        method: 'POST', body: JSON.stringify({ elapsedSeconds: submittedElapsed }),
+        method: 'POST', body: JSON.stringify({ elapsedSeconds: Math.max(1, taskElapsedSeconds(selected)) }),
       });
       mergeTask(result.task);
       setStage('assessment');
@@ -314,17 +299,6 @@ export function OfficerTrainingPage({ onSituation }: { onSituation: () => void }
       setMode('tasks');
     }, '正在创建复训任务');
   };
-  const reportException = () => {
-    if (!selected || exceptionReason.trim().length < 2) return;
-    void perform('训练异常已登记', async () => {
-      const result = await trainingRequest<{ task: TrainingTask }>(taskUrl(selected.taskId, 'exception'), {
-        method: 'POST', body: JSON.stringify({ reason: exceptionReason.trim(), reportedBy: selected.traineeId }),
-      });
-      mergeTask(result.task);
-      setExceptionOpen(false);
-    }, '正在登记训练异常');
-  };
-
   const openCreate = async () => {
     if (interactionLocked) return;
     setCreateOpen(true);
@@ -336,7 +310,7 @@ export function OfficerTrainingPage({ onSituation }: { onSituation: () => void }
     setCatalogLoading(true);
     try {
       const result = await trainingRequest<{ items: TrainingSubject[] }>('/training/subjects');
-      setSubjects(result.items);
+      setSubjects(result.items.filter(isTrainingWorkspaceSubject));
     } catch (cause) {
       setCatalogError(readableError(cause));
     } finally {
@@ -368,7 +342,7 @@ export function OfficerTrainingPage({ onSituation }: { onSituation: () => void }
       onOk: () => {
         trainingDemo.reset();
         setSelectedId(`TRAIN-DEMO-${effectiveOfficer.slice(-3)}-01`);
-        setArchiveTaskId('');
+        setExplicitTaskId('');
         setStatusFilter('all');
         setQuery('');
         setMode('tasks');
@@ -423,11 +397,10 @@ export function OfficerTrainingPage({ onSituation }: { onSituation: () => void }
     const task = snapshot.tasks.find((value) => value.taskId === item.taskId);
     if (task) {
       selectTask(task, 'archive');
-      setArchiveTaskId(task.taskId);
     }
   };
   const changeFilters = (nextQuery: string, nextStatus: string) => {
-    setArchiveTaskId('');
+    setExplicitTaskId('');
     setQuery(nextQuery);
     setStatusFilter(nextStatus);
   };
@@ -449,11 +422,11 @@ export function OfficerTrainingPage({ onSituation }: { onSituation: () => void }
         <div className="ot-context">
           <label className="ot-officer-select"><UserRound size={16} /><select aria-label="训练对象" value={effectiveOfficer} disabled={interactionLocked || !officers.length}
             onChange={(event) => {
-              const target = selectOfficerTask(snapshot.tasks.filter(isCreatedTrainingTask), event.target.value);
+              const target = selectOfficerTask(workspaceTasks, event.target.value);
               if (target) selectTask(target);
               else {
                 const nextOfficer = event.target.value;
-                leave(() => { setOfficerId(nextOfficer); setSelectedId(''); setArchiveTaskId(''); setQuery(''); setStatusFilter('all'); });
+                leave(() => { setOfficerId(nextOfficer); setSelectedId(''); setExplicitTaskId(''); setQuery(''); setStatusFilter('all'); });
               }
             }}>
             {!officers.length && <option value="">等待训练对象</option>}
@@ -553,19 +526,7 @@ export function OfficerTrainingPage({ onSituation }: { onSituation: () => void }
             {stage === 'run' && <div className="ot-execution">
               <div className="ot-recording-layout">
                 <TrainingCameraPreview key={selected.taskId} taskId={selected.taskId} officer={officerLabel(selected.traineeId)} teamName={selected.teamName} />
-                <section className="ot-timer-tool">
-                  <span><Clock3 size={16} />训练用时</span><strong className="ot-timer" aria-label="训练计时">{timeLabel(elapsed)}</strong>
-                  <div className="ot-time-standard">本次标准 <b>{selected.standard.thresholdSeconds != null ? `${selected.standard.thresholdSeconds} 秒` : '按本单位教学计划'}</b></div>
-                  <label className="ot-checkbox"><input type="checkbox" checked={manualTime} disabled={Boolean(busy) || selected.status !== '训练中'} onChange={(event) => setManualTime(event.target.checked)} />录入现场计时</label>
-                  {manualTime && <label className="ot-elapsed-input"><input type="number" min={1} max={3600} step={1} aria-label="现场用时（秒）" value={elapsedInput} disabled={Boolean(busy)} onChange={(event) => setElapsedInput(event.target.value)} /><span>秒</span></label>}
-                  {!validElapsed && <p className="ot-inline-error">请填写 1 至 3600 的整数秒数</p>}
-                  <div className="ot-started-at"><small>开始时间</small><span>{dateLabel(selected.startedAt)}</span></div>
-                  {selected.exception && <p className="ot-inline-error">已登记异常：{selected.exception.reason}</p>}
-                </section>
               </div>
-              <footer className="ot-action-bar"><button className="ot-text-button" onClick={() => { if (!exceptionReason.trim()) setExceptionReason('虚拟异常：训练设备电量偏低，已更换备用设备。'); setExceptionOpen(true); }} disabled={Boolean(busy) || !online}><AlertCircle size={15} />登记异常</button>
-                <button className="ot-button primary" disabled={Boolean(busy) || selected.status !== '训练中' || !validElapsed || !online} onClick={finish}>{busy ? <LoaderCircle className="spin" size={16} /> : <Square size={15} />}结束并提交考核</button>
-              </footer>
             </div>}
             {stage === 'assessment' && <section className="ot-assessment">
               {!assessment && busy ? <TrainingLoading label="正在生成考核结果" caption={false} /> : !assessment ? <div className="ot-empty"><ClipboardCheck size={30} /><h3>训练记录已提交</h3><p>尚未生成考核结果。</p><button className="ot-button primary" disabled={Boolean(busy) || !online || selected.status !== '待复核'} onClick={generateAssessment}><RefreshCw size={16} />生成考核结果</button></div> : <>
@@ -605,7 +566,7 @@ export function OfficerTrainingPage({ onSituation }: { onSituation: () => void }
           <span>{selected ? `${stages.findIndex((item) => item.id === stage) + 1} / 4 · ${stages.find((item) => item.id === stage)?.label}` : '新建训练任务'}</span>
           <div className="ot-next-actions">
           <button className="ot-button" onClick={previousStep} disabled={Boolean(busy) || !selected || stage === 'prepare'}><ArrowLeft size={16} />上一步</button>
-          <button className="ot-button primary" onClick={nextStep} disabled={Boolean(busy) || !online || catalogLoading || (stage === 'run' && !validElapsed)}>
+          <button className="ot-button primary" onClick={nextStep} disabled={Boolean(busy) || !online || catalogLoading}>
             {busy ? <LoaderCircle size={16} className="spin" /> : null}{stage === 'archive' && selected ? '完成' : '下一步'}<ArrowRight size={16} />
           </button>
           </div>
@@ -632,12 +593,6 @@ export function OfficerTrainingPage({ onSituation }: { onSituation: () => void }
         {error && <p role="alert" className="ot-inline-error">{error}</p>}
         <div className="ot-review-actions"><button className="ot-button" onClick={() => setCreateOpen(false)} disabled={Boolean(busy)}>取消</button><button className="ot-button primary" onClick={create} disabled={!subjectIds.length || Boolean(busy) || catalogLoading || Boolean(catalogError) || !online}><Plus size={16} />确认新建{subjectIds.length ? `（${subjectIds.length}）` : ''}</button></div>
       </div>
-    </Modal>
-    <Modal title="登记训练异常" open={exceptionOpen} onCancel={() => { if (!busy) setExceptionOpen(false); }} footer={null} destroyOnHidden>
-      <form className="ot-exception-form" onSubmit={(event) => { event.preventDefault(); reportException(); }}>
-        <label>异常情况<textarea aria-label="异常情况" rows={4} value={exceptionReason} onChange={(event) => setExceptionReason(event.target.value)} maxLength={500} placeholder="填写设备、场地或训练过程中的异常" disabled={Boolean(busy)} /></label>
-        <button className="ot-button primary" disabled={Boolean(busy) || exceptionReason.trim().length < 2 || !online}>提交异常记录</button>
-      </form>
     </Modal>
   </main>;
 }

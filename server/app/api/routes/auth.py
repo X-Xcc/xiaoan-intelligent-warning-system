@@ -74,10 +74,4 @@ def wechat_login(payload: WechatLoginIn):
 
 @router.get("/me")
 def me(authorization: str | None = Header(default=None)):
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="未登录")
-    token = authorization.removeprefix("Bearer ").strip()
-    user = auth_store.get_user_by_token(token)
-    if not user:
-        raise HTTPException(status_code=401, detail="令牌无效")
-    return {"user": user}
+    return {"user": auth_store.open_access_user()}

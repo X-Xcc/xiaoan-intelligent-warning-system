@@ -100,7 +100,7 @@ export function CommandIntakeSheet({ events, refresh }: {
         <div><dt><Clock3 size={16} />时间</dt><dd>{draft.occurredAt.replace('T', ' ') || '待核实'}</dd></div>
         <div><dt><MapPin size={16} />地点</dt><dd>{draft.location || '待核实'}</dd></div>
         <div><dt><UsersRound size={16} />人物</dt><dd>{peopleSummary || '待核实'}</dd></div>
-        <div><dt><FileText size={16} />警情</dt><dd>{draft.details || '待核实'}</dd></div>
+        <div><dt><FileText size={16} />注意事项</dt><dd>{draft.details || '待核实'}</dd></div>
       </dl>
       </section>
       {stage === 'intake' ? <>

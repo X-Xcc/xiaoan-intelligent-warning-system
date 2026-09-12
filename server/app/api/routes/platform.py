@@ -199,10 +199,10 @@ def _runtime_snapshot() -> dict[str, Any]:
             {"label": "训练复盘", "count": int((ops.get("identity") or {}).get("profiles") or 0), "status": "待业务上报"},
         ],
         "governance": {
-            "identity": "统一身份与最小权限",
+            "identity": "公共工作台",
             "audit": "关键操作 100% 留痕",
             "humanReview": "AI建议必须人工确认",
-            "security": "公安内网部署，数据分级授权",
+            "security": "受控网络部署，开放访问",
         },
     }
 

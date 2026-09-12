@@ -249,6 +249,43 @@ function Wait-NativeHttp {
     throw "Service did not become ready: $Url"
 }
 
+function Get-NativeJson {
+    param([string]$Url, [hashtable]$Headers = @{})
+    $response = Invoke-WebRequest -UseBasicParsing -Uri $Url -Headers $Headers -TimeoutSec 3
+    if ($response.StatusCode -lt 200 -or $response.StatusCode -ge 300) {
+        throw "Unexpected HTTP status $($response.StatusCode): $Url"
+    }
+    return ($response.Content | ConvertFrom-Json)
+}
+
+function Wait-NativeRealCameraReadiness {
+    param([string]$ApiBase, [string]$DetectorBase, [int]$Seconds = 90)
+    $deadline = [DateTime]::UtcNow.AddSeconds($Seconds)
+    $lastReason = 'real camera readiness has not been confirmed'
+    do {
+        try {
+            $bridge = Get-NativeJson "$ApiBase/api/device-bridges/readiness"
+            $detector = Get-NativeJson "$DetectorBase/api/detection/status"
+            $data = if ($detector.data) { $detector.data } else { $detector }
+            $required = @($bridge.requiredBindings).Count
+            $frameCameras = @($data.frames.cameras | Where-Object {
+                $_.online -eq $true -and [int64]$_.frameCount -gt 0
+            }).Count
+            if ($bridge.ready -eq $true -and $data.running -eq $true -and $frameCameras -gt 0) {
+                return
+            }
+            $codes = @($bridge.reasons | ForEach-Object { $_.code })
+            if ($data.running -ne $true) { $codes += 'detector_not_running' }
+            if ($frameCameras -eq 0) { $codes += 'detector_has_no_real_frame' }
+            $lastReason = ($codes | Select-Object -Unique) -join ', '
+        } catch {
+            $lastReason = $_.Exception.Message
+        }
+        Start-Sleep -Seconds 1
+    } while ([DateTime]::UtcNow -lt $deadline)
+    throw "Real camera readiness failed: $lastReason"
+}
+
 function Open-NativeDashboard {
     [CmdletBinding()]
     param([string]$Url)
@@ -266,16 +303,33 @@ function Start-NativeChild {
     $logs = Join-Path $native 'logs'
     New-Item -ItemType Directory -Force -Path $logs | Out-Null
     $pidPath = Join-Path $native "run/$Name.pid"
+    $recordPath = Join-Path $native "run/$Name.json"
     New-Item -ItemType Directory -Force -Path (Split-Path -Parent $pidPath) | Out-Null
     if (Test-Path -LiteralPath $pidPath) {
         $old = Get-Content -LiteralPath $pidPath -Raw
         $process = Get-Process -Id $old.Trim() -ErrorAction SilentlyContinue
-        if ($process) { return $process }
+        if ($process) {
+            if (-not (Test-Path -LiteralPath $recordPath)) {
+                throw "Existing $Name process cannot be verified; run stop.cmd before starting it."
+            }
+            $record = Get-Content -LiteralPath $recordPath -Raw | ConvertFrom-Json
+            $commandLine = (Get-CimInstance Win32_Process -Filter "ProcessId=$($process.Id)" -ErrorAction SilentlyContinue).CommandLine
+            if (-not $commandLine -or -not ($record.arguments | Where-Object { $commandLine.Contains([string]$_) })) {
+                throw "Existing $Name PID $($process.Id) does not match the recorded command."
+            }
+            return $process
+        }
         Remove-Item -LiteralPath $pidPath -Force
+        Remove-Item -LiteralPath $recordPath -Force -ErrorAction SilentlyContinue
     }
     $process = Start-Process -FilePath $FilePath -ArgumentList $Arguments -WorkingDirectory $WorkingDirectory -WindowStyle Hidden -PassThru `
         -RedirectStandardOutput (Join-Path $logs "$Name.out.log") -RedirectStandardError (Join-Path $logs "$Name.err.log")
     [IO.File]::WriteAllText($pidPath, $process.Id, [Text.UTF8Encoding]::new($false))
+    [IO.File]::WriteAllText($recordPath, (@{
+        pid = $process.Id
+        file = (Split-Path -Leaf $FilePath)
+        arguments = @($Arguments)
+    } | ConvertTo-Json -Compress), [Text.UTF8Encoding]::new($false))
     return $process
 }
 
@@ -283,9 +337,22 @@ function Stop-NativeChild {
     param([string]$Name)
     $path = Join-Path (Get-NativeDirectory) "run/$Name.pid"
     if (-not (Test-Path -LiteralPath $path)) { return }
-    $process = Get-Process -Id (Get-Content -LiteralPath $path -Raw).Trim() -ErrorAction SilentlyContinue
-    if ($process) { Stop-Process -Id $process.Id -Force }
+    $recordPath = Join-Path (Get-NativeDirectory) "run/$Name.json"
+    $pid = [int](Get-Content -LiteralPath $path -Raw).Trim()
+    $process = Get-Process -Id $pid -ErrorAction SilentlyContinue
+    if ($process) {
+        if (-not (Test-Path -LiteralPath $recordPath)) {
+            throw "Refusing to stop unverified $Name PID $pid."
+        }
+        $record = Get-Content -LiteralPath $recordPath -Raw | ConvertFrom-Json
+        $commandLine = (Get-CimInstance Win32_Process -Filter "ProcessId=$pid" -ErrorAction SilentlyContinue).CommandLine
+        if (-not $commandLine -or -not ($record.arguments | Where-Object { $commandLine.Contains([string]$_) })) {
+            throw "Refusing to stop $Name PID $pid because its command does not match the project record."
+        }
+        Stop-Process -Id $process.Id -Force
+    }
     Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $recordPath -Force -ErrorAction SilentlyContinue
 }
 
 function Test-NativePostgresConnection {

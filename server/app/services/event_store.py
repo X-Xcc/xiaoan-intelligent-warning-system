@@ -83,6 +83,8 @@ BAY_COORDS: dict[str, dict[str, float]] = {
 LEGACY_SAMPLE_EVENT_PREFIX = "YS-" + "260815-"
 SECURITY_DETECTION_EVENT_PREFIX = "VIDET-"
 LEGACY_SECURITY_DETECTION_EVENT_PREFIX = "A" "IDET-"
+DEMO_PLACEHOLDER_DETAILS = "该人员有暴力前科，属于重点人员且近期在本地多个夜市有五起相似的纠纷滋事类警情"
+DEMO_PLACEHOLDER_PERSON = "王五"
 
 NIGHT_MARKET_BAYS = {
     "某某夜市",
@@ -564,6 +566,7 @@ def _build_assignment(event: dict[str, Any], staff_id: str | None = None, sessio
 
 
 def _event_to_dict(event: SafetyEvent) -> dict[str, Any]:
+    meta = event.meta_json or {}
     return {
         "id": event.id,
         "kind": event.kind,
@@ -577,9 +580,15 @@ def _event_to_dict(event: SafetyEvent) -> dict[str, Any]:
         "time": event.time,
         "updatedAt": event.updatedAt,
         "description": event.description,
+        "caller": meta.get("caller", ""),
+        "reporter": meta.get("reporter", meta.get("caller", "")),
+        "people": meta.get("people", ""),
+        "person": meta.get("person", meta.get("people", "")),
+        "occurredAt": meta.get("occurredAt", ""),
+        "category": meta.get("category", ""),
         "result": event.result,
         "anonymous": bool(event.anonymous),
-        "meta": event.meta_json or {},
+        "meta": meta,
         "createdAt": event.createdAt,
         "updatedAtIso": event.updatedAtIso,
     }
@@ -835,7 +844,19 @@ def _prune_unlocated_help_events(session: Session) -> None:
 def _ensure_demo_placeholder_event(session: Session) -> None:
     """Keep one clearly synthetic high-risk card visible for demonstrations."""
     event_id = "YS-DEMO-001"
-    if session.get(SafetyEvent, event_id):
+    existing = session.get(SafetyEvent, event_id)
+    if existing:
+        meta = dict(existing.meta_json or {})
+        meta.update({
+            "demo": True,
+            "caller": DEMO_PLACEHOLDER_PERSON,
+            "reporter": DEMO_PLACEHOLDER_PERSON,
+            "people": DEMO_PLACEHOLDER_PERSON,
+            "person": DEMO_PLACEHOLDER_PERSON,
+            "category": "寻衅滋事",
+        })
+        existing.description = DEMO_PLACEHOLDER_DETAILS
+        existing.meta_json = meta
         return
     created_at = datetime.now().isoformat(timespec="seconds")
     session.add(
@@ -851,7 +872,7 @@ def _ensure_demo_placeholder_event(session: Session) -> None:
             distance="待测距",
             time=datetime.now().strftime("%H:%M"),
             updatedAt=datetime.now().strftime("%H:%M"),
-            description="某某夜市现场有人持续滋扰、挑衅并影响摊位经营，已形成围观，建议附近巡防人员先期到场核实。",
+            description=DEMO_PLACEHOLDER_DETAILS,
             result=None,
             anonymous=True,
             meta_json={
@@ -859,6 +880,11 @@ def _ensure_demo_placeholder_event(session: Session) -> None:
                 "manualLocation": "某某夜市",
                 "alarmLocation": {"latitude": 28.6819, "longitude": 115.8637, "name": "某某夜市", "source": "desensitized_demo"},
                 "demo": True,
+                "caller": DEMO_PLACEHOLDER_PERSON,
+                "reporter": DEMO_PLACEHOLDER_PERSON,
+                "people": DEMO_PLACEHOLDER_PERSON,
+                "person": DEMO_PLACEHOLDER_PERSON,
+                "category": "寻衅滋事",
             },
             createdAt=created_at,
             updatedAtIso=created_at,

@@ -111,18 +111,18 @@ export type PlatformOverview = {
 const PRODUCT_NAME = '小安智能预警系统';
 const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.DEV ? 'http://127.0.0.1:8010/api' : `${window.location.origin}/api`)).replace(/\/$/, '');
 
-const systemNavItems: Array<{ view: PlatformView; label: string; shortLabel: string; icon: typeof Activity; section: '业务工作台' | '平台能力' }> = [
+const systemNavItems: Array<{ view: PlatformView; label: string; shortLabel: string; icon: typeof Activity; section: '业务工作台' | '平台能力'; disabled?: boolean }> = [
   { view: 'platform', label: '平台总览', shortLabel: '总览', icon: LayoutDashboard, section: '业务工作台' },
+  { view: 'duty-situation', label: 'A1 勤务态势大屏', shortLabel: '勤务态势', icon: Monitor, section: '业务工作台' },
   { view: 'command', label: '接处警系统', shortLabel: '接处警', icon: Radio, section: '业务工作台' },
   { view: 'case', label: '执法办案系统', shortLabel: '执法办案', icon: FileCheck2, section: '业务工作台' },
-  { view: 'community', label: '社区警务系统', shortLabel: '社区警务', icon: Building2, section: '业务工作台' },
-  { view: 'duty-situation', label: 'A1 勤务态势大屏', shortLabel: '勤务态势', icon: Monitor, section: '业务工作台' },
+  { view: 'community', label: '社区警务系统', shortLabel: '社区警务', icon: Building2, section: '业务工作台', disabled: true },
   { view: 'contact-review', label: '视频筛查', shortLabel: '视频筛查', icon: Search, section: '业务工作台' },
   { view: 'video', label: '视频联动', shortLabel: '视频联动', icon: Video, section: '业务工作台' },
-  { view: 'night-market-command', label: '夜市指挥', shortLabel: '夜市指挥', icon: MapPinned, section: '业务工作台' },
-  { view: 'ai-center', label: 'AI能力中心', shortLabel: 'AI 中心', icon: BrainCircuit, section: '平台能力' },
-  { view: 'admin', label: '平台治理中心', shortLabel: '平台治理', icon: ShieldCheck, section: '平台能力' },
-  { view: 'device-bridges', label: '设备桥接管理', shortLabel: '设备桥接', icon: Cable, section: '平台能力' },
+  { view: 'night-market-command', label: '夜市指挥', shortLabel: '夜市指挥', icon: MapPinned, section: '业务工作台', disabled: true },
+  { view: 'ai-center', label: 'AI能力中心', shortLabel: 'AI 中心', icon: BrainCircuit, section: '平台能力', disabled: true },
+  { view: 'admin', label: '平台治理中心', shortLabel: '平台治理', icon: ShieldCheck, section: '平台能力', disabled: true },
+  { view: 'device-bridges', label: '设备桥接管理', shortLabel: '设备桥接', icon: Cable, section: '平台能力', disabled: true },
 ];
 
 const demoOverview: PlatformOverview = {
@@ -149,7 +149,6 @@ const demoOverview: PlatformOverview = {
   businessSystems: [
     { key: 'command', name: '接处警系统', shortName: '接处警', description: '接警、询问、分类分级、派警和处置回传', capabilities: ['语音转写', '警单摘要', '分级派警', '警情画像'], status: '运行中', metric: 128 },
     { key: 'case', name: '执法办案系统', shortName: '执法办案', description: '法律依据、取证清单、卷宗审核和类案辅助', capabilities: ['法律助手', '证据校验', '文书生成', '串并分析'], status: '运行中', metric: 37 },
-    { key: 'community', name: '社区警务系统', shortName: '社区警务', description: '网格画像、走访任务、隐患闭环和基层治理', capabilities: ['辖区画像', '走访任务', '隐患闭环', '热力研判'], status: '运行中', metric: 24 },
     { key: 'duty-plan', name: '勤务训练系统', shortName: '勤务训练', description: '课程编辑、实战模拟、动作识别和一人一档', capabilities: ['AI课程编辑', 'AI教官', '训练评估', '体能识别'], status: '运行中', metric: 318 },
   ],
   dataCatalog: {
@@ -161,7 +160,6 @@ const demoOverview: PlatformOverview = {
       { key: 'alarm', label: '警情与指令', description: '接报、分级、派警、处置回传', objects: ['警情', '指令', '处置结果'], status: '健康' },
       { key: 'case', label: '案件与证据', description: '案件、卷宗、证据链', objects: ['案件', '证据', '文书'], status: '健康' },
       { key: 'person', label: '人员与车辆', description: '身份核验、车辆和轨迹', objects: ['人员', '车辆', '轨迹'], status: '健康' },
-      { key: 'community', label: '社区与地址', description: '网格、重点人地事物', objects: ['网格', '地址', '走访任务'], status: '关注' },
       { key: 'training', label: '训练与健康', description: '课程、成绩、训练档案', objects: ['课程', '成绩', '健康指标'], status: '健康' },
     ],
   },
@@ -199,7 +197,7 @@ const demoOverview: PlatformOverview = {
     { label: '社区闭环', count: 24, status: '待复核' },
     { label: '训练复盘', count: 318, status: '已接入' },
   ],
-  governance: { identity: '统一身份与最小权限', audit: '关键操作 100% 留痕', humanReview: 'AI建议必须人工确认', security: '公安内网部署，数据分级授权' },
+  governance: { identity: '公共工作台', audit: '关键操作 100% 留痕', humanReview: 'AI建议必须人工确认', security: '开放访问' },
 };
 
 function pathView(): PlatformView {
@@ -218,7 +216,7 @@ function ShellNav({ view, navigate, open, close, online }: { view: PlatformView;
       <div className="platform-control-context"><span>当前组织</span><strong>市公安局</strong><small>指挥中心 · 综合值守</small></div>
       {sections.map((section) => <div className="platform-control-nav-group" key={section}>
         <span className="platform-control-nav-label">{section}</span>
-        <nav aria-label={section}>{systemNavItems.filter((item) => item.section === section).map((item) => { const Icon = item.icon; return <div className="platform-control-nav-entry" key={item.view}><button type="button" className={`platform-control-nav-item ${view === item.view ? 'active' : ''}`} aria-current={view === item.view ? 'page' : undefined} onClick={() => navigate(item.view)}><span className="platform-control-nav-icon"><Icon size={15} /></span><span>{item.label}</span>{view === item.view ? <span className="platform-control-nav-live" /> : <ChevronRight size={13} />}</button></div>; })}</nav>
+        <nav aria-label={section}>{systemNavItems.filter((item) => item.section === section).map((item) => { const Icon = item.icon; return <div className="platform-control-nav-entry" key={item.view}><button type="button" className={`platform-control-nav-item ${view === item.view ? 'active' : ''}`} aria-current={view === item.view ? 'page' : undefined} aria-disabled={item.disabled || undefined} onClick={() => { if (!item.disabled) navigate(item.view); }}><span className="platform-control-nav-icon"><Icon size={15} /></span><span>{item.label}</span>{view === item.view ? <span className="platform-control-nav-live" /> : <ChevronRight size={13} />}</button></div>; })}</nav>
       </div>)}
       <div className={`platform-control-sidebar-foot ${online ? 'online' : 'offline'}`}><span className="platform-control-health-dot" /><span>{online ? '数据连接正常' : '数据连接未就绪'}</span><ShieldCheck size={14} /></div>
     </aside>
@@ -303,29 +301,29 @@ export function DashboardApp() {
     return () => { document.body.style.overflow = previousOverflow; document.removeEventListener('keydown', onKey); };
   }, [mobileNavOpen]);
 
-  const navigate = useCallback((next: PlatformView) => {
-    const target = next === 'duty-plan' ? trainingEntryPath() : routePath(next);
-    if (window.location.pathname !== target) window.history.pushState({}, '', target);
-    setView(next);
-    setMobileNavOpen(false);
+  const navigatePath = useCallback((target: string) => {
+    if (`${window.location.pathname}${window.location.search}` !== target) window.history.pushState({}, '', target);
+    window.dispatchEvent(new PopStateEvent('popstate'));
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
+  const navigate = useCallback((next: PlatformView) => {
+    navigatePath(next === 'duty-plan' ? trainingEntryPath() : routePath(next));
+  }, [navigatePath]);
 
   const navView = view === 'command-workbench' ? 'command' : view;
   const currentNav = useMemo(() => systemNavItems.find((item) => item.view === navView) ?? systemNavItems[0], [navView]);
   const formattedDate = new Intl.DateTimeFormat('zh-CN', { month: '2-digit', day: '2-digit', weekday: 'short' }).format(clock);
   const formattedTime = new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(clock);
 
-  if (view === 'command-workbench' && new URLSearchParams(window.location.search).get('surface') === 'display') return <CommandWorkbench />;
-  if (view === 'video') return <VideoLinkagePage onBack={() => navigate('platform')} />;
-  if (view === 'night-market-command') return <NightMarketCommandPage onBack={() => navigate('video')} />;
-  if (view === 'duty-plan') return <OfficerTrainingPage onSituation={() => navigate('duty-situation')} />;
-  if (view === 'duty-situation') return <DutySituationPage onBack={() => navigate('platform')} onTraining={(taskId) => {
-    window.history.pushState({}, '', trainingEntryPath(taskId));
-    setView('duty-plan');
-    window.scrollTo({ top: 0, behavior: 'instant' });
-  }} />;
+  const standalonePage = view === 'command-workbench' && new URLSearchParams(window.location.search).get('surface') === 'display'
+    ? <CommandWorkbench />
+    : view === 'video' ? <VideoLinkagePage onBack={() => navigate('platform')} />
+    : view === 'night-market-command' ? <NightMarketCommandPage onBack={() => navigate('video')} />
+    : view === 'duty-plan' ? <OfficerTrainingPage onSituation={() => navigate('duty-situation')} />
+    : view === 'duty-situation' ? <DutySituationPage onBack={() => navigate('platform')}
+      onTraining={(taskId) => navigatePath(trainingEntryPath(taskId))} />
+    : null;
   const page = view === 'contact-review'
     ? <ContactReviewPage onBack={() => navigate('platform')} />
     : view === 'platform'
@@ -344,7 +342,8 @@ export function DashboardApp() {
                 ? <AICenterPage overview={overview} apiOnline={apiOnline} navigate={navigate} />
                 : <AdminConsolePage apiOnline={apiOnline} refresh={loadOverview} navigate={navigate} />;
 
-  return <main className="platform-control-shell">
+  return <>
+    {standalonePage ?? <main className="platform-control-shell">
     <a className="skip-link" href="#workspace-content">跳转到工作区</a>
     <ShellNav view={navView} navigate={navigate} open={mobileNavOpen} close={() => { setMobileNavOpen(false); menuRef.current?.focus(); }} online={apiOnline} />
     <div className="platform-control-main">
@@ -364,8 +363,9 @@ export function DashboardApp() {
           </header>
           {!apiOnline && view !== 'device-bridges' && <p className="platform-control-status-message" role="status"><AlertTriangle size={15} />{statusMessage}</p>}
       <div id="workspace-content" tabIndex={-1} className="platform-control-content">{page}</div>
-      <footer className="platform-control-footer"><span><ShieldCheck size={14} />高风险 AI 建议需人工确认</span><span><Database size={14} />操作留痕 · 分级授权</span><span>最近同步 {lastSync ? lastSync.toLocaleTimeString('zh-CN', { hour12: false }) : '尚未连接'}</span></footer>
+      <footer className="platform-control-footer"><span><ShieldCheck size={14} />高风险 AI 建议需人工确认</span><span><Database size={14} />操作留痕 · 开放访问</span><span>最近同步 {lastSync ? lastSync.toLocaleTimeString('zh-CN', { hour12: false }) : '尚未连接'}</span></footer>
     </div>
-    <XiaoanAssistant visible={assistantVisible} onVisibilityChange={setAssistantVisible} />
-  </main>;
+  </main>}
+    <XiaoanAssistant visible={assistantVisible} onVisibilityChange={setAssistantVisible} onNavigate={navigatePath} />
+  </>;
 }

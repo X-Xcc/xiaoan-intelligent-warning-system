@@ -12,25 +12,24 @@ const module = new vm.SourceTextModule(
 );
 await module.link(() => assert.fail('Assistant helpers must remain local and side-effect free'));
 await module.evaluate();
-const { ASSISTANT_SIZE, clampPosition, parsePosition, demoReply, snapPosition } = module.namespace;
+const { ASSISTANT_SIZE, assistantSize, clampPosition, parsePosition, demoReply, assistantPanelLayout } = module.namespace;
 const plain = value => JSON.parse(JSON.stringify(value));
 
 test('positions are clamped to the visible viewport', () => {
   assert.deepEqual(plain(clampPosition({ x: -40, y: 1200 }, 390, 844)),
-    { x: 12, y: 540 });
+    { x: 12, y: 624 });
   assert.deepEqual(plain(clampPosition({ x: 9999, y: -40 }, 1440, 900)),
-    { x: 1300, y: 76 });
+    { x: 1300, y: 12 });
 });
 
-test('compact assistant leaves the bottom action area clear after dragging or restoring', () => {
+test('free placement uses the entire viewport without reserved header or footer bands', () => {
   assert.deepEqual(plain(ASSISTANT_SIZE), { width: 128, height: 208 });
   for (const [width, height] of [[390, 844], [1440, 900], [844, 390]]) {
     for (const position of [
       clampPosition({ x: width, y: height }, width, height),
-      snapPosition({ x: width, y: height }, width, height),
-      parsePosition(JSON.stringify({ x: width - 232, y: height - 360 }), width, height),
+      parsePosition(JSON.stringify({ x: width, y: height }), width, height),
     ]) {
-      assert.ok(position.y + ASSISTANT_SIZE.height <= height - 96);
+      assert.equal(position.y + ASSISTANT_SIZE.height, height - 12);
     }
   }
 });
@@ -46,12 +45,68 @@ test('stored state is validated and clamped instead of hiding the pet', () => {
     assert.equal(parsePosition(raw, 390, 844), null);
   }
   assert.deepEqual(plain(parsePosition('{"x":9000,"y":8000}', 390, 844)),
-    { x: 250, y: 540 });
+    { x: 250, y: 624 });
 });
 
-test('drag release snaps to the closest edge', () => {
-  assert.equal(snapPosition({ x: 100, y: 200 }, 1440, 900).x, 12);
-  assert.equal(snapPosition({ x: 1100, y: 200 }, 1440, 900).x, 1300);
+test('interior placement remains exactly where released', () => {
+  for (const position of [{ x: 100, y: 200 }, { x: 700, y: 400 }, { x: 1100, y: 600 }]) {
+    assert.deepEqual(plain(clampPosition(position, 1440, 900)), position);
+  }
+});
+
+function assertVisible(position, layout, width, height) {
+  for (const box of [
+    { ...position, ...plain(assistantSize(width, height)) },
+    { x: position.x + layout.x, y: position.y + layout.y, width: layout.width, height: layout.height },
+  ]) {
+    assert.ok(box.x >= 12 - 1e-6 && box.y >= 12 - 1e-6, JSON.stringify(box));
+    assert.ok(box.x + box.width <= width - 12 + 1e-6, JSON.stringify(box));
+    assert.ok(box.y + box.height <= height - 12 + 1e-6, JSON.stringify(box));
+  }
+}
+
+test('open panel and avatar fit without overlap at every viewport corner', () => {
+  for (const [width, height] of [[1440, 1000], [600, 720], [390, 844], [320, 568], [390, 400], [320, 320], [844, 390]]) {
+    for (const anchor of [
+      { x: 12, y: 12 }, { x: width / 2, y: height / 2 },
+      { x: width, y: 12 }, { x: 12, y: height }, { x: width, y: height },
+    ]) {
+      const layout = assistantPanelLayout(clampPosition(anchor, width, height), width, height);
+      assertVisible(clampPosition(anchor, width, height, layout), layout, width, height);
+      const size = assistantSize(width, height);
+      assert.ok(layout.x + layout.width <= 0 || layout.x >= size.width
+        || layout.y + layout.height <= 0 || layout.y >= size.height);
+    }
+  }
+});
+
+test('short compact viewports scale the avatar to keep composer controls usable', () => {
+  for (const [width, height] of [[390, 400], [320, 320]]) {
+    const size = assistantSize(width, height);
+    const layout = assistantPanelLayout({ x: 100, y: 100 }, width, height);
+    assert.ok(size.height < ASSISTANT_SIZE.height);
+    assert.ok(layout.height >= 220, 'Header, composer and footer must fit without clipping Send');
+  }
+  assert.deepEqual(plain(assistantSize(390, 844)), plain(ASSISTANT_SIZE));
+});
+
+test('whole-group dragging preserves the panel offset, including across the screen midpoint', () => {
+  const layout = assistantPanelLayout({ x: 180, y: 300 }, 1440, 1000);
+  const original = plain(layout);
+  for (const anchor of [{ x: 200, y: 400 }, { x: 700, y: 400 }, { x: 1400, y: 990 }]) {
+    const next = clampPosition(anchor, 1440, 1000, layout);
+    assertVisible(next, layout, 1440, 1000);
+    assert.deepEqual(plain(layout), original);
+  }
+});
+
+test('resize recomputes a layout that keeps both elements visible', () => {
+  let position = { x: 1100, y: 700 };
+  for (const [width, height] of [[390, 844], [844, 390], [320, 568], [1440, 1000]]) {
+    const layout = assistantPanelLayout(clampPosition(position, width, height), width, height);
+    position = clampPosition(position, width, height, layout);
+    assertVisible(position, layout, width, height);
+  }
 });
 
 test('all preset replies are explicitly synthetic and cannot execute actions', () => {

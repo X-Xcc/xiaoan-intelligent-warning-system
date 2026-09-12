@@ -137,22 +137,17 @@ test('case search is explicit and local, and checklist changes invalidate its lo
   }
 });
 
-test('AI provides in-memory business-token login, logout and its own refresh without parent refresh', () => {
+test('AI provides anonymous review and its own refresh without parent refresh', () => {
   assert.doesNotMatch(aiPage, /localStorage|sessionStorage/);
-  assert.match(aiPage, /authenticateAiReviewer\(/);
-  assert.match(aiPage, /type="password"/);
-  assert.match(aiPage, /onSubmit=/);
-  assert.match(aiPage, /onClick=\{logout\}/);
+  assert.doesNotMatch(aiPage, /authenticateAiReviewer|type="password"|logout|tokenRef|permissions\.includes/);
   assert.match(aiPage, /onClick=\{\(\) => void refreshRuntime\(\)\}/);
   assert.doesNotMatch(aiPage, /refresh\?\.\(/);
-  assert.match(aiPage, /permissions\.includes\('review'\)/);
   assert.match(aiPage, /reviewPending/);
   assert.match(aiPage, /runtimeController\.current\?\.abort\(\)/);
-  assert.match(aiPage, /loginController\.current\?\.abort\(\)/);
   assert.match(aiPage, /reviewController\.current\?\.abort\(\)/);
 });
 
-const aiExports = ['refreshRuntime', 'runtime', 'runtimeError', 'runtimeLoading', 'login', 'logout', 'tokenInput', 'setTokenInput', 'reviewer', 'canReview', 'submitReview', 'reviewPending', 'reviewState', 'reviewReason', 'setReviewReason', 'updateReviewReason', 'tokenRef'];
+const aiExports = ['refreshRuntime', 'runtime', 'runtimeError', 'runtimeLoading', 'submitReview', 'reviewPending', 'reviewState', 'reviewReason', 'setReviewReason', 'updateReviewReason'];
 const sample = { model: { name: 'Sample' }, sampleResult: { auditId: 'sample-1', reviewStatus: 'pending' } };
 const deferred = () => {
   let resolve;
@@ -190,51 +185,20 @@ test('AI refresh cancels stale responses, retains the last snapshot and preserve
   assert.equal(render().reviewReason, 'Draft review');
 });
 
-test('AI login validates server permissions; logout prevents late credentials or reviews from restoring state', async () => {
-  assert.match(aiPage, /const login/);
-  const authentication = deferred();
-  let signal;
-  const render = await handlers(aiPage, '  const fallbackAgents', aiExports, {
-    authenticateAiReviewer: (_token, nextSignal) => { signal = nextSignal; return authentication.promise; },
-  });
-  render().setTokenInput('secret');
-  const login = render().login();
-  assert.equal(render().tokenInput, '');
-  assert.equal(render().tokenRef.current, '');
-  render().logout();
-  assert.equal(signal.aborted, true);
-  authentication.resolve({ openid: 'late-user', permissions: ['review'] });
-  await login;
-  assert.equal(render().reviewer, null);
-  assert.equal(render().tokenRef.current, '');
-});
-
-test('AI review is permission-gated, repeat-safe and keeps the reason after server acknowledgment', async () => {
-  assert.match(aiPage, /const login/);
-  let permissions = [];
+test('AI review is anonymous, repeat-safe and keeps the reason after server acknowledgment', async () => {
   const review = deferred();
   const calls = [];
   const render = await handlers(aiPage, '  const fallbackAgents', aiExports, {
     getAiRuntime: async () => sample,
-    authenticateAiReviewer: async () => ({ openid: 'user', permissions }),
     submitAiReview: (...args) => { calls.push(args); return review.promise; },
   });
   await render().refreshRuntime();
-  render().setTokenInput('token');
-  await render().login();
   render().updateReviewReason('Checked manually');
-  await render().submitReview('confirmed');
-  assert.equal(calls.length, 0);
-  assert.equal(render().canReview, false);
-  permissions = ['review'];
-  render().setTokenInput('token');
-  await render().login();
-  assert.equal(render().canReview, true);
   const first = render().submitReview('confirmed');
   await render().submitReview('rejected');
   assert.equal(calls.length, 1);
   assert.equal(render().reviewPending, true);
-  assert.deepEqual(calls[0].slice(0, 4), ['token', 'sample-1', 'confirmed', 'Checked manually']);
+  assert.deepEqual(calls[0].slice(0, 3), ['sample-1', 'confirmed', 'Checked manually']);
   review.resolve({ ...sample.sampleResult, reviewStatus: 'confirmed' });
   await first;
   assert.equal(render().runtime.sampleResult.reviewStatus, 'confirmed');
@@ -255,12 +219,9 @@ test('a refreshed result cannot silently inherit a review draft for a different 
   const calls = [];
   const render = await handlers(aiPage, '  const fallbackAgents', [...aiExports, 'updateReviewReason', 'reviewDraftAuditId'], {
     getAiRuntime: async () => current,
-    authenticateAiReviewer: async () => ({ openid: 'user', permissions: ['review'] }),
     submitAiReview: async (...args) => { calls.push(args); return { ...current.sampleResult, reviewStatus: 'confirmed' }; },
   });
   await render().refreshRuntime();
-  render().setTokenInput('token');
-  await render().login();
   render().updateReviewReason('Reason for sample-1');
   current = { ...sample, sampleResult: { auditId: 'sample-2', reviewStatus: 'pending' } };
   await render().refreshRuntime();
@@ -271,10 +232,10 @@ test('a refreshed result cannot silently inherit a review draft for a different 
   render().updateReviewReason('Reviewed sample-2');
   await render().submitReview('confirmed');
   assert.equal(calls.length, 1);
-  assert.equal(calls[0][1], 'sample-2');
+  assert.equal(calls[0][0], 'sample-2');
 });
 
-test('expired and denied reviews clear authorization and preserve uncertain-result drafts until refresh', async () => {
+test('failed reviews preserve uncertain-result drafts until refresh', async () => {
   class ApiFailure extends Error {
     constructor(status) { super(`Failure ${status}`); this.status = status; }
   }
@@ -283,12 +244,9 @@ test('expired and denied reviews clear authorization and preserve uncertain-resu
     const render = await handlers(aiPage, '  const fallbackAgents', aiExports, {
       AiCenterApiError: ApiFailure,
       getAiRuntime: async () => sample,
-      authenticateAiReviewer: async () => ({ openid: 'user', permissions: ['review'] }),
       submitAiReview: async () => { count += 1; throw new ApiFailure(status); },
     });
     await render().refreshRuntime();
-    render().setTokenInput('token');
-    await render().login();
     render().updateReviewReason('Keep this reason');
     await render().submitReview('confirmed');
     assert.equal(count, 1);
@@ -297,36 +255,23 @@ test('expired and denied reviews clear authorization and preserve uncertain-resu
     assert.ok(render().runtimeError);
     assert.match(render().reviewState, /未收到审核成功回执/);
     assert.doesNotMatch(render().reviewState, /未写入/);
-    if (status === 401) {
-      assert.equal(render().tokenRef.current, '');
-      assert.equal(render().reviewer, null);
-    }
-    if (status === 403) assert.equal(render().canReview, false);
     await render().submitReview('confirmed');
     assert.equal(count, 1, 'uncertain acknowledgment requires refresh before another submission');
   }
 });
 
-test('unmount cancels runtime and login requests and ignores their late responses', async () => {
+test('unmount cancels runtime requests and ignores their late responses', async () => {
   const runtime = deferred();
-  const auth = deferred();
   const signals = [];
   const render = await handlers(aiPage, '  const fallbackAgents', aiExports, {
     getAiRuntime: (signal) => { signals.push(signal); return runtime.promise; },
-    authenticateAiReviewer: (_token, signal) => { signals.push(signal); return auth.promise; },
   });
   render();
   render.effects();
-  render().setTokenInput('token');
-  const login = render().login();
   render.cleanup();
-  assert.equal(signals.length, 2);
+  assert.equal(signals.length, 1);
   assert.ok(signals.every((signal) => signal.aborted));
   runtime.resolve(sample);
-  auth.resolve({ openid: 'late', permissions: ['review'] });
-  await login;
   await new Promise(setImmediate);
   assert.equal(render().runtime, null);
-  assert.equal(render().reviewer, null);
-  assert.equal(render().tokenRef.current, '');
 });

@@ -34,7 +34,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CommandIntakeSheet } from '../components/CommandIntakeSheet';
-import { AiCenterApiError, authenticateAiReviewer, getAiRuntime, submitAiReview, type AiReviewUser, type AiRuntimeSnapshot } from '../lib/ai-center-api';
+import { AiCenterApiError, getAiRuntime, submitAiReview, type AiRuntimeSnapshot } from '../lib/ai-center-api';
 import { demoIntakeEvents } from '../lib/intake-demo-data';
 import { useAlarmIntake } from '../lib/use-alarm-intake';
 
@@ -1594,16 +1594,9 @@ export function AICenterPage({ apiOnline, navigate }: DomainPageProps) {
   const [reviewPending, setReviewPending] = useState(false);
   const [reviewReason, setReviewReason] = useState('');
   const [reviewDraftAuditId, setReviewDraftAuditId] = useState('');
-  const [tokenInput, setTokenInput] = useState('');
-  const [reviewer, setReviewer] = useState<AiReviewUser | null>(null);
-  const [authPending, setAuthPending] = useState(false);
-  const [authState, setAuthState] = useState('未登录业务账号。');
-  const tokenRef = useRef('');
   const runtimeController = useRef<AbortController | null>(null);
-  const loginController = useRef<AbortController | null>(null);
   const reviewController = useRef<AbortController | null>(null);
   const result = runtime?.sampleResult;
-  const canReview = Boolean(reviewer?.permissions.includes('review'));
   const updateReviewReason = (value: string) => {
     setReviewReason(value);
     setReviewDraftAuditId(result?.auditId ?? '');
@@ -1631,74 +1624,21 @@ export function AICenterPage({ apiOnline, navigate }: DomainPageProps) {
     }
   }, []);
 
-  const login = async () => {
-    if (!tokenInput.trim() || loginController.current || reviewController.current) return;
-    const token = tokenInput.trim();
-    const controller = new AbortController();
-    loginController.current = controller;
-    tokenRef.current = '';
-    setReviewer(null);
-    setTokenInput('');
-    setAuthPending(true);
-    setAuthState('正在核验业务账号与权限…');
-    try {
-      const user = await authenticateAiReviewer(token, controller.signal);
-      if (controller.signal.aborted || loginController.current !== controller) return;
-      tokenRef.current = token;
-      setReviewer(user);
-      setAuthState(user.permissions.includes('review') ? '业务账号已验证，可提交 AI 审核。' : '业务账号已验证，但没有 review 权限，当前仅可查看。');
-    } catch (error) {
-      if (controller.signal.aborted || loginController.current !== controller) return;
-      setAuthState(error instanceof AiCenterApiError ? error.message : '业务账号验证失败，请重试。');
-    } finally {
-      if (loginController.current === controller) {
-        loginController.current = null;
-        setAuthPending(false);
-      }
-    }
-  };
-
-  const logout = () => {
-    loginController.current?.abort();
-    loginController.current = null;
-    if (reviewController.current) {
-      reviewController.current.abort();
-      reviewController.current = null;
-      setRuntimeError('审核请求已取消，服务端结果待核对，请刷新运行态。');
-      setReviewState('未收到审核成功回执；取消请求不代表服务端撤销。');
-    }
-    tokenRef.current = '';
-    setTokenInput('');
-    setReviewer(null);
-    setAuthPending(false);
-    setReviewPending(false);
-    setAuthState('已退出本页业务登录，令牌已从本页内存清除。');
-  };
-
   const submitReview = async (decision: 'confirmed' | 'rejected') => {
-    if (!result || result.reviewStatus !== 'pending' || !canReview || !tokenRef.current
+    if (!result || result.reviewStatus !== 'pending'
       || !reviewReason.trim() || reviewDraftAuditId !== result.auditId || runtimeController.current || runtimeLoading || runtimeError
-      || loginController.current || reviewController.current) return;
+      || reviewController.current) return;
     const controller = new AbortController();
     reviewController.current = controller;
     setReviewPending(true);
     setReviewState('正在提交人工决定…');
     try {
-      const next = await submitAiReview(tokenRef.current, result.auditId, decision, reviewReason, controller.signal);
+      const next = await submitAiReview(result.auditId, decision, reviewReason, controller.signal);
       if (controller.signal.aborted || reviewController.current !== controller) return;
       setRuntime((current) => current?.sampleResult?.auditId === next.auditId ? { ...current, sampleResult: next } : current);
       setReviewState(decision === 'confirmed' ? '服务端已返回人工确认回执；未执行后续业务办理。' : '服务端已返回驳回回执；未执行后续业务办理。');
     } catch (error) {
       if (controller.signal.aborted || reviewController.current !== controller) return;
-      if (error instanceof AiCenterApiError && error.status === 401) {
-        tokenRef.current = '';
-        setReviewer(null);
-        setAuthState('业务登录已失效，请重新登录。');
-      }
-      if (error instanceof AiCenterApiError && error.status === 403) {
-        setReviewer((current) => current ? { ...current, permissions: [] } : null);
-        setAuthState('当前账号无审核权限，请联系管理员后重新验证。');
-      }
       setReviewState('未收到审核成功回执。' + (error instanceof AiCenterApiError ? error.message : '请刷新运行态核对结果。'));
       setRuntimeError('审核结果待核对，请刷新运行态后再操作；审核意见已保留。');
     } finally {
@@ -1713,12 +1653,9 @@ export function AICenterPage({ apiOnline, navigate }: DomainPageProps) {
     void refreshRuntime();
     return () => {
       runtimeController.current?.abort();
-      loginController.current?.abort();
       reviewController.current?.abort();
       runtimeController.current = null;
-      loginController.current = null;
       reviewController.current = null;
-      tokenRef.current = '';
     };
   }, [refreshRuntime]);
 
@@ -1749,7 +1686,7 @@ export function AICenterPage({ apiOnline, navigate }: DomainPageProps) {
   const agents = runtime?.agents ?? fallbackAgents;
   const skills = runtime?.skills ?? fallbackSkills;
   const connectors = runtime?.mcpConnectors ?? fallbackConnectors;
-  const reviewDisabled = !canReview || authPending || reviewPending || runtimeLoading || Boolean(runtimeError) || !result || result.reviewStatus !== 'pending' || !reviewReason.trim() || reviewDraftAuditId !== result.auditId;
+  const reviewDisabled = reviewPending || runtimeLoading || Boolean(runtimeError) || !result || result.reviewStatus !== 'pending' || !reviewReason.trim() || reviewDraftAuditId !== result.auditId;
 
   return (
     <section className="domain-page ai-center-page">
@@ -1768,17 +1705,6 @@ export function AICenterPage({ apiOnline, navigate }: DomainPageProps) {
         <section className="domain-panel"><PanelHeading kicker="SKILL POLICY" title="技能策略" icon={Target} /><div className="ai-runtime-list">{skills.map((skill) => <div key={skill.name}><span className={'ai-status-dot ' + (runtime && !runtimeError ? skill.status : 'pending')} /><div><strong>{skill.name}</strong><small>{skill.trigger}</small></div><b>{runtimeError ? '上次快照' : runtime ? `${skill.confidence}%` : '未同步'}</b></div>)}</div></section>
         <section className="domain-panel"><PanelHeading kicker="MCP CONNECTORS" title="工具与数据连接器" icon={Network} /><div className="ai-runtime-list">{connectors.map((connector) => <div key={connector.name}><span className={'ai-status-dot ' + (runtime && !runtimeError && connector.status === '在线' ? 'active' : 'pending')} /><div><strong>{connector.name}</strong><small>{connector.scope} · {connector.writeAllowed ? '可写入' : '只读白名单'}</small></div><b>{runtimeError ? '上次快照' : connector.lastSync}</b></div>)}</div></section>
       </div>
-      <section className="domain-panel ai-contract-panel">
-        <PanelHeading kicker="AI REVIEW ACCOUNT" title="业务账号登录" icon={ShieldCheck} />
-        <form className="domain-button-row" onSubmit={(event) => { event.preventDefault(); void login(); }} aria-busy={authPending}>
-          <label htmlFor="ai-business-token">业务访问令牌</label>
-          <input id="ai-business-token" type="password" value={tokenInput} onChange={(event) => setTokenInput(event.target.value)} autoComplete="off" spellCheck={false} disabled={authPending || reviewPending} style={{ minWidth: 0, maxWidth: '100%' }} />
-          <button type="submit" className="domain-primary-button" disabled={!tokenInput.trim() || authPending || reviewPending}>{authPending ? '正在验证' : '验证并登录'}</button>
-          <button type="button" className="domain-secondary-button" onClick={logout} disabled={!reviewer && !authPending && !tokenInput}>退出本页登录</button>
-        </form>
-        <p role="status">{authState}{reviewer ? ` 当前账号：${reviewer.displayName || reviewer.role || '业务用户'}` : ''}</p>
-        <ContractNote>仅接受已签发的业务 Bearer 令牌，不使用管理令牌。令牌仅保留在本页内存中，退出或离开页面后清除；权限以服务端验证为准。</ContractNote>
-      </section>
       <section className="domain-panel ai-contract-panel" aria-busy={reviewPending}>
         <PanelHeading kicker="AI RESULT RESPONSIBILITY" title="AI 结果样例审核" icon={ShieldCheck} />
         <p role="status">{reviewState}</p>
@@ -1789,7 +1715,7 @@ export function AICenterPage({ apiOnline, navigate }: DomainPageProps) {
           {result && reviewReason.trim() && reviewDraftAuditId !== result.auditId && <p role="status">审核结果已变更，原意见仍保留但未关联当前结果。<button type="button" className="domain-text-button" disabled={runtimeLoading || reviewPending} onClick={() => updateReviewReason(reviewReason)}>将意见用于当前结果</button></p>}
         </div>
         <div className="domain-button-row"><button type="button" className="domain-primary-button" onClick={() => void submitReview('confirmed')} disabled={reviewDisabled}><CheckCircle2 size={15} />{reviewPending ? '正在提交' : '人工确认'}</button><button type="button" className="domain-secondary-button" onClick={() => void submitReview('rejected')} disabled={reviewDisabled}><AlertTriangle size={15} />驳回并回退</button></div>
-        <ContractNote>账号须具备 review 权限；审核人由服务端令牌确定。确认或驳回均不直接改变派警、案件、审批或档案状态。</ContractNote>
+        <ContractNote>审核操作由服务端留痕。确认或驳回均不直接改变派警、案件、审批或档案状态。</ContractNote>
       </section>
     </section>
   );

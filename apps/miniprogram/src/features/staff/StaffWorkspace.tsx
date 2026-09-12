@@ -2,7 +2,7 @@ import { Button, Input, Text, Textarea, View } from '@tarojs/components'
 import Taro, { useDidHide, useDidShow } from '@tarojs/taro'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { BottomSheet, EmptyState, EventCard, Icon, PageHeader, Section } from '@/components/ui'
-import { connectRealtimeEvents, fetchSecurityOpsOverview, fetchStaffTasks, updateSafetyEventStatus, getAuthToken } from '@/utils/api'
+import { connectRealtimeEvents, fetchSecurityOpsOverview, fetchStaffTasks, updateSafetyEventStatus } from '@/utils/api'
 import type { SafetyEvent, SecurityOpsOverview } from '@/types/events'
 import { StaffTraining } from './StaffTraining'
 import { StaffCommandMaterials } from './StaffCommandMaterials'
@@ -40,7 +40,7 @@ function StaffWorkspaceContent({ staffName, onExit }: Props) {
   const [loadError, setLoadError] = useState('')
   const [busy, setBusy] = useState('')
   const [feedback, setFeedback] = useState<Record<string, Feedback>>({})
-  const draftKey = `command-staff-drafts:${getAuthToken()}`
+  const draftKey = `command-staff-drafts:staff:${encodeURIComponent(staffName)}`
   const [drafts, setDrafts] = useState<Record<string, string>>(() => {
     const saved = Taro.getStorageSync(draftKey)
     return saved && typeof saved === 'object' ? saved : {}
@@ -69,7 +69,7 @@ function StaffWorkspaceContent({ staffName, onExit }: Props) {
     loadingRef.current = true
     setLoading(true)
     try {
-      if (!staffName.trim()) throw new Error('未提供工作人员身份，请返回重新登录。')
+      if (!staffName.trim()) throw new Error('未选择工作人员，请返回重新选择。')
       const items = await fetchStaffTasks(staffName)
       if (!Array.isArray(items)) throw new Error('任务数据格式不完整，请重试。')
       if (!mounted.current || version !== loadVersion.current) return
@@ -81,12 +81,7 @@ function StaffWorkspaceContent({ staffName, onExit }: Props) {
       setLastSync(new Date().toLocaleTimeString())
     } catch (error) {
       if (mounted.current && version === loadVersion.current) {
-        const message = staffError(error)
-        const missingDevIdentity = process.env.NODE_ENV === 'development'
-          && process.env.TARO_APP_ENABLE_DEV_LOGIN === 'true' && message === `Unsupported staff: ${staffName}`
-        setLoadError(missingDevIdentity
-          ? `开发账号尚未登记到平台工作人员目录，请在管理端登记 ${staffName} 后刷新。任务和统计暂不可用。`
-          : message)
+        setLoadError(staffError(error))
       }
     } finally {
       if (version === loadVersion.current) {
@@ -96,7 +91,7 @@ function StaffWorkspaceContent({ staffName, onExit }: Props) {
     }
   }, [staffName])
 
-  useEffect(() => { if (getAuthToken()) Taro.setStorageSync(draftKey, drafts) }, [draftKey, drafts])
+  useEffect(() => { Taro.setStorageSync(draftKey, drafts) }, [draftKey, drafts])
 
   useEffect(() => {
     mounted.current = true

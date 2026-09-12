@@ -1,12 +1,11 @@
 import { useNavigate, useLocation, Outlet, NavLink } from "react-router-dom";
 import { useState, useEffect, useMemo } from "react";
-import { Search, Bell, Sun, Moon, Shield, LogOut, ChevronDown } from "lucide-react";
+import { Search, Bell, Sun, Moon, Shield, ChevronDown } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
-import { useAuth } from "../lib/auth";
 import { cn } from "../lib/utils";
 import type { Camera } from "../types";
 import Clock from "./Clock";
-import { appRoutes, defaultProtectedRoute, homeRoute, loginRoute, sidebarRoutes, workspaceLinks } from "../navigation/routes";
+import { defaultAppRoute, homeRoute, sidebarRoutes, workspaceLinks } from "../navigation/routes";
 import { createLayoutMonitorLinks, shouldOpenMonitorMenu } from "../services/layout-data";
 import { loadLayoutCameras } from "../services/layout-service";
 
@@ -14,10 +13,9 @@ export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { theme, toggle } = useTheme();
-  const { logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [cameras, setCameras] = useState<Camera[]>([]);
-  const [monitorOpen, setMonitorOpen] = useState(shouldOpenMonitorMenu(location.pathname, defaultProtectedRoute));
+  const [monitorOpen, setMonitorOpen] = useState(shouldOpenMonitorMenu(location.pathname, defaultAppRoute));
   const sidebarItems = sidebarRoutes;
   const annotationWorkspaceLink = workspaceLinks.find(link => link.label === "数据标注");
   const monitorLinks = useMemo(() => createLayoutMonitorLinks(cameras), [cameras]);
@@ -43,7 +41,7 @@ export default function Layout() {
   }, []);
 
   useEffect(() => {
-    if (shouldOpenMonitorMenu(location.pathname, defaultProtectedRoute)) setMonitorOpen(true);
+    if (shouldOpenMonitorMenu(location.pathname, defaultAppRoute)) setMonitorOpen(true);
   }, [location.pathname]);
 
   return (
@@ -82,15 +80,6 @@ export default function Layout() {
 
           <div className="h-5 w-px bg-outline-variant/50" />
 
-          <button onClick={() => navigate(homeRoute)} className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container-high transition-all cursor-pointer">
-            <div className="flex flex-col items-end leading-none">
-              <span className="text-[12px] font-semibold text-on-surface">管理员</span>
-              <span className="text-[10px] text-outline">系统管理员</span>
-            </div>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/80 to-blue-500/80 flex items-center justify-center text-white text-[13px] font-bold shadow-sm">
-              管
-            </div>
-          </button>
         </div>
       </header>
 
@@ -160,12 +149,6 @@ export default function Layout() {
               </button>
             )}
 
-            <button onClick={() => { logout(); navigate(loginRoute); }} aria-label="退出系统"
-              className="w-8 h-8 flex items-center justify-center rounded text-on-surface-variant hover:text-danger-red hover:bg-surface-container-high transition-all"
-              title="退出系统"
-            >
-              <LogOut size={15} />
-            </button>
           </div>
         </aside>
 

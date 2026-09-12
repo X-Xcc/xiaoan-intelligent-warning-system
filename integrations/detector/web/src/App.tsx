@@ -5,13 +5,11 @@
 
 import { lazy, Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import type { ReactNode } from "react";
 import Layout from "./components/Layout";
 import AppErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { ToastProvider } from "./components/Toast";
-import { AuthProvider, useAuth } from "./lib/auth";
-import { defaultProtectedRoute, homeRoute, loginRoute, protectedAppRoutes } from "./navigation/routes";
+import { defaultAppRoute, homeRoute, appRoutes } from "./navigation/routes";
 
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Monitor = lazy(() => import("./pages/Monitor"));
@@ -22,11 +20,10 @@ const Analysis = lazy(() => import("./pages/Analysis"));
 const Maintenance = lazy(() => import("./pages/Maintenance"));
 const Audit = lazy(() => import("./pages/Audit"));
 const Home = lazy(() => import("./pages/Home"));
-const Login = lazy(() => import("./pages/Login"));
 const ModelTraining = lazy(() => import("./pages/ModelTraining"));
 const Training = lazy(() => import("./pages/Training"));
 
-const protectedRouteComponents = {
+const routeComponents = {
   Dashboard,
   Monitor,
   Alerts,
@@ -47,25 +44,15 @@ function PageLoading() {
   );
 }
 
-function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { authenticated } = useAuth();
-  if (!authenticated) return <Navigate to={loginRoute} replace />;
-  return <>{children}</>;
-}
-
 function AppRoutes() {
-  const { authenticated, login } = useAuth();
-
   return (
     <Suspense fallback={<PageLoading />}>
       <Routes>
         <Route path={homeRoute} element={<Home />} />
-        <Route path={loginRoute} element={
-          authenticated ? <Navigate to={defaultProtectedRoute} replace /> : <Login onLogin={login} />
-        } />
-        <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-          {protectedAppRoutes.map(route => {
-            const Component = route.componentKey ? protectedRouteComponents[route.componentKey] : null;
+        <Route path="/login" element={<Navigate to={defaultAppRoute} replace />} />
+        <Route element={<Layout />}>
+          {appRoutes.map(route => {
+            const Component = route.componentKey ? routeComponents[route.componentKey] : null;
             if (!Component) return null;
 
             return (
@@ -88,11 +75,9 @@ export default function App() {
     <AppErrorBoundary>
       <ThemeProvider>
         <ToastProvider>
-          <AuthProvider>
-            <Router>
-              <AppRoutes />
-            </Router>
-          </AuthProvider>
+          <Router>
+            <AppRoutes />
+          </Router>
         </ToastProvider>
       </ThemeProvider>
     </AppErrorBoundary>

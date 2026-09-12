@@ -55,6 +55,24 @@ Run a single API worker per bridge data directory.
    Success requires a decoded frame. A test-only connection is stopped afterward.
 6. Start bridging for continued preview, then persist a video-wall slot assignment.
 
+The device editor also provides **Connect and Add** (`连接并接入`): choose a
+video-wall slot and submit the device settings. It saves the encrypted profile,
+starts the source, requires decoded-frame evidence, fetches a real JPEG, and
+then saves and verifies the slot assignment. Occupied slots cannot be replaced
+by this action. An existing device can use its current slot.
+
+A failed attempt leaves the saved device available for editing and retry without
+creating another profile. Newly started decoders are stopped on pre-binding
+failure; already active devices are left running. An uncertain binding response
+leaves the decoder running until the operator verifies the inventory.
+The editor retains the separate save-only command and optional auto-start flag.
+Auto-start also requires the deployment-wide `CICSIC_BRIDGE_AUTOSTART` setting;
+the UI does not override a disabled deployment-wide setting.
+
+Binding updates use the existing re-read/compare/write/verify flow. This is
+optimistic conflict detection, not a server-side compare-and-swap transaction;
+do not edit bindings concurrently from multiple management sessions.
+
 ## YOLO-Compatible Access Methods
 
 The adapters preserve the access methods present in `detection/monitor.py`,
@@ -71,7 +89,8 @@ YOLO project:
   input and native decoder pixel allocation are bounded.
 - USB uses the explicitly selected local index. On Windows it requests
   DirectShow, MJPG, 1280x720 and 30 fps, matching the original capture setup.
-  Bridge output remains capped at 8 fps. Saving/importing never opens hardware.
+  Live video follows the decoded source cadence; compatibility JPEG output is
+  limited separately. Saving/importing never opens hardware.
 - Go2 keeps the existing local WebRTC adapter. The original optional go2rtc
   service is not installed or started by this migration. A separately managed
   RTSP relay can still be entered as a generic RTSP source.
@@ -135,17 +154,26 @@ device network. This release does not configure VPNs or expose camera ports.
 - The browser retains its administrator token only in memory. Preview uses an
   HttpOnly, SameSite cookie; mutation endpoints still require the admin header.
   Reauthenticate after reloading the page or when preview authorization expires.
-  Session renewal revokes the replaced cookie. Active MJPEG streams recheck
-  authorization every 0.5 seconds while transmitting frames.
+  Session renewal revokes the replaced cookie. Active MJPEG streams and WebRTC
+  sessions recheck authorization every 0.5 seconds.
 - Use HTTPS and authenticated reverse proxy access for non-loopback deployment.
   Disable proxy buffering for MJPEG and configure a suitable stream read timeout.
 - Start, stop and reconnect manage isolated decoder processes. Auto-start is off
   unless explicitly enabled per device. Disconnecting or stale frames clear
   online status and no generated image is substituted.
-- At most 16 devices can be configured. Decoder output is capped at 8 fps and
-  1280x720. Wall thumbnails use JPEG snapshots, at most three requests at once,
-  with a 500 ms interval after completion; focus/detail uses MJPEG. Wall refresh
-  is not the decoder frame rate, and the limit is not a 16-camera capacity claim.
+- At most 16 devices can be configured. WebRTC-capable bridges publish decoded
+  frames directly to a bounded latest-frame relay and encode H264 for browser
+  video playback. This is not compressed RTSP passthrough. Wall and focus views
+  share one browser connection per source. JPEG snapshots remain available for
+  compatibility and connection checks, but do not pace WebRTC video.
+- Each worker accepts at most four viewer connections. Worker leases expire
+  after six seconds without API renewal; browser leases expire after ten seconds.
+  Signaling is authenticated and private worker endpoints listen on loopback.
+  ICE uses directly reachable network candidates, without a configured TURN
+  relay; remote viewing needs a suitable protected network route.
+- Source frame rate and host encoding capacity still bound playback. An HTTP
+  snapshot source polled once per second does not become high-frame-rate video
+  merely by using WebRTC. Sixteen slots are not a 16-camera capacity claim.
 - There are no ONVIF discovery, PTZ, recording or robot motion controls in this
   increment. These capabilities are not implied by a successful RTSP connection.
 
@@ -155,6 +183,13 @@ Automated tests exercise configuration, encryption, access control, failure
 handling and actual decoding of controlled test media. Such media is synthetic
 test input, not a live camera acceptance result. Physical Go2 and every camera/NVR
 model must pass sustained video and reconnect checks before deployment acceptance.
+
+On September 11, 2026, the local Go2 hotspot and wired Hikvision streams were
+verified together at 1280x720. A 25-second receiving test measured 14.29 fps and
+24.22 fps respectively, with maximum inter-frame gaps of 79 ms and 94 ms.
+Browser observations were approximately 14.5/25 fps with zero reported dropped
+frames. Jitter-buffer delay is not end-to-end camera latency. These observations
+cover these two sources, not every supported model or full-wall capacity.
 
 ```powershell
 npm run dashboard:build

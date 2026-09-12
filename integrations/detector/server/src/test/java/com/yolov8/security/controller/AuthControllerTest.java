@@ -11,7 +11,17 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+    "spring.datasource.url=jdbc:h2:mem:anonymous-access;DB_CLOSE_DELAY=-1;MODE=MySQL",
+    "app.file.upload-dir=./target/anonymous-access/data",
+    "app.file.result-dir=./target/anonymous-access/results",
+    "app.camera-config-path=./target/anonymous-access/cameras.json",
+    "app.python.auto-start=false",
+    "app.go2rtc.auto-start=false",
+    "app.go2rtc.sync-enabled=false",
+    "app.camera.snapshot.enabled=false",
+    "app.cleanup.retention-days=0"
+})
 @AutoConfigureMockMvc
 class AuthControllerTest {
 
@@ -19,25 +29,27 @@ class AuthControllerTest {
     private MockMvc mockMvc;
 
     @Test
-    void login_with_missing_fields_returns_400() throws Exception {
+    void legacy_login_accepts_anonymous_access() throws Exception {
         mockMvc.perform(post("/api/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{}"))
-            .andExpect(status().isBadRequest());
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.token").doesNotExist());
     }
 
     @Test
-    void login_with_invalid_credentials_returns_401() throws Exception {
+    void legacy_credentials_are_ignored() throws Exception {
         mockMvc.perform(post("/api/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"username\":\"wrong\",\"password\":\"wrong\"}"))
-            .andExpect(status().isUnauthorized());
+            .andExpect(status().isOk());
     }
 
     @Test
-    void me_without_token_returns_401() throws Exception {
+    void me_without_token_returns_anonymous_identity() throws Exception {
         mockMvc.perform(get("/api/me"))
-            .andExpect(status().isUnauthorized());
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.username").value("anonymous"));
     }
 
     @Test

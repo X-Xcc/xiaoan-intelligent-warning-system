@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
-  ArrowRight, ArrowUpRight, BrainCircuit, CheckCircle2, Clock3, Database, FileCheck2,
-  GraduationCap, MapPinned, Radio, Search, ShieldCheck, UsersRound, Video, X,
+  ArrowRight, ArrowUpRight, CheckCircle2, Clock3, FileCheck2,
+  GraduationCap, Radio, Search, ShieldCheck, UsersRound, Video, X,
 } from 'lucide-react';
 import { Drawer, Empty } from 'antd';
 import type { PlatformOverview, PlatformView } from './DashboardApp';
@@ -23,7 +23,6 @@ function eventKey(event: Event) {
 const businessEntries: Array<{ view: PlatformView; title: string; detail: string; icon: typeof Radio; tone: string }> = [
   { view: 'command', title: '接处警', detail: '接报与协同处置', icon: Radio, tone: 'blue' },
   { view: 'case', title: '执法办案', detail: '案件与证据核验', icon: FileCheck2, tone: 'purple' },
-  { view: 'community', title: '社区警务', detail: '走访与隐患闭环', icon: MapPinned, tone: 'green' },
   { view: 'duty-situation', title: '勤务态势', detail: '态势与靶向训练', icon: GraduationCap, tone: 'amber' },
 ];
 const filters: Array<{ key: EventFilter; label: string }> = [
@@ -94,9 +93,6 @@ export function PublicSecurityPlatformPage({ overview, apiOnline, navigate }: Pr
       <aside className="overview-side">
         <section className="overview-services" aria-labelledby="services-heading">
           <div className="ui-section-heading"><h2 id="services-heading">平台运行</h2><span className={`ui-tag ${apiOnline ? 'success' : 'warning'}`}>{apiOnline ? '已连接' : '未连接'}</span></div>
-          <button className="overview-service" type="button" onClick={() => navigate('ai-center')}><span className="ui-tone-icon blue"><BrainCircuit size={19} /></span><span><strong>AI 能力中心</strong><small>{agents.length} 个智能体 · {connectors.length} 个连接器</small></span><ArrowUpRight size={15} /></button>
-          <button className="overview-service" type="button" onClick={() => navigate('admin')}><span className="ui-tone-icon green"><Database size={19} /></span><span><strong>数据资源</strong><small>{formatMetric(overview.dataCatalog?.domainCount)} 个数据域 · {formatMetric(overview.dataCatalog?.objectCount)} 个对象</small></span><ArrowUpRight size={15} /></button>
-          <button className="overview-service" type="button" onClick={() => navigate('admin')}><span className="ui-tone-icon purple"><ShieldCheck size={19} /></span><span><strong>治理与审计</strong><small>访问权限 · 操作记录</small></span><ArrowUpRight size={15} /></button>
           <div className="overview-safety-note"><ShieldCheck size={15} /><span>高风险建议待人工确认</span></div>
         </section>
         <button type="button" className="overview-monitor-link" onClick={() => navigate('video')} aria-label="打开视频联动">

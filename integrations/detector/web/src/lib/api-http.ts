@@ -1,7 +1,5 @@
-import { clearToken } from './auth-token';
-import { clearRequestState, cachedFetch, invalidateCache } from './api-cache';
+import { cachedFetch, invalidateCache } from './api-cache';
 import { getWorkspaceApiUrl } from './api-config';
-import { getToken } from './auth-token';
 
 function createJsonHeaders(headers?: HeadersInit): Record<string, string> {
   if (headers instanceof Headers) {
@@ -16,17 +14,12 @@ function createJsonHeaders(headers?: HeadersInit): Record<string, string> {
 }
 
 export async function apiFetch(path: string, options: RequestInit = {}): Promise<Response> {
-  const token = getToken();
   const headers: Record<string, string> = {
     ...createJsonHeaders(options.headers),
   };
 
   if (!(options.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json';
-  }
-
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
   }
 
   return fetch(getWorkspaceApiUrl(path), {
@@ -45,12 +38,6 @@ function unwrapResponse<T>(json: unknown): T {
 
 function handleResponseError(response: Response, body: unknown): never {
   const err = (body ?? {}) as { error?: string; message?: string };
-  if (response.status === 401) {
-    clearToken();
-    clearRequestState();
-    window.dispatchEvent(new Event('rtk:token-invalid'));
-  }
-
   throw new Error(err.error || err.message || '请求失败');
 }
 
@@ -92,13 +79,11 @@ export async function apiDelete<T>(path: string, signal?: AbortSignal): Promise<
 }
 
 export async function apiUpload<T>(path: string, file: File, onProgress?: (pct: number) => void): Promise<T> {
-  const token = getToken();
   invalidateCache(path);
 
   return new Promise<T>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', getWorkspaceApiUrl(path));
-    if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
 
     xhr.upload.onprogress = event => {
       if (event.lengthComputable && onProgress) {

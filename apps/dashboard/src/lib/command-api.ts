@@ -58,7 +58,7 @@ export async function protectedMaterial(url: string, token: string) {
     throw new Error('材料地址不属于受控上传目录');
   }
   const response = await fetch(`${commandApiBase}${url.slice(4)}`, {
-    headers: { Authorization: `Bearer ${token}` }, cache: 'no-store', signal: AbortSignal.timeout(15000),
+    headers: token ? { Authorization: `Bearer ${token}` } : {}, cache: 'no-store', signal: AbortSignal.timeout(15000),
   });
   if (!response.ok) throw new Error('材料不可访问，请重新核对账号和文件');
   return URL.createObjectURL(await response.blob());

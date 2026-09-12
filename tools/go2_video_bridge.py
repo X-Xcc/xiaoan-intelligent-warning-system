@@ -128,7 +128,7 @@ def windows_platform_import_guard(platform_module: Any = platform, is_windows: b
 
 
 class Go2FrameProvider:
-    """Adapts go2-webrtc-connect's async video track to JPEG callbacks."""
+    """Adapts unitree-webrtc-connect's async video track to JPEG callbacks."""
 
     def __init__(self, state: BridgeState) -> None:
         self.state = state
@@ -154,8 +154,7 @@ class Go2FrameProvider:
             return
         try:
             with windows_platform_import_guard():
-                from go2_webrtc_driver.constants import WebRTCConnectionMethod
-                from go2_webrtc_driver.webrtc_driver import Go2WebRTCConnection
+                from unitree_webrtc_connect import UnitreeWebRTCConnection, WebRTCConnectionMethod
 
             method_name = os.getenv("GO2_CONNECT_MODE", "LocalSTA").strip().lower()
             if method_name == "localap":
@@ -166,7 +165,7 @@ class Go2FrameProvider:
                 raise ValueError("Only LocalSTA and LocalAP are supported")
 
             kwargs: dict[str, Any] = {"serialNumber": self.serial, "ip": self.ip or None}
-            connection = Go2WebRTCConnection(method, **kwargs)
+            connection = UnitreeWebRTCConnection(method, **kwargs)
             self._connection = connection
             await connection.connect()
             connection.video.add_track_callback(self._consume_track)

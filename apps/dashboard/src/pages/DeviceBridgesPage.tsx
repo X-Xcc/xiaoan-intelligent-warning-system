@@ -1,22 +1,26 @@
 import { Alert, App, Button, Empty, Form, Input, InputNumber, Modal, Segmented, Select, Space, Switch, Table, Tag, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { Activity, Cable, Edit3, FlaskConical, Link2, LockKeyhole, Plus, Power, RefreshCw, RotateCw, Save, Search, Square, Trash2, Unlink, Video } from 'lucide-react';
-import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
-import { BridgeLogin, BridgePreview } from '../components/BridgePreview';
+import { Activity, Cable, Edit3, FlaskConical, Link2, Plus, Power, RefreshCw, RotateCw, Save, Search, Square, Trash2, Unlink, Video } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { BridgePreview } from '../components/BridgePreview';
 import {
   bridgeDeviceAddress, bridgeEditorPath, bridgeErrorMessage, bridgeKindLabels, bridgeModeFields, bridgeStageLabel, bridgeStatusLabels, controlBridge, deleteBridge, frameTime,
-  getBridgeInventory, hasFreshFrame, isHttpBridge, isRtspBridge, redactBridgeMessage, rtspTemplate, saveBridge, saveBridgeBindings,
+  connectBridgeToSlot, getBridgeInventory, hasFreshFrame, isHttpBridge, isRtspBridge, redactBridgeMessage, rtspTemplate, saveBridge, saveBridgeBindings,
   testBridge, useBridgeInventory, validateDeviceInput,
-  type BridgeDevice, type BridgeKind, type BridgeStatus, type BridgeTestResult, type DeviceInput,
+  type BridgeConnectStage, type BridgeDevice, type BridgeKind, type BridgeStatus, type BridgeTestResult, type DeviceInput,
 } from '../lib/device-bridges-api';
 import { routePath } from '../lib/presentation';
 import '../styles/device-bridges.css';
 
 const kindOptions = Object.entries(bridgeKindLabels).map(([value, label]) => ({ value, label }));
 const statusOptions = Object.entries(bridgeStatusLabels).map(([value, label]) => ({ value, label }));
-const initialDevice: DeviceInput = { name: '', kind: 'rtsp', host: '', port: 554, username: '', rtspPath: '', channel: 1, stream: 'main', go2Mode: 'LocalSTA', usbIndex: 0, httpScheme: 'http', httpPath: '', autoStart: false };
+const initialDevice: DeviceInput = { name: '', kind: 'rtsp', host: '', port: 554, username: '', rtspPath: '', channel: 1, stream: 'main', go2Mode: 'LocalSTA', httpScheme: 'http', httpPath: '', autoStart: false };
 const operationLabels = { start: '启动', stop: '停止', restart: '重启', test: '测试连接', delete: '删除' } as const;
 type Operation = keyof typeof operationLabels;
+const connectionLabels: Record<BridgeConnectStage | 'save', string> = {
+  save: '正在保存设备', validate: '正在核对视频槽位', start: '正在连接摄像头',
+  decode: '正在等待真实视频帧', preview: '正在验证预览画面', bind: '正在绑定视频槽位',
+};
 
 function timestamp(value: string | number | null | undefined): string {
   const time = frameTime(value ?? null);
@@ -31,8 +35,18 @@ function DeviceStatus({ device, available, now }: { device: BridgeDevice; availa
   return <Tag color={color}>{!available ? '状态未确认' : device.status === 'online' && !fresh ? '画面过期' : bridgeStatusLabels[device.status]}</Tag>;
 }
 
-function DeviceEditor({ device, busy, close, save }: { device?: BridgeDevice; busy: boolean; close: () => void; save: (input: DeviceInput) => Promise<void> }) {
+function DeviceEditor({ device, busy, bindings, devices, progress, close, save }: {
+  device?: BridgeDevice; busy: boolean; bindings: Array<string | null>; devices: BridgeDevice[];
+  progress: string; close: () => void; save: (input: DeviceInput, slot?: number) => Promise<void>;
+}) {
   const [form] = Form.useForm<DeviceInput>();
+  const intent = useRef<'save' | 'connect'>('connect');
+  const [slot, setSlot] = useState<number | undefined>(() => {
+    const assigned = device ? bindings.indexOf(device.id) : -1;
+    const available = assigned >= 0 ? assigned : bindings.indexOf(null);
+    return available >= 0 ? available + 1 : undefined;
+  });
+  const [slotError, setSlotError] = useState('');
   const initialPath = bridgeEditorPath(device);
   const [customPath, setCustomPath] = useState(initialPath.customPath);
   const [error, setError] = useState('');
@@ -41,7 +55,7 @@ function DeviceEditor({ device, busy, close, save }: { device?: BridgeDevice; bu
   const values: DeviceInput = device ? {
     name: device.name, kind: device.kind, host: device.host, port: device.port, username: device.username,
     rtspPath: initialPath.rtspPath, channel: device.channel, stream: device.stream, go2Mode: device.go2Mode,
-    usbIndex: device.usbIndex ?? 0, httpScheme: device.httpScheme ?? 'http', httpPath: device.httpPath ?? '',
+    httpScheme: device.httpScheme ?? 'http', httpPath: device.httpPath ?? '',
     autoStart: device.autoStart,
   } : initialDevice;
 
@@ -52,9 +66,14 @@ function DeviceEditor({ device, busy, close, save }: { device?: BridgeDevice; bu
       form.setFields(Object.entries(errors).map(([name, value]) => ({ name: name as keyof DeviceInput, errors: [value] })));
       return;
     }
+    if (intent.current === 'connect' && (!slot || (bindings[slot - 1] && bindings[slot - 1] !== device?.id))) {
+      setSlotError('请选择空闲槽位或当前设备的槽位');
+      return;
+    }
+    setSlotError('');
     setError('');
     form.setFieldValue('password', '');
-    try { await save(input); } catch (failure) { setError(bridgeErrorMessage(failure)); }
+    try { await save(input, intent.current === 'connect' ? slot : undefined); } catch (failure) { setError(bridgeErrorMessage(failure)); }
   };
   const applyTemplate = () => {
     const current = form.getFieldsValue(true);
@@ -66,8 +85,13 @@ function DeviceEditor({ device, busy, close, save }: { device?: BridgeDevice; bu
   };
 
   return <Modal open title={device ? '编辑设备' : '添加设备'} onCancel={busy ? undefined : closeEditor} closable={!busy} maskClosable={false} destroyOnHidden
-    width={660} className="bridge-editor" footer={<Space><Button disabled={busy} onClick={closeEditor}>取消</Button><Button type="primary" loading={busy} icon={<Save size={15} />} onClick={() => form.submit()}>保存设备</Button></Space>}>
+    width={660} className="bridge-editor" footer={<Space wrap>
+      <Button disabled={busy} onClick={closeEditor}>取消</Button>
+      <Button disabled={busy} icon={<Save size={15} />} onClick={() => { intent.current = 'save'; form.submit(); }}>仅保存配置</Button>
+      <Button type="primary" loading={busy} icon={<Link2 size={15} />} onClick={() => { intent.current = 'connect'; form.submit(); }}>连接并接入</Button>
+    </Space>}>
     {error && <Alert type="error" showIcon title={error} />}
+    {busy && progress && <div role="status" aria-live="polite"><Alert type="info" showIcon title={progress} /></div>}
     <Form form={form} layout="vertical" initialValues={values} disabled={busy} onFinish={submit}
       onValuesChange={(changed: Partial<DeviceInput>, all: DeviceInput) => {
         const next = bridgeModeFields(all, changed);
@@ -81,10 +105,9 @@ function DeviceEditor({ device, busy, close, save }: { device?: BridgeDevice; bu
       <div className="bridge-form-grid">
         <Form.Item name="name" label="设备名称" rules={[{ required: true, whitespace: true, max: 80, message: '请输入 1 至 80 字的设备名称' }]}><Input maxLength={80} autoComplete="off" /></Form.Item>
         <Form.Item name="kind" label="设备类型" rules={[{ required: true }]}><Select options={kindOptions} /></Form.Item>
-        {kind === 'usb' && <Form.Item name="usbIndex" label="USB 设备序号" rules={[{ required: true, type: 'integer', min: 0, max: 15, message: 'USB 设备序号范围为 0 至 15' }]}><InputNumber min={0} max={15} precision={0} /></Form.Item>}
-        {kind !== 'usb' && <Form.Item name="host" label="IP / 主机名" rules={[{ required: true, whitespace: true, message: '请输入 IP 或主机名' }]}><Input autoComplete="off" placeholder="192.0.2.10" readOnly={kind === 'go2' && go2Mode === 'LocalAP'} /></Form.Item>}
+        <Form.Item name="host" label="IP / 主机名" rules={[{ required: true, whitespace: true, message: '请输入 IP 或主机名' }]}><Input autoComplete="off" placeholder="192.0.2.10" readOnly={kind === 'go2' && go2Mode === 'LocalAP'} /></Form.Item>
         {isHttpBridge(kind) && <Form.Item name="httpScheme" label="HTTP 协议" rules={[{ required: true, message: '请选择 HTTP 或 HTTPS' }]}><Segmented options={[{ value: 'http', label: 'HTTP' }, { value: 'https', label: 'HTTPS' }]} /></Form.Item>}
-        {kind !== 'usb' && kind !== 'go2' && <>
+        {kind !== 'go2' && <>
           <Form.Item name="port" label={isHttpBridge(kind) ? 'HTTP 端口' : 'RTSP 端口'} rules={[{ required: true, type: 'integer', min: 1, max: 65535, message: '端口范围为 1 至 65535' }]}><InputNumber min={1} max={65535} precision={0} /></Form.Item>
           <Form.Item name="username" label="设备用户名"><Input autoComplete="off" maxLength={128} /></Form.Item>
           <Form.Item name="password" label="设备密码" preserve={false}><Input.Password autoComplete="new-password" placeholder={kind === device?.kind && device?.hasPassword ? '已配置，留空保留原密码' : '未配置密码'} /></Form.Item>
@@ -105,6 +128,15 @@ function DeviceEditor({ device, busy, close, save }: { device?: BridgeDevice; bu
             <Form.Item name="rtspPath" label="RTSP 路径" rules={[{ required: true, message: '请输入 RTSP 路径' }]}><Input readOnly={kind !== 'rtsp' && !customPath} placeholder="/live" autoComplete="off" /></Form.Item>
           </div>
         </>}
+        <Form.Item label="视频墙槽位" validateStatus={slotError ? 'error' : undefined} help={slotError || undefined}>
+          <Select aria-label="接入视频槽位" placeholder="选择视频槽位" value={slot}
+            onChange={(value: number) => { setSlot(value); setSlotError(''); }}
+            options={bindings.map((id, index) => ({
+              value: index + 1,
+              label: `槽位 ${String(index + 1).padStart(2, '0')} · ${id ? devices.find((item) => item.id === id)?.name ?? '已占用' : '空闲'}`,
+              disabled: Boolean(id && id !== device?.id),
+            }))} />
+        </Form.Item>
         <Form.Item name="autoStart" label="服务启动时自动连接" valuePropName="checked"><Switch /></Form.Item>
       </div>
       {kind === 'go2' && <Tag>Go2 摄像头视频接入</Tag>}
@@ -120,6 +152,7 @@ export function DeviceBridgesPage() {
   const [status, setStatus] = useState<BridgeStatus | 'all'>('all');
   const [selectedId, setSelectedId] = useState(() => new URLSearchParams(window.location.search).get('device') ?? '');
   const [editor, setEditor] = useState<{ device?: BridgeDevice } | null>(null);
+  const [connectionProgress, setConnectionProgress] = useState('');
   const [testResult, setTestResult] = useState<{ id: string; result: BridgeTestResult } | null>(null);
   const [bindingDraft, setBindingDraft] = useState<Array<string | null> | null>(null);
   const [bindingBase, setBindingBase] = useState<Array<string | null> | null>(null);
@@ -183,14 +216,36 @@ export function DeviceBridgesPage() {
       },
     });
   };
-  const saveDevice = async (input: DeviceInput) => {
-    await bridge.mutate(async (signal) => {
-      const payload = await saveBridge(input, editor?.device?.id, signal, editor?.device?.kind);
-      if (!payload.device?.id) throw new Error('服务端未确认设备保存结果');
-      selectDevice(payload.device.id);
-      setEditor(null);
-      message.success('设备配置已保存');
-    });
+  const saveDevice = async (input: DeviceInput, slot?: number) => {
+    if (slot !== undefined && dirty) throw new Error('视频槽位有未保存的更改，请先保存或撤销更改');
+    let saved = false;
+    setConnectionProgress(connectionLabels.save);
+    try {
+      await bridge.mutate(async (signal) => {
+        const payload = await saveBridge(input, editor?.device?.id, signal, editor?.device?.kind);
+        if (!payload.device?.id) throw new Error('服务端未确认设备保存结果，请刷新清单核对后再操作');
+        saved = true;
+        selectDevice(payload.device.id);
+        // Keep the saved ID when connection fails, so retry updates instead of creating again.
+        setEditor({ device: payload.device });
+        if (slot !== undefined) {
+          const result = await connectBridgeToSlot(payload.device.id, slot, signal,
+            (stage) => setConnectionProgress(connectionLabels[stage]));
+          setTestResult({ id: payload.device.id, result });
+          setBindingDraft(null);
+          setBindingBase(null);
+          message.success(`已收到实时画面，已接入槽位 ${String(slot).padStart(2, '0')}`);
+        } else {
+          message.success('设备配置已保存');
+        }
+        setEditor(null);
+      });
+    } catch (failure) {
+      if (saved && slot !== undefined) throw new Error(`配置已保存，接入未完成：${bridgeErrorMessage(failure)}`);
+      throw failure;
+    } finally {
+      setConnectionProgress('');
+    }
   };
   const changeBinding = (index: number, id: string | null) => {
     if (!bindingBase) setBindingBase([...bindings]);
@@ -230,13 +285,15 @@ export function DeviceBridgesPage() {
       <div><h1><Cable size={23} />设备桥接</h1><span className="bridge-muted">最近同步 {bridge.updatedAt ? timestamp(bridge.updatedAt) : '尚未连接'}</span></div>
       <Space wrap>
         <Button icon={<Video size={15} />} onClick={() => { window.history.pushState({}, '', routePath('video')); window.dispatchEvent(new PopStateEvent('popstate')); }}>视频联动</Button>
-        {bridge.auth?.enabled && !bridge.authRequired && <Tooltip title="锁定管理与预览访问"><Button aria-label="锁定访问" disabled={bridge.busy} icon={<LockKeyhole size={15} />} onClick={() => void bridge.lock().catch((error) => message.error(`本地已锁定；${bridgeErrorMessage(error)}`))} /></Tooltip>}
         <Tooltip title="刷新设备状态"><Button aria-label="刷新设备状态" icon={<RefreshCw size={16} />} loading={bridge.refreshing} disabled={bridge.busy} onClick={bridge.refresh} /></Tooltip>
         <Button type="primary" icon={<Plus size={16} />} disabled={disabled} onClick={() => setEditor({})}>添加设备</Button>
       </Space>
     </header>
-    {bridge.authRequired ? <BridgeLogin login={bridge.login} busy={bridge.busy} tokenConfigured={bridge.auth?.tokenConfigured} /> : <>
+    {<>
       {(bridge.error || (bridge.updatedAt > 0 && !bridge.available)) && <Alert type="warning" showIcon title={bridge.error || '状态已过期，等待重新同步'} description={bridge.inventory ? '当前清单为上次读取结果，视频预览已暂停。' : undefined} />}
+      {bridge.readiness && !bridge.readiness.ready && <Alert type="error" showIcon
+        title={`现场演示已阻断：${bridge.readiness.reasons.map((reason) => reason.message).join('；')}`}
+        description="只有绑定设备持续收到真实新鲜帧时，视频墙才会进入实时状态。" />}
       <div className="bridge-runtime" aria-label="桥接运行环境">
         <span><Activity size={15} />{bridge.available ? '管理服务已连接' : '管理服务未确认'}</span>
         <span>运行 <b>{bridge.available ? `${bridge.inventory?.runtime.running} / ${bridge.inventory?.runtime.maxDevices}` : '未读取'}</b></span>
@@ -260,6 +317,7 @@ export function DeviceBridgesPage() {
           {selected ? <>
             <div className="bridge-device-actions">
               <Tooltip title="编辑设备"><Button aria-label="编辑设备" disabled={disabled} icon={<Edit3 size={15} />} onClick={() => setEditor({ device: selected })} /></Tooltip>
+              <Button type="primary" disabled={disabled} icon={<Link2 size={15} />} onClick={() => setEditor({ device: selected })}>连接并接入</Button>
               <Button disabled={disabled || ['online', 'connecting', 'reconnecting'].includes(selected.status)} icon={<Power size={15} />} onClick={() => confirmOperation(selected, 'start')}>启动</Button>
               <Button disabled={disabled || selected.status === 'stopped'} icon={<Square size={14} />} onClick={() => confirmOperation(selected, 'stop')}>停止</Button>
               <Tooltip title="重启设备桥接"><Button aria-label="重启设备桥接" disabled={disabled} icon={<RotateCw size={15} />} onClick={() => confirmOperation(selected, 'restart')} /></Tooltip>
@@ -273,7 +331,7 @@ export function DeviceBridgesPage() {
               <div><dt>接收帧数</dt><dd>{number(selected.frameCount)}</dd></div>
               <div><dt>最近帧</dt><dd>{timestamp(selected.lastFrameAt)}</dd></div>
               <div><dt>连接阶段</dt><dd>{bridgeStageLabel(selected.stage)}</dd></div>
-              <div><dt>{selected.kind === 'go2' ? '连接模式' : selected.kind === 'usb' ? 'USB 设备序号' : '设备凭据'}</dt><dd>{selected.kind === 'go2' ? selected.go2Mode : selected.kind === 'usb' ? `#${selected.usbIndex ?? 0}` : selected.hasPassword ? '已配置' : '未配置密码'}</dd></div>
+              <div><dt>{selected.kind === 'go2' ? '连接模式' : '设备凭据'}</dt><dd>{selected.kind === 'go2' ? selected.go2Mode : selected.hasPassword ? '已配置' : '未配置密码'}</dd></div>
               <div><dt>接入方式</dt><dd>{bridgeKindLabels[selected.kind]}</dd></div>
               <div><dt>设备地址</dt><dd>{bridgeDeviceAddress(selected)}</dd></div>
               {isHttpBridge(selected.kind) && <div><dt>HTTP 路径</dt><dd>{selected.httpPath || '未配置'}</dd></div>}
@@ -306,6 +364,7 @@ export function DeviceBridgesPage() {
         </div>)}</div>
       </section>
     </>}
-    {editor && <DeviceEditor device={editor.device} busy={bridge.busy} close={() => setEditor(null)} save={saveDevice} />}
+    {editor && <DeviceEditor device={editor.device} busy={bridge.busy} bindings={bindings} devices={devices}
+      progress={connectionProgress} close={() => setEditor(null)} save={saveDevice} />}
   </section>;
 }

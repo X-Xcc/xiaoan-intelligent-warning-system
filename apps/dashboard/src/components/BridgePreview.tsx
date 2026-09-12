@@ -1,19 +1,12 @@
-import { Alert, Button, Form, Input } from 'antd';
-import { CameraOff, KeyRound, RefreshCw } from 'lucide-react';
+import { Button } from 'antd';
+import { CameraOff, RefreshCw } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { bridgeErrorMessage, bridgeMediaUrl, bridgeSourceKey, bridgeStatusLabels, hasFreshFrame, requestBridgeSnapshot, type BridgeDevice } from '../lib/device-bridges-api';
+import { subscribeBridgeVideo, type VideoPlayback } from '../lib/bridge-webrtc';
 
-type PreviewProps = { device?: BridgeDevice; available: boolean; authorized: boolean; epoch?: number; compact?: boolean; placeholderSrc?: string };
+type PreviewProps = { device?: BridgeDevice; available: boolean; authorized: boolean; epoch?: number; compact?: boolean };
 
-function PreviewPlaceholder({ src }: { src: string }) {
-  const [failed, setFailed] = useState(false);
-  if (failed) return null;
-  return <div className="bridge-preview-placeholder">
-    <img src={src} alt="夜市场景演示图片，非实时监控" onError={() => setFailed(true)} />
-  </div>;
-}
-
-function SnapshotSource({ device, available, authorized, placeholderSrc }: PreviewProps) {
+function SnapshotSource({ device, available, authorized }: PreviewProps) {
   const latestDevice = useRef(device);
   const [now, setNow] = useState(Date.now);
   const [frame, setFrame] = useState('');
@@ -43,6 +36,8 @@ function SnapshotSource({ device, available, authorized, placeholderSrc }: Previ
       setFrame('');
     };
     const load = async () => {
+      const startedAt = performance.now();
+      let interval = 100;
       try {
         if (!latestDevice.current || !hasFreshFrame(latestDevice.current)) { clearFrame(); return; }
         const image = await requestBridgeSnapshot(id, controller.signal);
@@ -61,13 +56,15 @@ function SnapshotSource({ device, available, authorized, placeholderSrc }: Previ
         setReceivedAt(capturedAt);
         setError('');
       } catch (failure) {
+        interval = 1000;
         if (!controller.signal.aborted) {
           clearFrame();
           setError(bridgeErrorMessage(failure));
         }
       } finally {
         if (pendingUrl) { URL.revokeObjectURL(pendingUrl); pendingUrl = ''; }
-        if (!controller.signal.aborted) timer = setTimeout(load, 500);
+        // Include fetch/decode time in the cadence; never overlap requests.
+        if (!controller.signal.aborted) timer = setTimeout(load, Math.max(0, interval - (performance.now() - startedAt)));
       }
     };
     void load();
@@ -91,12 +88,11 @@ function SnapshotSource({ device, available, authorized, placeholderSrc }: Previ
   return <div className="bridge-preview compact" data-device-id={device?.id} data-preview-mode="snapshot" data-preview-state={showImage ? 'live' : 'unavailable'}>
     {showImage && device && <img src={frame} alt={`${device.name}最新视频画面`} onError={() => { setFrame(''); setError('画面解码失败'); }} />}
     {!showImage && <div className="bridge-preview-empty" role="status"><CameraOff size={20} /><span>{state}</span></div>}
-    {!showImage && placeholderSrc && <PreviewPlaceholder key={placeholderSrc} src={placeholderSrc} />}
     {showImage && <span className="bridge-preview-live">最新画面</span>}
   </div>;
 }
 
-function PreviewSource({ device, available, authorized, compact, placeholderSrc }: PreviewProps) {
+function PreviewSource({ device, available, authorized, compact }: PreviewProps) {
   const image = useRef<HTMLImageElement>(null);
   const [now, setNow] = useState(Date.now);
   const [loaded, setLoaded] = useState(false);
@@ -142,32 +138,45 @@ function PreviewSource({ device, available, authorized, compact, placeholderSrc 
       <CameraOff size={compact ? 20 : 28} /><span>{state}</span>
       {failed && <Button size="small" icon={<RefreshCw size={14} />} onClick={() => { setFailedAt(null); setRetry((value) => value + 1); }}>重试画面</Button>}
     </div>}
-    {(!showImage || !loaded) && placeholderSrc && <PreviewPlaceholder key={placeholderSrc} src={placeholderSrc} />}
     {showImage && loaded && <span className="bridge-preview-live">实时画面</span>}
+  </div>;
+}
+
+function ContinuousVideo(props: PreviewProps) {
+  const video = useRef<HTMLVideoElement>(null);
+  const [playback, setPlayback] = useState<VideoPlayback>({ stream: null, fps: null, bufferMs: null, dropped: 0, error: '' });
+  const [playing, setPlaying] = useState(false);
+  const key = props.device ? `${bridgeSourceKey(props.device)}:${props.epoch ?? 0}` : '';
+  const active = Boolean(props.device && props.available && props.authorized && props.device.online);
+  useEffect(() => {
+    setPlaying(false);
+    if (!active || !props.device) return;
+    return subscribeBridgeVideo(props.device.id, key, setPlayback);
+  }, [active, key]);
+  useEffect(() => {
+    const element = video.current;
+    if (!element) return;
+    element.srcObject = playback.stream;
+    if (playback.stream) void element.play().catch(() => setPlaying(false));
+    return () => { element.srcObject = null; };
+  }, [playback.stream]);
+  const live = active && playing && Boolean(playback.stream);
+  return <div className={`bridge-preview ${props.compact ? 'compact' : ''}`}
+    data-device-id={props.device?.id} data-preview-mode="webrtc" data-preview-state={live ? 'live' : 'unavailable'}
+    data-playback-fps={playback.fps?.toFixed(1)} data-buffer-ms={playback.bufferMs?.toFixed(1)}
+    data-dropped-frames={playback.dropped}>
+    <video ref={video} autoPlay muted playsInline aria-label={`${props.device?.name}实时视频`}
+      onPlaying={() => setPlaying(true)} onWaiting={() => setPlaying(false)} />
+    {!live && <div className="bridge-preview-empty" role="status"><CameraOff size={20} />
+      <span>{!active ? '视频未连接' : playback.error || '正在连接实时视频'}</span></div>}
+    {live && <span className="bridge-preview-live">
+      实时画面{playback.fps !== null ? ` · ${playback.fps.toFixed(1)} fps` : ''}
+    </span>}
   </div>;
 }
 
 export function BridgePreview(props: PreviewProps) {
   const key = `${props.device ? bridgeSourceKey(props.device) : 'unbound'}:${props.epoch ?? 0}`;
+  if (props.device?.webrtc && typeof RTCPeerConnection !== 'undefined') return <ContinuousVideo key={key} {...props} />;
   return props.compact ? <SnapshotSource key={key} {...props} /> : <PreviewSource key={key} {...props} />;
-}
-
-export function BridgeLogin({ login, busy, tokenConfigured }: { login: (token: string) => Promise<void>; busy: boolean; tokenConfigured?: boolean }) {
-  const [form] = Form.useForm<{ token: string }>();
-  const [error, setError] = useState('');
-  return <section className="bridge-login" aria-label="设备管理员授权">
-    <h2><KeyRound size={18} />管理员授权</h2>
-    {tokenConfigured === false && <Alert type="warning" showIcon title="服务端尚未配置管理员令牌" />}
-    {error && <Alert type="error" showIcon title={error} />}
-    <Form form={form} layout="vertical" clearOnDestroy onFinish={async ({ token }: { token: string }) => {
-      form.resetFields(['token']);
-      setError('');
-      try { await login(token); } catch (failure) { setError(bridgeErrorMessage(failure)); }
-    }}>
-      <Form.Item name="token" label="管理员令牌" preserve={false} rules={[{ required: true, whitespace: true, message: '请输入管理员令牌' }]}>
-        <Input.Password autoComplete="off" aria-label="管理员令牌" disabled={busy || tokenConfigured === false} />
-      </Form.Item>
-      <Button type="primary" htmlType="submit" loading={busy} disabled={tokenConfigured === false} icon={<KeyRound size={15} />}>授权访问</Button>
-    </Form>
-  </section>;
 }

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+from collections import deque
 from contextlib import contextmanager
 import errno
 import json
@@ -105,17 +106,34 @@ def windows_platform_import_guard(is_windows=None):
 
 def load_go2():
     with windows_platform_import_guard():
-        from go2_webrtc_driver.constants import WebRTCConnectionMethod
-        from go2_webrtc_driver.webrtc_driver import Go2WebRTCConnection
-    return Go2WebRTCConnection, WebRTCConnectionMethod
+        from unitree_webrtc_connect import UnitreeWebRTCConnection, WebRTCConnectionMethod
+    return UnitreeWebRTCConnection, WebRTCConnectionMethod
 
 
 class Emitter:
-    def __init__(self, output):
+    def __init__(self, output, media=None):
         self.output = output
+        self.media = media
         self.last_frame = float("-inf")
         self.count = 0
+        self.source_times = deque(maxlen=120)
         self._lock = threading.Lock()
+
+    def video(self, frame):
+        if frame.width * frame.height > MAX_INPUT_PIXELS:
+            raise ValueError(MESSAGES["decode_failed"])
+        now = time.monotonic()
+        if self.media:
+            self.source_times.append(now)
+            # Bound pixel cost, without converting every video frame to JPEG.
+            if frame.width > MAX_WIDTH or frame.height > MAX_HEIGHT:
+                scale = min(MAX_WIDTH / frame.width, MAX_HEIGHT / frame.height)
+                width = max(2, int(frame.width * scale) // 2 * 2)
+                height = max(2, int(frame.height * scale) // 2 * 2)
+                frame = frame.reformat(width, height, format="yuv420p")
+            self.media.publish(frame)
+        if now - self.last_frame >= 1 / 8:
+            self.image(frame.to_ndarray(format="bgr24"), publish=False)
 
     def _send(self, event):
         encoded = json.dumps(event, ensure_ascii=True, separators=(",", ":")).encode() + b"\n"
@@ -133,10 +151,14 @@ class Emitter:
         with self._lock:
             self._send({"type": "status", "status": status, "stage": stage, "code": code})
 
-    def image(self, image):
+    def image(self, image, publish=True):
         now = time.monotonic()
+        if publish and self.media:
+            import av
+            self.video(av.VideoFrame.from_ndarray(image, format="bgr24"))
+            return
         with self._lock:
-            if now - self.last_frame < 1 / MAX_FPS:
+            if now - self.last_frame < 1 / 8:
                 return
             import cv2
             if image.ndim != 3 or image.shape[2] != 3:
@@ -152,8 +174,12 @@ class Emitter:
             ok, encoded = cv2.imencode(".jpg", image, [cv2.IMWRITE_JPEG_QUALITY, 80])
             if not ok or len(encoded) > MAX_JPEG_BYTES:
                 raise ValueError(MESSAGES["decode_failed"])
-            self._send({"type": "frame", "jpeg": base64.b64encode(encoded).decode("ascii"),
-                        "width": width, "height": height})
+            event = {"type": "frame", "jpeg": base64.b64encode(encoded).decode("ascii"),
+                     "width": width, "height": height}
+            if len(self.source_times) > 1:
+                span = self.source_times[-1] - self.source_times[0]
+                event["sourceFps"] = min(MAX_FPS, (len(self.source_times) - 1) / max(span, .001))
+            self._send(event)
             self.last_frame = now
             self.count += 1
 
@@ -191,8 +217,7 @@ def decode_rtsp(config, emitter, stopped):
                     return
                 if frame.width * frame.height > MAX_INPUT_PIXELS:
                     raise BridgeFailure("decode", "unsupported_stream")
-                if time.monotonic() - emitter.last_frame >= 1 / MAX_FPS:
-                    emitter.image(frame.to_ndarray(format="bgr24"))
+                emitter.video(frame)
         raise EOFError(MESSAGES["decode_failed"])
     except Exception as error:
         raise _failure(error, stage) from None
@@ -219,15 +244,14 @@ async def decode_go2(config, emitter, stopped):
                 frame = await asyncio.wait_for(track.recv(), READ_TIMEOUT)
                 if frame.width * frame.height > MAX_INPUT_PIXELS:
                     raise ValueError(MESSAGES["decode_failed"])
-                if time.monotonic() - emitter.last_frame >= 1 / MAX_FPS:
-                    emitter.image(frame.to_ndarray(format="bgr24"))
+                emitter.video(frame)
         except Exception:
             failed.set()
         finally:
             callbacks.discard(task)
 
     async def connect_and_register():
-        # 0.2.1 creates video inside connect(); register as soon as it exists,
+        # The driver creates video inside connect(); register as soon as it exists,
         # before the track event can enter its callback loop.
         task = asyncio.create_task(connection.connect())
         try:
@@ -281,13 +305,12 @@ def run(config, emitter, stopped):
         try:
             if config["kind"] == "go2":
                 asyncio.run(decode_go2(config, emitter, stopped))
-            elif config["kind"] in ("usb", "http_snapshot", "http_mjpeg"):
+            elif config["kind"] in ("http_snapshot", "http_mjpeg"):
                 if __package__:
-                    from .bridge_sources import decode_http, decode_usb
+                    from .bridge_sources import decode_http
                 else:
-                    from bridge_sources import decode_http, decode_usb
-                decoder = decode_usb if config["kind"] == "usb" else decode_http
-                decoder(config, emitter, stopped)
+                    from bridge_sources import decode_http
+                decode_http(config, emitter, stopped)
             else:
                 decode_rtsp(config, emitter, stopped)
             if stopped.is_set():
@@ -322,11 +345,21 @@ def main():
     except Exception:
         emitter.status("error", "config", "config")
         return 2
+    media = None
     try:
+        if __package__:
+            from .bridge_media import MediaHub
+        else:
+            from bridge_media import MediaHub
+        media = MediaHub()
+        emitter.media = media
+        emitter._send({"type": "media", "port": media.address[1], "key": media.key})
         return run(config, emitter, stopped)
     except (Exception, SystemExit):
         return 2
     finally:
+        if media:
+            media.close()
         output.close()
 
 

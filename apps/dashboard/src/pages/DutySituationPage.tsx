@@ -1,19 +1,23 @@
 import {
-  ArrowLeft, ArrowUpRight, ChartNoAxesColumnIncreasing,
+  ArrowLeft, ChartNoAxesColumnIncreasing,
   Clock3, Database, MapPin, Maximize2, Minimize2, Pause, Play,
-  RefreshCw, RotateCcw, ShieldAlert, Sparkles, Target, Volume2, VolumeX,
+  RefreshCw, RotateCcw, Sparkles, Volume2, VolumeX,
 } from 'lucide-react';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
-import { getTrainingReadiness, getTrainingTasks, type TrainingReadiness, type TrainingTask } from '../lib/training-api';
-import { readSituationView, rememberSituationView, type SituationPhase } from '../lib/training-navigation';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { getTrainingReadiness, type TrainingReadiness } from '../lib/training-api';
+import { readSituationView, type SituationPhase } from '../lib/training-navigation';
 import { useXiaoanVoice } from '../components/XiaoanVoice';
+import { DutyCompositionChart } from '../components/DutyCompositionChart';
 
 type Situation = NonNullable<TrainingReadiness['dutySituation']>;
 type Source = 'sample' | 'api' | 'stale';
 
 const HOURS = ['18:00', '19:00', '20:00', '21:00', '22:00', '23:00', '00:00', '01:00'];
 const TASK_IDS = ['TRAIN-READINESS-001', 'TRAIN-READINESS-002', 'TRAIN-READINESS-003'];
-const COLORS = ['#edbf69', '#5cd5d0', '#79cca4', '#ff727c'];
+const COLORS = ['#2f817a', '#86b0ce', '#d1dce3', '#eca69f'];
+const CATEGORY_COLORS: Record<string, string> = {
+  '滋事纠纷': COLORS[0], '手机扒窃': COLORS[1], '其他': COLORS[2], '可疑物品': COLORS[3],
+};
 const SAMPLE: Situation = {
   title: 'A1 勤务态势大屏',
   location: '南昌 · 绳金塔夜市',
@@ -55,17 +59,12 @@ function validSituation(value: Situation | undefined): value is Situation {
 }
 
 function categoryColor(item: Situation['composition'][number], index: number) {
-  if (item.label === '可疑物品') return COLORS[3];
+  if (CATEGORY_COLORS[item.label]) return CATEGORY_COLORS[item.label];
   return /^#[0-9a-f]{6}$/i.test(item.color) ? item.color : COLORS[index % COLORS.length];
 }
 
 function dataModeLabel(mode: string | undefined) {
   return /^desensitized[-_]sample$/i.test(mode ?? '') ? '脱敏样例' : mode || '未提供数据模式';
-}
-
-function conciseBasis(basis: string) {
-  return basis.replace(/^脱敏样例(?:演示)?[：:]\s*/, '')
-    .replace(/[；;]\s*演示阈值[，,].*$/, '').trim();
 }
 
 function timestampLabel(value: string) {
@@ -77,18 +76,15 @@ function timestampLabel(value: string) {
   }).format(parsed);
 }
 
-export function DutySituationPage({ onBack, onTraining }: { onBack: () => void; onTraining: (taskId?: string) => void }) {
+export function DutySituationPage({ onBack }: { onBack: () => void; onTraining: (taskId?: string) => void }) {
   const rootRef = useRef<HTMLElement>(null);
   const requestRef = useRef<AbortController | null>(null);
-  const taskRequestRef = useRef<AbortController | null>(null);
   const restoredScrollRef = useRef(false);
   const { enabled: sound, setEnabled: setSound, speak, stop: stopVoice, error: voiceError } = useXiaoanVoice();
   const generationRef = useRef(0);
   const [snapshot, setSnapshot] = useState<TrainingReadiness | null>(null);
   const [savedView] = useState(readSituationView);
   const phaseClock = useRef({ key: `1:${savedView.phase}`, remaining: savedView.remainingMs, startedAt: 0 });
-  const [tasks, setTasks] = useState<TrainingTask[]>([]);
-  const [tasksOnline, setTasksOnline] = useState(false);
   const [settled, setSettled] = useState(false);
   const [source, setSource] = useState<Source>('sample');
   const [refreshing, setRefreshing] = useState(false);
@@ -126,31 +122,15 @@ export function DutySituationPage({ onBack, onTraining }: { onBack: () => void; 
     }
   }, []);
 
-  const refreshTasks = useCallback(async () => {
-    taskRequestRef.current?.abort();
-    const controller = new AbortController();
-    taskRequestRef.current = controller;
-    try {
-      const result = await getTrainingTasks(controller.signal);
-      if (controller.signal.aborted) return;
-      setTasks(result.items);
-      setTasksOnline(true);
-    } catch {
-      if (!controller.signal.aborted) setTasksOnline(false);
-    }
-  }, []);
-
   useEffect(() => {
     void refresh();
-    void refreshTasks();
-    const onFocus = () => { void refresh(); void refreshTasks(); };
+    const onFocus = () => { void refresh(); };
     window.addEventListener('focus', onFocus);
     return () => {
       requestRef.current?.abort();
-      taskRequestRef.current?.abort();
       window.removeEventListener('focus', onFocus);
     };
-  }, [refresh, refreshTasks]);
+  }, [refresh]);
 
   useLayoutEffect(() => {
     if (!settled || restoredScrollRef.current || (!savedView.scrollY && !savedView.panels.some(Boolean))) return;
@@ -205,8 +185,6 @@ export function DutySituationPage({ onBack, onTraining }: { onBack: () => void; 
   const situation = snapshot?.dutySituation ?? SAMPLE;
   const hourly = HOURS.map((hour) => situation.timeTrend.find((item) => item.time === hour)!);
   const maxHourly = Math.max(1, ...hourly.map((item) => item.value));
-  const largestCategory = situation.composition.reduce((largest, item) => item.value > largest.value ? item : largest);
-  const suspicious = situation.composition.find((item) => item.label === '可疑物品');
   const totalHourly = hourly.reduce((total, item) => total + item.value, 0);
   const peakHourly = hourly.filter((item) => /^(20|21|22|23):/.test(item.time)).reduce((total, item) => total + item.value, 0);
   const peakShare = totalHourly ? Math.round(peakHourly / totalHourly * 100) : 0;
@@ -215,22 +193,6 @@ export function DutySituationPage({ onBack, onTraining }: { onBack: () => void; 
     : source === 'stale' ? '刷新失败 · 保留上次快照，数据尚未更新'
       : dataModeLabel(snapshot?.dataMode) === '脱敏样例' ? '脱敏样例，非实时警情；训练阈值仅供演示。'
         : snapshot?.notice || '接口快照，数据口径以来源标识为准';
-  const recommendations = TASK_IDS.map((id) => situation.recommendations.find((item) => item.taskId === id)!);
-  const generationBusy = phase === 'lead' || phase === 'donut' || phase === 'hotspot';
-
-  const openTraining = (taskId?: string) => {
-    rememberSituationView({
-      selectedId: savedView.selectedId,
-      scrollY: Math.max(window.scrollY, rootRef.current?.scrollTop ?? 0),
-      phase, paused, sound,
-      remainingMs: phaseClock.current.key === `${run}:${phase}`
-        ? Math.max(0, phaseClock.current.remaining - (paused || !phaseClock.current.startedAt ? 0 : Date.now() - phaseClock.current.startedAt))
-        : phase === 'lead' ? 500 : 1000,
-      panels: Array.from(rootRef.current?.querySelectorAll<HTMLElement>('.duty-main-grid > section') ?? []).map((panel) => panel.scrollTop),
-    });
-    onTraining(taskId);
-  };
-
   const generate = async () => {
     const generation = ++generationRef.current;
     stopVoice();
@@ -256,8 +218,6 @@ export function DutySituationPage({ onBack, onTraining }: { onBack: () => void; 
       setFeedback('无法进入或退出全屏，浏览器拒绝了请求；已保持窗口内大屏。');
     }
   };
-
-  let donutOffset = 0;
 
   return (
     <main ref={rootRef} className="duty-situation duty-situation-page" data-source={source} data-phase={phase}
@@ -294,7 +254,7 @@ export function DutySituationPage({ onBack, onTraining }: { onBack: () => void; 
             {paused ? <Play size={18} /> : <Pause size={18} />}
           </button>
           <button type="button" className="duty-icon-button" aria-label="刷新态势" title="刷新态势" disabled={refreshing}
-            onClick={() => { generationRef.current += 1; stopVoice(); setPhase('idle'); setPaused(false); void refresh(); void refreshTasks(); }}>
+            onClick={() => { generationRef.current += 1; stopVoice(); setPhase('idle'); setPaused(false); void refresh(); }}>
             <RefreshCw size={18} />
           </button>
           <button type="button" className="duty-icon-button" aria-label={fullscreen ? '退出全屏' : '进入全屏'}
@@ -318,66 +278,22 @@ export function DutySituationPage({ onBack, onTraining }: { onBack: () => void; 
         </div>
       </header>
 
-      <section className="duty-training-ticker" aria-label="训练推荐">
-        <div className="duty-ticker-heading">
-          <div><Target size={20} aria-hidden="true" /><h2>训练推荐</h2><span>03 项</span></div>
-          <button type="button" aria-label="民警单警训练" title="民警单警训练" onClick={() => openTraining()}>民警单警训练<ArrowUpRight size={16} aria-hidden="true" /></button>
-        </div>
-        <div className="duty-ticker-group">
-          {recommendations.map((task, index) => (
-            <button type="button" className="duty-course" key={task.taskId}
-              data-task-id={task.taskId} title={`${task.subject} · ${task.standard}`} onClick={() => openTraining(task.taskId)}>
-              <span className="duty-course-number">0{index + 1}</span>
-              <span className="duty-course-content"><strong>{task.subject}<ArrowUpRight size={17} aria-hidden="true" /></strong>
-                <span title={task.basis}>{conciseBasis(task.basis)}</span>
-                <span className="duty-course-footer"><b>{task.standard}</b><em className="duty-course-status">
-                  {tasks.find((item) => item.taskId === task.taskId)?.status ?? (tasksOnline ? '未分配' : '状态未同步')}{!tasksOnline && tasks.some((item) => item.taskId === task.taskId) ? ' · 未同步' : ''}
-                </em></span>
-              </span>
-            </button>
-          ))}
-        </div>
-        <span className="duty-generation-state">{generationBusy ? '画像生成中' : phase === 'ticker' ? paused ? '动画已暂停' : '画像已生成' : '勤务训练依据'}</span>
-      </section>
-
       <div className="duty-main-grid">
         <section className="duty-composition-panel" aria-labelledby="duty-composition-heading">
           <div className="duty-section-heading"><span className="duty-section-index">01</span><h2 id="duty-composition-heading">警情类型构成</h2><span>占比 %</span></div>
-          <div className="duty-donut-wrap">
-            <svg className="duty-donut" viewBox="0 0 260 260" role="img"
-              aria-label={`警情类型构成：${situation.composition.map((item) => `${item.label} ${item.value}%`).join('，')}`}>
-              <circle className="duty-donut-track" cx="130" cy="130" r="96" fill="none" strokeWidth="25" />
-              <g key={run} className="duty-donut-segments">
-                {situation.composition.map((item, index) => {
-                  const offset = donutOffset;
-                  donutOffset += item.value;
-                  return <circle key={item.label} cx="130" cy="130" r="96" fill="none" pathLength="100" strokeWidth={item.label === '可疑物品' ? 33 : 25}
-                    stroke={categoryColor(item, index)} strokeDasharray={`${Math.max(0, item.value - 0.8)} ${100 - Math.max(0, item.value - 0.8)}`}
-                    strokeDashoffset={-offset} transform="rotate(-90 130 130)" />;
-                })}
-              </g>
-            </svg>
-            <div className="duty-donut-center" aria-hidden="true"><span>首要警情</span>
-              <strong>{largestCategory.value}<small>%</small></strong><b>{largestCategory.label}</b>
-            </div>
+          <div className="duty-pie-wrap">
+            <DutyCompositionChart run={run} items={situation.composition.map((item, index) => ({ ...item, color: categoryColor(item, index) }))} />
           </div>
-          <ul className="duty-composition-list">
-            {situation.composition.map((item, index) => (
-              <li key={item.label} data-category={item.label} data-value={item.value}
-                className={item.label === '可疑物品' ? 'is-danger' : ''} style={{ '--category-color': categoryColor(item, index) } as CSSProperties}>
-                <i aria-hidden="true" /><span>{item.label}</span><strong>{item.value}%</strong>
-                <div className="duty-category-meter" aria-hidden="true"><span style={{ width: `${item.value}%` }} /></div>
-              </li>
-            ))}
-          </ul>
-          {suspicious && <div className="duty-risk-note"><ShieldAlert size={21} aria-hidden="true" />
-            <div><strong>低频不等于低风险</strong><p>可疑物品 {suspicious.value}% · 纳入先期处置训练</p></div>
-          </div>}
         </section>
 
         <section className="duty-trend-panel" aria-labelledby="duty-trend-heading">
           <div className="duty-section-heading"><span className="duty-section-index">02</span><h2 id="duty-trend-heading">警情时段分布</h2><span>强度</span></div>
-          <div className="duty-peak-heading"><Clock3 size={20} aria-hidden="true" /><div><span>高发时段</span><strong>20:00-23:00</strong></div></div>
+          <div className="duty-trend-metrics">
+            <div className="duty-peak-heading"><Clock3 size={18} aria-hidden="true" /><div><span>高发时段</span><strong>20:00-23:00</strong></div></div>
+            <div className="duty-trend-summary"><ChartNoAxesColumnIncreasing size={18} aria-hidden="true" />
+              <div><span>高发时段强度占比</span><strong>{peakShare}<small>%</small></strong></div>
+            </div>
+          </div>
           <div className="duty-hour-chart" role="group" aria-label="18:00至次日01:00逐小时警情分布">
             <div className="duty-chart-grid" aria-hidden="true"><span /><span /><span /><span /></div>
             {hourly.map((hour) => {
@@ -391,10 +307,6 @@ export function DutySituationPage({ onBack, onTraining }: { onBack: () => void; 
             })}
           </div>
           <div className="duty-chart-legend"><i /><span>20:00-23:00 高发时段</span><span>次日 00:00 起</span></div>
-          <div className="duty-trend-summary"><ChartNoAxesColumnIncreasing size={23} aria-hidden="true" />
-            <div><span>高发时段强度占比</span><strong>{peakShare}<small>%</small></strong></div>
-          </div>
-          <div className="duty-trend-note"><span>训练重点</span><strong>弱光识别 · 快速反应</strong><p>夜间高发时段与重点区域共同纳入训练靶向依据。</p></div>
         </section>
       </div>
 

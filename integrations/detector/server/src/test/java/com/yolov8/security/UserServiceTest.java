@@ -43,25 +43,25 @@ class UserServiceTest {
     }
 
     @Test
-    void validatePassword_correctPassword_returnsTrue() {
+    void storedPasswordHashPreservesTheUserRecord() {
         User user = new User();
         user.setUsername("testuser");
         user.setPassword("password123");
         user.setRole("operator");
-        service.addUser(user);
-
-        assertTrue(service.validatePassword("testuser", "password123"));
+        User saved = service.addUser(user);
+        assertTrue(at.favre.lib.crypto.bcrypt.BCrypt.verifyer()
+                .verify("password123".toCharArray(), saved.getPassword()).verified);
     }
 
     @Test
-    void validatePassword_wrongPassword_returnsFalse() {
+    void storedPasswordHashDoesNotMatchOtherValues() {
         User user = new User();
         user.setUsername("testuser");
         user.setPassword("password123");
         user.setRole("operator");
-        service.addUser(user);
-
-        assertFalse(service.validatePassword("testuser", "wrongpassword"));
+        User saved = service.addUser(user);
+        assertFalse(at.favre.lib.crypto.bcrypt.BCrypt.verifyer()
+                .verify("wrongpassword".toCharArray(), saved.getPassword()).verified);
     }
 
     @Test

@@ -15,6 +15,9 @@
 .platform-control-nav-item > svg { color: #a2aab7; }
 .platform-control-nav-icon { display: inline-flex; align-items: center; color: #7b8595; }
 .platform-control-nav-icon svg { width: 18px; height: 18px; }
+.platform-control-nav-item[aria-disabled="true"] { opacity: 1; color: #515e70; }
+.platform-control-nav-item[aria-disabled="true"] .platform-control-nav-icon,
+.platform-control-nav-item[aria-disabled="true"] > svg { color: #7b8595; }
 .platform-control-nav-item:hover { background: #f5f7fa; color: var(--ui-text); }
 .platform-control-nav-item.active { background: var(--ui-primary-soft); color: var(--ui-primary); font-weight: 600; }
 .platform-control-nav-item.active .platform-control-nav-icon { color: var(--ui-primary); }

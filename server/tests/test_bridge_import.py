@@ -595,17 +595,15 @@ class ImportTests(SourceFixture, unittest.TestCase):
         self.assertEqual(result["created"], 1)
         self.assertEqual(len(api.items), 2)
 
-    def test_disabled_or_unauthorized_auth_blocks_all_writes(self):
+    def test_open_access_import_does_not_require_enabled_authorization(self):
         plan = self.plan()
-        for auth in ({"enabled": False, "authorized": True},
-                     {"enabled": True, "authorized": False}):
-            api = FakeApi()
-            original = api.request
-            api.request = lambda method, path="", payload=None: (
-                auth if path == "/auth" else original(method, path, payload))
-            with self.assertRaises(importer.ImportFailure):
-                importer.import_plan(plan, api, dry_run=False)
-            self.assertFalse(api.calls)
+        api = FakeApi()
+        original = api.request
+        api.request = lambda method, path="", payload=None: (
+            {"enabled": False, "authorized": True} if path == "/auth"
+            else original(method, path, payload))
+        result = importer.import_plan(plan, api, dry_run=False)
+        self.assertGreater(result["created"], 0)
 
     def test_candidate_mutation_is_revalidated_before_api_access(self):
         plan = self.plan()
@@ -626,6 +624,14 @@ class ImportTests(SourceFixture, unittest.TestCase):
 
 @unittest.skipUnless(HAS_IMPORTER, "Importer not implemented yet")
 class HttpAndCliTests(SourceFixture, unittest.TestCase):
+    def test_apply_without_token_file(self):
+        self.write("server/detection/cameras.json", {"cameras": [camera()]})
+        api = FakeApi()
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()), \
+                patch.object(importer.BridgeApi, "request", side_effect=api.request):
+            self.assertEqual(importer.main(["--source-root", str(self.root), "--apply"]), 0)
+        self.assertTrue(any(call[0] == "POST" for call in api.calls))
+
     def token(self, value="synthetic-admin-token-123456"):
         return self.write("admin.token", value + "\n")
 

@@ -1,4 +1,5 @@
 export type AssistantPosition = { x: number; y: number };
+export type AssistantPanelLayout = AssistantPosition & { width: number; height: number };
 export const ASSISTANT_SIZE = { width: 128, height: 208 };
 export const ASSISTANT_STORAGE_KEY = 'xiaoan-assistant:position:v1';
 export const ASSISTANT_PROMPTS = ['今日概览', '今日勤务预案', '今日训练方案'] as const;
@@ -11,15 +12,50 @@ export type AssistantReply = {
   trainingLinks?: { label: string; taskId: string }[];
 };
 
-export function clampPosition(position: AssistantPosition, width: number, height: number): AssistantPosition {
-  const maxX = Math.max(0, width - ASSISTANT_SIZE.width - 12);
-  // Keep the bottom action row clear, including after restoring or dragging.
-  const maxY = Math.max(0, height - ASSISTANT_SIZE.height - 96);
-  const minX = Math.min(12, maxX);
-  const minY = Math.min(76, maxY);
+export function assistantSize(width: number, height: number) {
+  const avatarHeight = width < 534
+    ? Math.min(ASSISTANT_SIZE.height, Math.max(52, height - 24 - 12 - 240))
+    : ASSISTANT_SIZE.height;
+  return { width: ASSISTANT_SIZE.width * avatarHeight / ASSISTANT_SIZE.height, height: avatarHeight };
+}
+
+export function clampPosition(
+  position: AssistantPosition, width: number, height: number, panel?: AssistantPanelLayout | null,
+): AssistantPosition {
+  const size = assistantSize(width, height);
+  const left = Math.min(0, panel?.x ?? 0);
+  const top = Math.min(0, panel?.y ?? 0);
+  const right = Math.max(size.width, panel ? panel.x + panel.width : 0);
+  const bottom = Math.max(size.height, panel ? panel.y + panel.height : 0);
+  const maxX = Math.max(-left, width - right - 12);
+  const maxY = Math.max(-top, height - bottom - 12);
+  const minX = Math.min(12 - left, maxX);
+  const minY = Math.min(12 - top, maxY);
   return {
     x: Math.min(maxX, Math.max(minX, Number.isFinite(position.x) ? position.x : maxX)),
     y: Math.min(maxY, Math.max(minY, Number.isFinite(position.y) ? position.y : maxY)),
+  };
+}
+
+export function assistantPanelLayout(position: AssistantPosition, width: number, height: number): AssistantPanelLayout {
+  const size = assistantSize(width, height);
+  const stacked = width < 368 + ASSISTANT_SIZE.width + 14 + 24;
+  const panelWidth = Math.min(368, Math.max(0, width - 24));
+  const panelHeight = Math.min(stacked ? 440 : 546,
+    Math.max(0, height - 24 - (stacked ? size.height + 12 : 0)));
+  if (stacked) {
+    return {
+      x: Math.max(12, Math.min(position.x + size.width / 2 - panelWidth / 2,
+        width - panelWidth - 12)) - position.x,
+      y: position.y + size.height / 2 > height / 2 ? -panelHeight - 12 : size.height + 12,
+      width: panelWidth, height: panelHeight,
+    };
+  }
+  return {
+    x: position.x + size.width / 2 > width / 2 ? -panelWidth - 14 : size.width + 14,
+    y: Math.max(12, Math.min(position.y + size.height - panelHeight,
+      height - panelHeight - 12)) - position.y,
+    width: panelWidth, height: panelHeight,
   };
 }
 
@@ -34,13 +70,6 @@ export function parsePosition(raw: string | null, width: number, height: number)
   } catch {
     return null;
   }
-}
-
-export function snapPosition(position: AssistantPosition, width: number, height: number): AssistantPosition {
-  return clampPosition({
-    x: position.x + ASSISTANT_SIZE.width / 2 < width / 2 ? 12 : width,
-    y: position.y,
-  }, width, height);
 }
 
 export function demoReply(prompt: string, previous?: AssistantReply): AssistantReply {

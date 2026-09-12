@@ -146,8 +146,7 @@ async def upload_evidence(
     _: None = Depends(enforce_public_write_rate_limit),
 ):
     if eventId:
-        if actor is None:
-            raise HTTPException(401, "请登录获授权的处警账号")
+        actor = actor or command_workflow.actor_for_token(None)
         content = await file.read(20 * 1024 * 1024 + 1)
         return {"evidence": command_workflow.upload_evidence(eventId, actor, file.filename, file.content_type, content)}
     limit_mb = system_control.get_platform_settings()["evidenceUploadLimitMb"]
@@ -221,11 +220,11 @@ def staff_tasks(staff: str, actor=Depends(optional_actor)):
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     controlled = []
-    if actor and actor.staff_id and staff in {actor.staff_id, *[
-        entry["name"] for entry in event_store.list_staff() if entry["id"] == actor.staff_id
-    ]}:
+    identity = next((entry for entry in event_store.list_staff()
+                     if staff in {entry["id"], entry["name"]}), None)
+    if identity:
         controlled = [item for item in command_workflow.list_events(actor)
-                      if item["status"] != "已提交" and item["meta"].get("assignment", {}).get("staffId") == actor.staff_id]
+                      if item["status"] != "已提交" and item["meta"].get("assignment", {}).get("staffId") == identity["id"]]
     return {"items": [*items, *controlled]}
 
 
@@ -301,8 +300,7 @@ def create_lost_claim(payload: LostClaimIn, _: None = Depends(enforce_public_wri
 @router.patch("/{event_id}/status")
 def update_status(event_id: str, payload: EventStatusIn, actor=Depends(optional_actor)):
     if payload.requestId is not None:
-        if actor is None:
-            raise HTTPException(401, "请登录获授权的处警账号")
+        actor = actor or command_workflow.actor_for_token(None)
         return command_workflow.execute(event_id, "status", payload.model_dump(exclude_none=True), actor)
     try:
         event = event_store.update_event(event_id, payload.status, payload.owner, payload.result, payload.operator)

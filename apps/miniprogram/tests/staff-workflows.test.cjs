@@ -79,7 +79,7 @@ function mount(entry, exportName, props, api = {}, environment = 'production') {
       if (id === '@tarojs/components' || id === '@/components/ui') return components;
       if (id === '@tarojs/taro') return taro;
       if (id === '@/utils/api') return {
-        getAuthToken: () => 'synthetic-staff-session',
+        getAuthToken: () => '',
         fetchStaffTasks: async () => [], connectRealtimeEvents: () => () => {},
         fetchSecurityOpsOverview: async () => ({}), ...api,
       };
@@ -117,6 +117,7 @@ function mount(entry, exportName, props, api = {}, environment = 'production') {
     return text(node.props.children);
   };
   return {
+    storage,
     async settle() {
       for (let i = 0; i < 15; i++) { if (dirty) render(); await new Promise(setImmediate); }
     },
@@ -131,17 +132,26 @@ function mount(entry, exportName, props, api = {}, environment = 'production') {
   };
 }
 
-test('an unregistered development account explains missing staff binding without inventing tasks', async () => {
+test('a removed staff identity reports the backend failure without inventing tasks', async () => {
   const app = mount('StaffWorkspace', 'StaffWorkspace', { staffName: 'xx', onExit() {} }, {
     fetchStaffTasks: async (name) => { assert.equal(name, 'xx'); throw new Error('Unsupported staff: xx'); },
   }, 'development');
   await app.settle();
   const empty = app.nodes('EmptyState')[0];
-  assert.match(empty.props.description, /账号尚未登记.*工作人员目录/);
+  assert.match(empty.props.description, /Unsupported staff/);
   assert.match(empty.props.description, /xx/);
   assert.deepEqual(app.nodes('EventCard'), []);
   assert.equal(app.text().includes('--'), true);
   app.unmount();
+});
+
+test('token-free staff drafts are saved in separate worker partitions', async () => {
+  for (const staffName of ['李警官', 'Other worker']) {
+    const app = mount('StaffWorkspace', 'StaffWorkspace', { staffName, onExit() {} });
+    await app.settle();
+    assert.deepEqual([...app.storage.keys()], [`command-staff-drafts:staff:${encodeURIComponent(staffName)}`]);
+    app.unmount();
+  }
 });
 
 test('task mutation locks double taps and displays success only after the server receipt', async () => {

@@ -63,9 +63,9 @@ public class PythonScriptService {
             pb.directory(projectRoot);
 
             // dotenv-java uses system properties; pass only the detector's declared keys.
-            for (String name : new String[]{"API_KEY", "CAM_PASSWORD", "DATA_DIR", "WEB_SERVER_URL",
+            for (String name : new String[]{"CAM_PASSWORD", "DATA_DIR", "WEB_SERVER_URL",
                     "CAMERAS_CONFIG_PATH", "YOLOV8_MODEL_PATH", "YOLOV8_DEVICE", "GO2RTC_API",
-                    "GO2RTC_RTSP_HOST", "CICSIC_REVIEW_URL", "CICSIC_REVIEW_API_KEY",
+                    "GO2RTC_RTSP_HOST", "CICSIC_REVIEW_URL",
                     "CICSIC_REVIEW_ENABLED", "CICSIC_REVIEW_TIMEOUT", "THRESHOLDS_PATH"}) {
                 String value = System.getProperty(name);
                 if (value != null) pb.environment().putIfAbsent(name, value);

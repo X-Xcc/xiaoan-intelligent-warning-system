@@ -141,7 +141,7 @@
 .ot-checklist > label { display: flex; align-items: center; gap: 9px; min-height: 42px; border-bottom: 1px solid #edf0f1; font-size: 13px; cursor: pointer; }
 .ot-checklist > label > span { flex: 1; }
 .ot-checklist .checked { color: #236b56; }
-.ot-checklist input, .ot-checkbox input { width: 16px; height: 16px; flex: 0 0 16px; accent-color: #147b66; }
+.ot-checklist input { width: 16px; height: 16px; flex: 0 0 16px; accent-color: #147b66; }
 .ot-basis { padding-left: 24px; border-left: 1px solid var(--ot-border); }
 .ot-basis h3 { display: flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 600; margin-bottom: 14px; }
 .ot-basis p { color: #68777e; font-size: 13px; margin-bottom: 10px; line-height: 1.7; }
@@ -151,7 +151,19 @@
 .ot-action-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; position: sticky; bottom: 0; z-index: 2; padding: 14px 0; margin-top: auto; border-top: 1px solid var(--ot-border); background: #fff; }
 .ot-action-bar > span { display: inline-flex; align-items: center; gap: 6px; color: var(--ot-muted); font-size: 12px; }
 .ot-text-button { display: inline-flex; align-items: center; gap: 6px; padding: 5px 0; min-height: 30px; border: 0; color: #147b66; background: transparent; font-size: 13px; cursor: pointer; }
-.ot-recording-layout { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(210px, 1fr); gap: 24px; padding-bottom: 20px; }
+.ot-recording-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; padding-bottom: 20px; }
+.ot-monitor-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.ot-monitor { min-width: 0; }
+.ot-monitor-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.ot-monitor-heading h3, .ot-monitor-heading > div { display: flex; align-items: center; gap: 6px; }
+.ot-monitor-heading h3 { margin: 0; font-size: 14px; font-weight: 600; }
+.ot-training-monitors .bridge-preview.compact { aspect-ratio: 16 / 9; }
+.ot-monitor-caption { margin: 8px 0 0; color: var(--ot-muted); font-size: 12px; overflow-wrap: anywhere; }
+.ot-monitor-locked { display: grid; place-items: center; aspect-ratio: 16 / 9; background: #191c1f; color: #c7cdd2; font-size: 13px; }
+.ot-monitor-dialog { width: min(1100px, calc(100vw - 32px)); max-height: 90dvh; margin: auto; padding: 16px; border: 1px solid var(--ot-border); border-radius: 6px; background: #fff; }
+.ot-monitor-dialog::backdrop { background: #0009; }
+.ot-monitor-dialog .bridge-preview { max-height: 72dvh; }
+@media (max-width: 600px) { .ot-monitor-grid { grid-template-columns: minmax(0, 1fr); } }
 .ot-video-tool { min-width: 0; }
 .ot-video { position: relative; aspect-ratio: 16 / 10; overflow: hidden; background: #1c2428; border-radius: 5px; color: #d8e4e5; }
 .ot-video > video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
@@ -198,17 +210,6 @@
 .ot-skeleton-error > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .ot-skeleton-error button { display: grid; place-items: center; width: 30px; height: 30px; flex: 0 0 30px; border: 1px solid #ffdab166; border-radius: 4px; color: inherit; background: transparent; pointer-events: auto; cursor: pointer; }
 .ot-media-note { color: var(--ot-muted); font-size: 12px; }
-.ot-timer-tool { padding: 12px 0 0 4px; min-width: 0; }
-.ot-timer-tool > span { display: flex; align-items: center; gap: 7px; color: var(--ot-muted); font-size: 13px; }
-.ot-timer { display: block; margin: 14px 0 12px; font-size: 42px; line-height: 1.15; font-weight: 500; font-family: Consolas, monospace; font-variant-numeric: tabular-nums; color: #254c47; }
-.ot-time-standard { font-size: 13px; padding-bottom: 18px; border-bottom: 1px solid var(--ot-border); color: var(--ot-muted); }
-.ot-time-standard b { color: var(--ot-text); margin-left: 8px; font-weight: 500; }
-.ot-checkbox { display: flex; align-items: center; gap: 6px; margin-top: 16px; font-size: 13px; }
-.ot-elapsed-input { display: flex; align-items: center; gap: 8px; margin-top: 12px; color: var(--ot-muted); font-size: 13px; }
-.ot-elapsed-input input { min-width: 0; width: 110px; height: 36px; border: 1px solid #cad6d9; border-radius: 4px; padding: 6px 10px; color: var(--ot-text); }
-.ot-started-at { display: grid; gap: 6px; margin-top: 20px; }
-.ot-started-at small { color: var(--ot-muted); font-size: 12px; }
-.ot-started-at > span { font-size: 12px; }
 .ot-inline-error { display: flex; align-items: flex-start; gap: 6px; padding: 8px 0; color: #ae4940; font-size: 12px; }
 .ot-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; min-height: 210px; padding: 24px; gap: 12px; text-align: center; }
 .ot-empty > svg { color: #8ca39d; }
@@ -388,7 +389,7 @@
   .ot-stage-panel { padding: 18px 18px 0; }
   .ot-prep-columns { gap: 20px; }
   .ot-basis { padding-left: 18px; }
-  .ot-recording-layout { grid-template-columns: minmax(0, 1.2fr) minmax(180px, 1fr); gap: 18px; }
+  .ot-recording-layout { grid-template-columns: minmax(0, 1fr); gap: 18px; }
 }
 @media (max-width: 900px) {
   .officer-training-workspace { height: auto; min-height: 100dvh; overflow: visible; }
@@ -456,8 +457,6 @@
   .ot-basis { padding: 16px 0 0; border-left: 0; border-top: 1px solid var(--ot-border); }
   .ot-recording-layout { grid-template-columns: minmax(0, 1fr); gap: 20px; }
   .ot-video { aspect-ratio: 16 / 10; }
-  .ot-timer-tool { padding: 4px 0; }
-  .ot-timer { font-size: 40px; }
   .ot-action-bar { padding: 14px 0; }
   .ot-action-bar > span { flex: 1 1 140px; }
   .ot-button { min-height: 40px; }

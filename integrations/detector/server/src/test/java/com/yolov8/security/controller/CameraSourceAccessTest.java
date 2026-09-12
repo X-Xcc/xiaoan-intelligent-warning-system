@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yolov8.security.config.AppConfig;
 import com.yolov8.security.config.AuthFilter;
 import com.yolov8.security.service.CameraConfigService;
-import com.yolov8.security.service.JwtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -44,43 +43,37 @@ class CameraSourceAccessTest {
             }
         };
         controller = new CameraConfigController(service);
-        ReflectionTestUtils.setField(controller, "serviceApiKey", KEY);
-        JwtService jwt = new JwtService();
-        ReflectionTestUtils.setField(jwt, "jwtSecret", "fixture-jwt-signing-key-not-for-production-000000000000");
-        ReflectionTestUtils.setField(jwt, "jwtExpiration", 60000L);
-        jwt.init();
-        token = jwt.generateToken("fixture-browser-user");
-        AuthFilter filter = new AuthFilter(jwt);
-        ReflectionTestUtils.setField(filter, "apiKey", KEY);
+        token = "legacy-token";
+        AuthFilter filter = new AuthFilter();
         mvc = MockMvcBuilders.standaloneSetup(controller).addFilters(filter).build();
     }
 
     @ParameterizedTest
     @NullAndEmptySource
     @ValueSource(strings = {"wrong-fixture-key"})
-    void privateSourcesRejectMissingAndInvalidServiceKeys(String key) throws Exception {
+    void sourceCredentialsRemainAvailableWithoutAServiceKey(String key) throws Exception {
         var request = get("/api/internal/camera_config");
         if (key != null) request.header("X-API-Key", key);
         var response = mvc.perform(request).andReturn().getResponse();
-        assertEquals(401, response.getStatus());
-        assertFalse(response.getContentAsString().contains(SECRET));
+        assertEquals(200, response.getStatus());
+        assertTrue(response.getContentAsString().contains(SECRET));
     }
 
     @Test
-    void browserJwtCannotReadPrivateSourceCredentials() throws Exception {
+    void legacyBearerHeaderDoesNotRestrictSourceAccess() throws Exception {
         var response = mvc.perform(get("/api/internal/camera_config")
                 .header("Authorization", "Bearer " + token)).andReturn().getResponse();
-        assertEquals(403, response.getStatus());
-        assertFalse(response.getContentAsString().contains(SECRET));
+        assertEquals(200, response.getStatus());
+        assertTrue(response.getContentAsString().contains(SECRET));
     }
 
     @Test
-    void browserJwtDoesNotMakeAnInvalidMachineKeyValid() throws Exception {
+    void obsoleteHeadersDoNotRestrictSourceAccess() throws Exception {
         var response = mvc.perform(get("/api/internal/camera_config")
                 .header("Authorization", "Bearer " + token).header("X-API-Key", "wrong"))
                 .andReturn().getResponse();
-        assertEquals(403, response.getStatus());
-        assertFalse(response.getContentAsString().contains(SECRET));
+        assertEquals(200, response.getStatus());
+        assertTrue(response.getContentAsString().contains(SECRET));
     }
 
     @Test
@@ -97,17 +90,16 @@ class CameraSourceAccessTest {
     @ParameterizedTest
     @NullAndEmptySource
     @ValueSource(strings = {" "})
-    void unconfiguredServiceKeyFailsClosedEvenAfterGeneralAuthentication(String configured) throws Exception {
-        ReflectionTestUtils.setField(controller, "serviceApiKey", configured);
-        var response = mvc.perform(get("/api/internal/camera_config").header("X-API-Key", KEY))
+    void anonymousSourcesDoNotRequireConfiguration(String configured) throws Exception {
+        var response = mvc.perform(get("/api/internal/camera_config"))
                 .andReturn().getResponse();
-        assertEquals(403, response.getStatus());
-        assertFalse(response.getContentAsString().contains(SECRET));
+        assertEquals(200, response.getStatus());
+        assertTrue(response.getContentAsString().contains(SECRET));
     }
 
     @Test
     void browserCameraInventoryRemainsSanitized() throws Exception {
-        var response = mvc.perform(get("/api/camera_config").header("Authorization", "Bearer " + token))
+        var response = mvc.perform(get("/api/camera_config"))
                 .andReturn().getResponse();
         assertEquals(200, response.getStatus());
         assertFalse(response.getContentAsString().contains(SECRET));

@@ -3,8 +3,8 @@ import type { TrainingArchive, TrainingAssessment, TrainingSnapshot, TrainingSub
 const officerIds = ['DEMO-OFFICER-017', 'DEMO-OFFICER-018', 'DEMO-OFFICER-019'];
 const catalog: TrainingSubject[] = [
   ['单警装备快速取用', '装备应用', '训练装备包', 45],
-  ['弱光队形转换', '协同训练', '反光标识', 90],
-  ['现场警戒与人员疏散', '现场处置', '模拟警戒带', 120],
+  ['弱光执法场景战术协同', '协同训练', '反光标识', 90],
+  ['防爆先期处置', '现场处置', '模拟警戒带', 120],
   ['对讲机通联与信息报告', '装备应用', '模拟对讲机', 60],
   ['执法记录仪佩戴检查', '装备应用', '模拟记录仪', 45],
   ['现场沟通与矛盾调解', '沟通规范', '情景练习卡', 180],
@@ -20,6 +20,12 @@ const catalog: TrainingSubject[] = [
   standard: { label: `虚拟考核标准：${seconds} 秒内完成，模拟总分 80 分达标`, thresholdSeconds: Number(seconds) },
   basis: ['虚拟勤务画像', '合成训练计划'],
 }));
+
+const workspaceSubjects = new Set(['单警装备快速取用', '弱光执法场景战术协同', '防爆先期处置']);
+
+export function isTrainingWorkspaceSubject(item: Pick<TrainingTask, 'subject'>): boolean {
+  return workspaceSubjects.has(item.subject);
+}
 
 export function demoTrainingSelection(selection: { taskId: string; officerId: string }) {
   const readiness = /^TRAIN-READINESS-00([1-3])$/.exec(selection.taskId);

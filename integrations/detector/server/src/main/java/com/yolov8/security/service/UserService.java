@@ -145,24 +145,6 @@ public class UserService {
         }
     }
 
-    public boolean validatePassword(String username, String password) {
-        lock.readLock().lock();
-        try {
-            List<User> users = read();
-            User user = users.stream()
-                    .filter(u -> u.getUsername().equals(username))
-                    .findFirst()
-                    .orElse(null);
-            if (user == null) {
-                return false;
-            }
-            BCrypt.Result result = BCrypt.verifyer().verify(password.toCharArray(), user.getPassword());
-            return result.verified;
-        } finally {
-            lock.readLock().unlock();
-        }
-    }
-
     private void validate(User user, boolean isUpdate) {
         if (!isUpdate) {
             if (user.getUsername() == null || user.getUsername().length() < 3 || user.getUsername().length() > 20) {

@@ -33,17 +33,7 @@
 
     function authFetch(url, opts) {
         opts = opts || {};
-        var headers = opts.headers || {};
-        var token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
-        if (token) {
-            headers['Authorization'] = 'Bearer ' + token;
-        }
-        opts.headers = headers;
         return fetch(url, opts).then(function(resp) {
-            if (resp.status === 401) {
-                window.location.href = API_BASE + '/login';
-                return Promise.reject(new Error('Unauthorized'));
-            }
             if (!resp.ok) {
                 return resp.json().catch(function() { return { message: 'HTTP ' + resp.status }; })
                     .then(function(body) {
@@ -167,17 +157,6 @@
         }
     }
 
-    // 从 API 加载当前用户信息并更新侧边栏
-    async function loadUserInfo() {
-        try {
-            var user = await authFetch(API_BASE + '/api/me');
-            var avatarEl = document.getElementById('userAvatarInitial');
-            var nameEl = document.getElementById('userName');
-            if (avatarEl) avatarEl.textContent = (user.name || user.username || '?').charAt(0);
-            if (nameEl) nameEl.textContent = user.name || user.username;
-        } catch (e) { /* 静默 */ }
-    }
-
     // Export to window.Common
     window.Common = {
         API_BASE: API_BASE,
@@ -193,14 +172,9 @@
         initTheme: initTheme,
         themeToggle: themeToggle,
         startClock: startClock,
-        initSidebarToggle: initSidebarToggle,
-        loadUserInfo: loadUserInfo
+        initSidebarToggle: initSidebarToggle
     };
 
     // Auto-init theme on load
     initTheme();
-    // Auto-load user info when token exists
-    if (sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token')) {
-        loadUserInfo();
-    }
 })();

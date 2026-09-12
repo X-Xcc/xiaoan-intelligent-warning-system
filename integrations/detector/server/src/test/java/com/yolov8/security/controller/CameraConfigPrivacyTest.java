@@ -13,7 +13,6 @@ import com.yolov8.security.repository.CameraRepository;
 import com.yolov8.security.service.CameraConfigService;
 import com.yolov8.security.service.CameraConfigService.Camera;
 import com.yolov8.security.service.Go2rtcService;
-import com.yolov8.security.service.JwtService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -77,8 +76,7 @@ class CameraConfigPrivacyTest {
         config.getPython().setScriptPath(directory.resolve("unused.py").toString());
         go2rtc = new StubGo2rtc();
         service = new CameraConfigService(repository, mapper, go2rtc, config, null);
-        AuthFilter filter = new AuthFilter(new JwtService());
-        ReflectionTestUtils.setField(filter, "apiKey", "fixture-api-key");
+        AuthFilter filter = new AuthFilter();
         mvc = MockMvcBuilders.standaloneSetup(new CameraConfigController(service))
                 .setControllerAdvice(new GlobalExceptionHandler()).addFilters(filter).build();
     }
@@ -89,9 +87,12 @@ class CameraConfigPrivacyTest {
     }
 
     @Test
-    void anonymousListCannotReadConfiguration() throws Exception {
+    void anonymousListReceivesSanitizedConfiguration() throws Exception {
         repository.insert(camera(), "cam_fixture");
-        mvc.perform(get("/api/camera_config")).andExpect(status().isUnauthorized());
+        String json = mvc.perform(get("/api/camera_config")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertFalse(json.contains(PASSWORD));
+        assertFalse(json.contains("fixture-url-secret"));
     }
 
     @Test

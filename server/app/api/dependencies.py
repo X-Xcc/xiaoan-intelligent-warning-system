@@ -11,13 +11,7 @@ from app.services.rate_limit import public_write_limiter
 async def require_source_ingest_key(
     x_service_key: str | None = Header(default=None, alias="X-Service-Key"),
 ) -> None:
-    if not system_control.source_auth_enabled():
-        return
-    if not system_control.verify_access_key(x_service_key, "source:ingest"):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="来源服务凭据无效、已撤销或无调用权限",
-        )
+    return
 
 
 def _client_key(request: Request) -> str:

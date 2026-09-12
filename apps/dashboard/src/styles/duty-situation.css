@@ -11,7 +11,8 @@
   position: relative;
   z-index: 60;
   display: grid;
-  grid-template-rows: auto auto 1fr;
+  grid-template-rows: auto auto;
+  align-content: start;
   gap: 24px;
   width: 100%;
   min-height: 100dvh;
@@ -291,7 +292,7 @@
   .duty-situation-page .duty-ticker-copy { display: none; }
 }
 
-/* Training stays in document order above the two supporting analyses. */
+/* The two analyses share the main content area. */
 .duty-situation-page { padding: 24px 32px 32px; }
 .duty-situation-page:fullscreen { height: 100dvh; overflow-y: auto; }
 .duty-topbar { padding-bottom: 4px; }
@@ -324,14 +325,14 @@
 .duty-course-content > .duty-course-footer { margin-top: auto; gap: 8px; }
 .duty-course-status { padding: 2px 0; }
 .duty-generation-state { position: static; padding: 0 18px; }
-.duty-situation-page .duty-main-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; }
+.duty-situation-page .duty-main-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr); gap: 0; width: 100%; max-width: 1440px; margin: 12px auto 0; }
 .duty-situation-page .duty-composition-panel {
   display: grid;
-  grid-template-columns: minmax(150px, .9fr) minmax(0, 1fr);
-  grid-template-rows: auto 1fr auto;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
   align-content: start;
-  gap: 24px 18px;
-  padding: 0 28px 0 0;
+  gap: 20px;
+  padding: 0 32px 0 0;
   overflow: visible;
   border-right: 1px solid var(--duty-line);
 }
@@ -339,20 +340,50 @@
 .duty-situation-page .duty-donut-wrap { height: 250px; min-height: 0; max-height: none; align-self: center; }
 .duty-composition-list { align-content: center; gap: 22px; }
 .duty-risk-note { padding-top: 16px; margin-top: 0; }
-.duty-situation-page .duty-trend-panel { padding: 0 0 0 28px; border: 0; gap: 18px; overflow: visible; }
+.duty-situation-page .duty-trend-panel { padding: 0 0 0 32px; border: 0; gap: 22px; overflow: visible; }
 .duty-section-heading { min-height: 32px; }
 .duty-section-heading h2 { font-size: 17px; }
-.duty-situation-page .duty-hour-chart { height: 220px; min-height: 220px; max-height: 220px; flex: 0 0 220px; gap: 12px; }
+.duty-situation-page .duty-hour-chart { height: 330px; min-height: 330px; max-height: 330px; flex: 0 0 330px; gap: 10px; padding-top: 28px; }
 .duty-hour-column { grid-template-rows: minmax(0, 1fr) 30px; }
 .duty-chart-grid { bottom: 30px; }
 .duty-hour-label { writing-mode: horizontal-tb; transform: none; }
 .duty-trend-note { margin-top: 0; }
+.duty-pie-wrap { display: grid; place-items: center; min-width: 0; padding: 12px 0 24px; }
+.duty-composition-chart { display: block; width: 100%; max-width: 420px; aspect-ratio: 1; overflow: visible; }
+.duty-pie-label { fill: #233d48; font-size: 15px; font-weight: 500; }
+.duty-pie-value { font-size: 25px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.duty-pie-unit { font-size: 15px; font-weight: 400; }
+.duty-pie-label.is-small { font-size: 13px; }
+.duty-pie-label.is-small .duty-pie-value { font-size: 14px; }
+.duty-pie-label.is-small .duty-pie-unit { font-size: 11px; }
+.duty-pie-segments [data-category="滋事纠纷"] .duty-pie-label { fill: #fff; }
+.duty-trend-metrics { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px 20px; padding: 8px 0 14px; border-bottom: 1px solid #edf1f3; }
+.duty-trend-metrics .duty-peak-heading, .duty-trend-metrics .duty-trend-summary { align-items: flex-start; gap: 10px; margin: 0; padding: 0; border: 0; color: #337c88; }
+.duty-trend-metrics svg { margin-top: 3px; flex-shrink: 0; }
+.duty-trend-metrics .duty-trend-summary > div { display: block; }
+.duty-trend-metrics span { font-size: 12px; color: var(--duty-muted); }
+.duty-trend-metrics strong { display: block; margin-top: 4px; color: #264b55; font-size: 26px; font-weight: 600; line-height: 1.3; }
+.duty-trend-metrics small { font-size: 15px; font-weight: 400; }
+.duty-situation-page .duty-bar-space { justify-content: center; }
+.duty-situation-page .duty-hour-bar { width: 66%; max-width: 54px; border: 0; border-radius: 4px 4px 0 0; background: #b7cbd1; }
+.duty-situation-page .duty-hour-column.is-peak .duty-hour-bar { background: #518fa4; }
+.duty-situation-page .duty-hour-column.is-peak .duty-hour-bar > span, .duty-situation-page .duty-hour-column.is-peak .duty-hour-label { color: #377487; }
+.duty-situation-page .duty-chart-grid { inset: 28px 0 30px; }
+.duty-situation-page .duty-chart-grid span { border-color: #e0e8eb; }
+.duty-situation-page .duty-chart-legend { margin-top: -4px; gap: 7px; }
+.duty-situation-page .duty-chart-legend i { background: #518fa4; border-radius: 2px; }
+.duty-pie-segments { transform-origin: 200px 200px; }
+.duty-situation-page[data-phase="lead"] .duty-pie-segments { opacity: 0; }
+.duty-situation-page[data-phase="donut"] .duty-pie-segments { animation: duty-donut-reveal 1s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .duty-situation-page .duty-pie-segments { opacity: 1; animation: none; }
+}
 @media (max-width: 1100px) {
   .duty-situation-page { padding: 20px 24px 28px; }
   .duty-situation-page .duty-composition-panel { grid-template-columns: minmax(0, 1fr); gap: 18px; padding-right: 24px; }
   .duty-situation-page .duty-trend-panel { padding-left: 24px; }
   .duty-situation-page .duty-donut-wrap { height: 190px; }
-  .duty-situation-page .duty-hour-chart { height: 250px; min-height: 250px; max-height: 250px; flex-basis: 250px; gap: 7px; }
+  .duty-situation-page .duty-hour-chart { height: 290px; min-height: 290px; max-height: 290px; flex-basis: 290px; gap: 7px; }
   .duty-situation-page .duty-course { padding: 14px; min-height: 136px; gap: 8px; }
   .duty-course-content > strong { font-size: 15px; }
 }

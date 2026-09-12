@@ -20,6 +20,18 @@ function Ensure-NativeConfiguration {
     )) { Add-NativeSetting (Join-Path $Native '.env') $item[0] $item[1] }
 }
 
+function Test-NativeDashboardBuild {
+    param([string]$Root)
+    $dist = Join-Path $Root 'apps/dashboard/dist'
+    $index = Join-Path $dist 'index.html'
+    $assets = Join-Path $dist 'assets'
+    if (-not (Test-Path -LiteralPath $index) -or -not (Test-Path -LiteralPath $assets)) { return $false }
+    foreach ($asset in @(Get-ChildItem -LiteralPath $assets -Filter '*.js' -File -ErrorAction SilentlyContinue)) {
+        if (Select-String -LiteralPath $asset.FullName -SimpleMatch 'http://127.0.0.1:8010/api' -Quiet) { return $true }
+    }
+    return $false
+}
+
 function Ensure-NativeBuild {
     param([string]$Python, [string]$Root, [string]$Native)
     $runtime = Join-Path $Native '.runtime'
@@ -41,7 +53,7 @@ function Ensure-NativeBuild {
     $npm = Get-NativeNpm
     $nodeDir = Get-NativeNodeDirectory
     $env:Path = "$nodeDir;$env:Path"
-    if (-not (Test-Path -LiteralPath (Join-Path $Root 'apps/dashboard/dist/index.html'))) {
+    if (-not (Test-NativeDashboardBuild $Root)) {
         Push-Location $Root
         try {
             & $npm ci --workspace apps/dashboard --include-workspace-root --no-audit --no-fund
@@ -140,10 +152,20 @@ try {
     $javaArgs += @('-jar', (Join-Path $detector 'server/target/yolov8-security.war'), "--server.port=$($settings['DETECTOR_PORT'])")
     Start-NativeChild 'detector' (Get-NativeJava) $javaArgs (Join-Path $detector 'server') | Out-Null
     Wait-NativeHttp "http://127.0.0.1:$($settings['DETECTOR_PORT'])/api/detection/status"
+    if ($EnableCameras) {
+        Write-Host 'Checking real camera frames and detector receipt...'
+        Wait-NativeRealCameraReadiness `
+            "http://127.0.0.1:$($settings['API_PORT'])" `
+            "http://127.0.0.1:$($settings['DETECTOR_PORT'])"
+    }
     Write-Host '[5/5] Starting dashboard...'
     Start-NativeChild 'web' $apiPython @((Join-Path $PSScriptRoot 'static_server.py'), '--directory', (Join-Path $root 'apps/dashboard/dist'), '--port', $settings['WEB_PORT']) $root | Out-Null
     Wait-NativeHttp "http://127.0.0.1:$($settings['WEB_PORT'])/"
-    Write-Host "READY: http://127.0.0.1:$($settings['WEB_PORT'])"
+    if ($EnableCameras) {
+        Write-Host "READY: real camera demo http://127.0.0.1:$($settings['WEB_PORT'])"
+    } else {
+        Write-Host "SERVICES_READY_ONLY: real cameras are not connected; demo is blocked."
+    }
     Write-Host "Detector: http://127.0.0.1:$($settings['DETECTOR_PORT'])"
     if (-not $EnableCameras) { Write-Host 'Cameras are restored but not connected. Double-click enable-cameras.cmd after checking the target computer network.' }
     if ($OpenBrowser) { Open-NativeDashboard "http://127.0.0.1:$($settings['WEB_PORT'])" }

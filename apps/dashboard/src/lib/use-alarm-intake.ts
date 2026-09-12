@@ -6,7 +6,14 @@ type AlarmEvent = IntakeSource & {
   id: string;
   kind?: string;
   createdAt?: string;
-  meta?: { contact?: string; category?: string };
+  meta?: {
+    contact?: string;
+    category?: string;
+    caller?: string;
+    reporter?: string;
+    people?: string;
+    person?: string;
+  };
 };
 
 export function useAlarmIntake(enabled = true) {
@@ -41,6 +48,10 @@ export function useAlarmIntake(enabled = true) {
             ...item,
             sourceMode: 'live' as const,
             receivedAt: item.receivedAt || item.createdAt,
+            caller: item.caller || item.reporter || item.meta?.caller || item.meta?.reporter,
+            reporter: item.reporter || item.caller || item.meta?.reporter || item.meta?.caller,
+            people: item.people || item.person || item.meta?.people || item.meta?.person,
+            person: item.person || item.people || item.meta?.person || item.meta?.people,
             phone: item.phone || item.meta?.contact,
             category: item.category || item.meta?.category,
             method: item.method || (item.kind === 'help' ? '小程序报警' : ''),

@@ -30,6 +30,102 @@ async function loadModule(path, env = {}) {
 }
 const api = (base) => loadModule('./device-bridges-api.ts', { VITE_API_BASE_URL: base });
 
+function connectionFixture(t, overrides = {}) {
+  const id = 'onboarding-camera';
+  const device = { ...input, id, online: true, status: 'online', frameCount: 12,
+    lastFrameAt: new Date().toISOString(), lastError: '', width: 640, height: 360 };
+  let bindings = Array(16).fill(null);
+  bindings[8] = 'existing-camera';
+  const calls = [];
+  let reads = 0;
+  t.mock.method(globalThis, 'fetch', async (url, init) => {
+    calls.push({ url, init });
+    if (init.signal?.aborted) throw new DOMException('Cancelled', 'AbortError');
+    const json = (value) => new Response(JSON.stringify(value));
+    if (url.endsWith('/snapshot')) {
+      if (overrides.snapshotFailure) return new Response('offline', { status: 503 });
+      return new Response(new Uint8Array([255, 216, 255, 217]), { headers: { 'Content-Type': 'image/jpeg' } });
+    }
+    if (url.endsWith('/start')) return json({ device: { ...device, online: false, status: 'connecting' } });
+    if (url.endsWith('/stop')) return json({ device: { ...device, online: false, status: 'stopped' } });
+    if (url.endsWith('/test')) return json({
+      ok: !overrides.noFrame, device: overrides.noFrame ? { ...device, online: false, status: 'reconnecting', frameCount: 0 } : device,
+      checks: [{ stage: 'decode', ok: !overrides.noFrame, message: overrides.noFrame ? 'Decode failed' : 'Frame decoded' }],
+    });
+    if (url.endsWith('/bindings')) {
+      bindings = JSON.parse(init.body).bindings;
+      return json({ bindings: overrides.badBinding ? Array(16).fill(null) : bindings });
+    }
+    if (url.endsWith('/')) {
+      reads += 1;
+      const occupied = overrides.occupied || (overrides.conflict && reads > 1);
+      return json({ items: [
+        reads === 1 && !overrides.active ? { ...device, status: 'stopped', online: false, frameCount: 0 } : device,
+        { ...device, id: 'existing-camera', name: 'Existing camera' },
+      ], bindings: occupied ? bindings.map((value, index) => index === 1 ? 'existing-camera' : value) : bindings,
+      runtime: { running: 1, av: true, opencv: true, go2: false, maxDevices: 16 } });
+    }
+    throw new Error(`Unexpected request: ${url}`);
+  });
+  return { id, calls };
+}
+
+test('one-action connection starts, decodes, fetches a real snapshot and preserves other slots', async (t) => {
+  const lib = await api();
+  assert.equal(typeof lib.connectBridgeToSlot, 'function');
+  const { id, calls } = connectionFixture(t);
+  const stages = [];
+  const result = await lib.connectBridgeToSlot(id, 2, undefined, (stage) => stages.push(stage));
+  assert.equal(result.device.id, id);
+  assert.equal(result.bindings[1], id);
+  assert.equal(result.bindings[8], 'existing-camera');
+  assert.deepEqual(stages, ['validate', 'start', 'decode', 'preview', 'bind']);
+  assert.ok(calls.findIndex(({ url }) => url.endsWith('/snapshot')) < calls.findIndex(({ url }) => url.endsWith('/bindings')));
+  assert.equal(calls.filter(({ url }) => url.endsWith('/stop')).length, 0);
+});
+
+test('one-action connection rejects invalid slots without network activity', async (t) => {
+  const lib = await api();
+  assert.equal(typeof lib.connectBridgeToSlot, 'function');
+  const { id, calls } = connectionFixture(t);
+  for (const slot of [0, 17, 1.5, undefined, null]) await assert.rejects(lib.connectBridgeToSlot(id, slot));
+  assert.equal(calls.length, 0);
+});
+
+test('occupied slots are rejected before starting a camera', async (t) => {
+  const lib = await api();
+  assert.equal(typeof lib.connectBridgeToSlot, 'function');
+  const { id, calls } = connectionFixture(t, { occupied: true });
+  await assert.rejects(lib.connectBridgeToSlot(id, 2), /占用/);
+  assert.equal(calls.filter(({ init }) => init.method === 'POST' || init.method === 'PUT').length, 0);
+});
+
+for (const failure of ['noFrame', 'snapshotFailure', 'conflict']) {
+  test(`connection failure (${failure}) does not bind and stops only its newly started decoder`, async (t) => {
+    const lib = await api();
+    assert.equal(typeof lib.connectBridgeToSlot, 'function');
+    const { id, calls } = connectionFixture(t, { [failure]: true });
+    await assert.rejects(lib.connectBridgeToSlot(id, 2), failure === 'noFrame' ? /Decode failed/ : undefined);
+    assert.equal(calls.filter(({ url }) => url.endsWith('/bindings')).length, 0);
+    assert.equal(calls.filter(({ url }) => url.endsWith('/stop')).length, 1);
+  });
+}
+
+test('an already active camera is never stopped when onboarding fails', async (t) => {
+  const lib = await api();
+  assert.equal(typeof lib.connectBridgeToSlot, 'function');
+  const { id, calls } = connectionFixture(t, { active: true, noFrame: true });
+  await assert.rejects(lib.connectBridgeToSlot(id, 2));
+  assert.equal(calls.filter(({ url }) => url.endsWith('/stop') || url.endsWith('/start')).length, 0);
+});
+
+test('an incorrect binding acknowledgement is not reported as a successful connection', async (t) => {
+  const lib = await api();
+  assert.equal(typeof lib.connectBridgeToSlot, 'function');
+  const { id } = connectionFixture(t, { badBinding: true });
+  await assert.rejects(lib.connectBridgeToSlot(id, 2), /绑定/);
+});
+
 test('bridge route and prefix navigation resolve independently of governance', async () => {
   const routes = await loadModule('./presentation.ts', { BASE_URL: '/public-security/' });
   assert.equal(routes.routePath('device-bridges'), '/public-security/admin/bridges');
@@ -47,26 +143,22 @@ test('video wall never fabricates cameras or AI/evidence findings', () => {
   assert.match(page, /<Button disabled icon=\{<BrainCircuit/);
 });
 
-test('video wall opts into placeholders without changing live preview state', () => {
+test('video wall never uses local placeholder media for empty slots', () => {
   const page = read('../pages/VideoLinkagePage.tsx');
   const preview = read('../components/BridgePreview.tsx');
-  assert.match(page, /placeholderSrc=\{slotPlaceholder\(index\)\}/);
-  assert.match(page, /placeholderSrc=\{slotPlaceholder\(selectedChannel\)\}/);
-  assert.match(page, /appBasePath.*night-market-cam-/);
-  assert.match(preview, /placeholderSrc\?: string/);
-  assert.match(preview, /alt="夜市场景演示图片，非实时监控"/);
-  assert.doesNotMatch(preview, /<span>演示图片 · 非实时<\/span>/);
-  assert.match(preview, /onError=\{\(\) => setFailed\(true\)\}/);
+  assert.doesNotMatch(page, /placeholderSrc|slotPlaceholder|night-market-cam-/);
+  assert.doesNotMatch(preview, /placeholderSrc|night-market-cam-/);
   assert.match(preview, /data-preview-state=\{showImage \? 'live' : 'unavailable'\}/);
-  for (let camera = 2; camera <= 16; camera++) {
-    assert.ok(fs.existsSync(new URL(`../../public/night-market-cam-${String(camera).padStart(2, '0')}.png`, import.meta.url)));
-  }
+  assert.match(preview, /onError=/);
+  assert.match(preview, /实时画面|最新画面/);
 });
 
-test('video wall omits service status and error banner without removing authorization', () => {
+test('video wall keeps service status and error banner while remaining open access', () => {
   const page = read('../pages/VideoLinkagePage.tsx');
-  assert.doesNotMatch(page, /monitoring-service|bridge-video-alert|<Alert\b/);
-  assert.match(page, /bridge\.authRequired \? <BridgeLogin/);
+  assert.match(page, /monitoring-service/);
+  assert.match(page, /bridge-video-alert/);
+  assert.match(page, /<Alert\b/);
+  assert.doesNotMatch(page, /BridgeLogin|bridge\.authRequired|bridge\.lock/);
   assert.match(page, /const previewAvailable = bridge\.available && !bridge\.busy/);
 });
 
@@ -403,38 +495,34 @@ test('compact previews use cancellable snapshots with object URL cleanup, not MJ
   const preview = read('../components/BridgePreview.tsx');
   assert.match(preview, /props\.compact \? <SnapshotSource/);
   assert.match(preview, /requestBridgeSnapshot\(/);
-  assert.match(preview, /setTimeout\(load, 500\)/);
+  assert.match(preview, /setTimeout\(load, Math\.max\(0, interval - \(performance\.now\(\) - startedAt\)\)\)/);
   assert.match(preview, /URL\.revokeObjectURL\(/);
   assert.match(preview, /controller\.abort\(\)/);
   assert.match(preview, /hasFreshFrame\(/);
   assert.match(preview, /now - receivedAt <= 10000/);
 });
 
-test('inventory accepts USB and HTTP access methods while legacy records omit new fields', async (t) => {
+test('inventory accepts the supported real-camera access methods', async (t) => {
   const lib = await api();
-  assert.equal(lib.bridgeKindLabels.usb, 'USB 摄像头');
   assert.equal(lib.bridgeKindLabels.http_snapshot, 'HTTP 快照');
   assert.equal(lib.bridgeKindLabels.http_mjpeg, 'HTTP MJPEG');
-  const items = ['go2', 'hikvision', 'dahua', 'rtsp', 'usb', 'http_snapshot', 'http_mjpeg']
+  assert.equal('usb' in lib.bridgeKindLabels, false);
+  const items = ['go2', 'hikvision', 'dahua', 'rtsp', 'http_snapshot', 'http_mjpeg']
     .map((kind) => ({ ...input, id: kind, kind, status: 'stopped' }));
   t.mock.method(globalThis, 'fetch', async () => new Response(JSON.stringify({
     items, bindings: Array(16).fill(null), runtime: { av: true, opencv: true, go2: false, running: 0, maxDevices: 16 },
   })));
-  assert.equal((await lib.getBridgeInventory()).items.length, 7);
+  assert.equal((await lib.getBridgeInventory()).items.length, 6);
 });
 
-test('USB validates its zero-based device index without network or RTSP fields', async () => {
+test('unsupported USB input is rejected and never normalized as a camera', async () => {
   const lib = await api();
   const usb = { ...input, kind: 'usb', host: '', rtspPath: '', usbIndex: 0 };
-  assert.deepEqual(plain(lib.validateDeviceInput(usb)), {});
-  assert.deepEqual(plain(lib.validateDeviceInput({ ...usb, usbIndex: undefined })), {});
-  assert.deepEqual(plain(lib.validateDeviceInput({ ...usb, usbIndex: 15 })), {});
-  for (const usbIndex of [-1, 16, 0.5, '1', null]) assert.ok(lib.validateDeviceInput({ ...usb, usbIndex }).usbIndex);
-  const clean = lib.deviceInput({ ...usb, host: 'discarded', port: 80, username: 'discarded', password: 'discarded', httpPath: '/discarded', rtspPath: '/discarded' });
-  assert.equal(clean.host, '');
-  assert.equal(clean.port, 554);
-  assert.equal(clean.usbIndex, 0);
-  for (const field of ['username', 'password', 'rtspPath', 'httpPath', 'httpScheme']) assert.equal(field in clean, false, field);
+  assert.ok(lib.validateDeviceInput(usb).kind);
+  assert.ok(lib.validateDeviceInput(usb).host);
+  assert.equal('usb' in lib.bridgeKindLabels, false);
+  assert.equal(lib.deviceInput(usb).kind, 'usb');
+  assert.equal('usbIndex' in lib.deviceInput(usb), false);
 });
 
 test('HTTP kinds validate separate scheme host port and credential-free paths', async () => {
@@ -471,11 +559,6 @@ test('mode transitions reset discarded credentials and choose protocol defaults'
   assert.equal(lib.bridgeModeFields({ ...http, httpScheme: 'https' }, { httpScheme: 'https' }).port, 443);
   assert.equal(lib.bridgeModeFields(http, { httpScheme: 'http' }).port, 80);
   assert.equal(lib.bridgeModeFields({ ...http, kind: 'http_mjpeg', httpScheme: 'https' }, { kind: 'http_mjpeg' }).port, 443);
-  const usb = lib.bridgeModeFields({ ...http, kind: 'usb' }, { kind: 'usb' });
-  assert.equal(usb.host, '');
-  assert.equal(usb.usbIndex, 0);
-  assert.equal(usb.httpPath, '');
-  assert.equal(usb.password, '');
   const rtsp = lib.bridgeModeFields({ ...http, kind: 'hikvision' }, { kind: 'hikvision' });
   assert.equal(rtsp.port, 554);
   assert.equal(rtsp.rtspPath, '/Streaming/Channels/101');
@@ -504,30 +587,27 @@ test('same-kind blank passwords preserve credentials but changing network kind c
   for (const field of ['password', 'username', 'httpPath', 'httpScheme', 'usbIndex', 'rtspPath']) assert.equal(field in go2, false);
 });
 
-test('new source parameters invalidate previews and USB addresses never look like network endpoints', async () => {
+test('new network source parameters invalidate previews and addresses remain sanitized', async () => {
   const lib = await api();
-  const device = { ...input, id: 'camera', kind: 'http_snapshot', updatedAt: 'unchanged', httpScheme: 'http', httpPath: '/image', usbIndex: 0 };
-  for (const patch of [{ httpScheme: 'https' }, { httpPath: '/other' }, { usbIndex: 1 }]) {
+  const device = { ...input, id: 'camera', kind: 'http_snapshot', updatedAt: 'unchanged', httpScheme: 'http', httpPath: '/image' };
+  for (const patch of [{ httpScheme: 'https' }, { httpPath: '/other' }, { host: '192.0.2.9' }]) {
     assert.notEqual(lib.bridgeSourceKey(device), lib.bridgeSourceKey({ ...device, ...patch }));
   }
   assert.equal(typeof lib.bridgeDeviceAddress, 'function');
-  assert.equal(lib.bridgeDeviceAddress({ ...input, kind: 'usb', usbIndex: 3 }), 'USB #3');
-  assert.equal(lib.bridgeDeviceAddress({ ...input, kind: 'usb' }), 'USB #0');
   assert.equal(lib.bridgeDeviceAddress({ ...device, port: 80 }), 'http://192.0.2.2:80');
   assert.equal(lib.bridgeDeviceAddress({ ...input, host: '::1' }), '[::1]:554');
 });
 
-test('editor shows type-specific USB and HTTP fields without automatic device activation', () => {
+test('editor shows type-specific HTTP fields without automatic device activation', () => {
   const page = read('../pages/DeviceBridgesPage.tsx');
-  assert.ok(page.includes('name="usbIndex"'));
   assert.ok(page.includes('name="httpScheme"'));
   assert.ok(page.includes('name="httpPath"'));
-  assert.ok(page.includes("kind !== 'usb' &&"));
   assert.ok(page.includes('isRtspBridge(kind) &&'));
   assert.ok(page.includes('isHttpBridge(kind) &&'));
   assert.ok(page.includes('bridgeModeFields(all, changed)'));
   assert.ok(page.includes('bridgeDeviceAddress(device)'));
   assert.ok(page.includes("kind === device?.kind"));
+  assert.doesNotMatch(page, /usb|USB/);
   assert.doesNotMatch(page, /getUserMedia|enumerateDevices|navigator\.mediaDevices/);
 });
 

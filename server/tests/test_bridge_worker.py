@@ -203,7 +203,7 @@ class WorkerTests(unittest.TestCase):
             self.assertEqual(platform.system(), "Windows")
         self.assertIs(platform.system, original)
         connection, modes = worker.load_go2()
-        self.assertEqual(connection.__module__, "go2_webrtc_driver.webrtc_driver")
+        self.assertEqual(connection.__module__, "unitree_webrtc_connect.webrtc_driver")
         self.assertTrue(hasattr(modes, "LocalSTA"))
         self.assertTrue(hasattr(modes, "LocalAP"))
 

@@ -159,7 +159,7 @@ export default function Home() {
           </motion.div>
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.5, delay: 0.8 }}
             className="flex items-center gap-6">
-            <button onClick={() => navigate("/login")}
+            <button onClick={() => navigate("/monitor")}
               className="text-[11px] tracking-[0.25em] text-gray-500 hover:text-gray-700 transition-colors duration-700 uppercase"
               style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 400 }}>
               Enter
@@ -190,7 +190,7 @@ export default function Home() {
 
               {/* CTA — 无边框文字链 */}
               <motion.div variants={fadeUp} className="mt-16">
-                <button onClick={() => navigate("/login")}
+                <button onClick={() => navigate("/monitor")}
                   className="group text-[12px] tracking-[0.3em] text-gray-500 hover:text-gray-700 transition-colors duration-1000 uppercase"
                   style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 400 }}>
                   Start
@@ -356,7 +356,7 @@ export default function Home() {
                style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 300, fontStyle: "italic" }}>
               准备好开始了吗
             </p>
-            <button onClick={() => navigate("/login")}
+            <button onClick={() => navigate("/monitor")}
               className="text-[11px] tracking-[0.4em] text-gray-500 hover:text-gray-700 transition-colors duration-1000 uppercase"
               style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 400 }}>
               立即体验 →
