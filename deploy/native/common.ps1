@@ -392,6 +392,106 @@ function Get-NativeChildRecord {
     }
 }
 
+function Get-NativeProcessWorkingDirectory {
+    param([Parameter(Mandatory)][Alias('Pid')][int]$ProcessId)
+    try {
+        if (-not ('XiaoAn.NativeProcessWorkingDirectory' -as [type])) {
+            Add-Type @'
+using System;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
+using System.Text;
+
+namespace XiaoAn
+{
+public static class NativeProcessWorkingDirectory
+{
+    private const uint PROCESS_QUERY_INFORMATION = 0x0400;
+    private const uint PROCESS_VM_READ = 0x0010;
+    private const uint PROCESS_BASIC_INFORMATION = 0;
+    private const int STATUS_SUCCESS = 0;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct UnicodeString
+    {
+        public ushort Length;
+        public ushort MaximumLength;
+        public IntPtr Buffer;
+    }
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern IntPtr OpenProcess(uint access, bool inheritHandle, int processId);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool CloseHandle(IntPtr handle);
+
+    [DllImport("ntdll.dll")]
+    private static extern int NtQueryInformationProcess(
+        IntPtr processHandle, uint informationClass, IntPtr information, int informationLength, out int returnLength);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool ReadProcessMemory(
+        IntPtr processHandle, IntPtr address, byte[] buffer, int size, out IntPtr bytesRead);
+
+    public static string Get(int processId)
+    {
+        IntPtr process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, processId);
+        if (process == IntPtr.Zero) return null;
+        try
+        {
+            int pointerSize = IntPtr.Size;
+            int pebOffset = pointerSize == 8 ? 0x20 : 0x10;
+            int currentDirectoryOffset = pointerSize == 8 ? 0x38 : 0x24;
+            int infoSize = pointerSize == 8 ? 0x38 : 0x1c;
+            IntPtr info = Marshal.AllocHGlobal(infoSize);
+            try
+            {
+                int returnLength;
+                if (NtQueryInformationProcess(process, PROCESS_BASIC_INFORMATION, info, infoSize, out returnLength) != STATUS_SUCCESS)
+                    return null;
+                IntPtr peb = Marshal.ReadIntPtr(info, pointerSize == 8 ? 0x8 : 0x4);
+                if (peb == IntPtr.Zero) return null;
+                byte[] pointerBytes = new byte[pointerSize];
+                IntPtr bytesRead;
+                if (!ReadProcessMemory(process, IntPtr.Add(peb, pebOffset), pointerBytes, pointerBytes.Length, out bytesRead) ||
+                    bytesRead.ToInt64() != pointerSize)
+                    return null;
+                IntPtr parameters = pointerSize == 8
+                    ? new IntPtr(BitConverter.ToInt64(pointerBytes, 0))
+                    : new IntPtr(BitConverter.ToInt32(pointerBytes, 0));
+                if (parameters == IntPtr.Zero) return null;
+                int unicodeSize = pointerSize == 8 ? 16 : 8;
+                byte[] unicodeBytes = new byte[unicodeSize];
+                if (!ReadProcessMemory(process, IntPtr.Add(parameters, currentDirectoryOffset), unicodeBytes, unicodeBytes.Length, out bytesRead) ||
+                    bytesRead.ToInt64() != unicodeSize)
+                    return null;
+                ushort length = BitConverter.ToUInt16(unicodeBytes, 0);
+                IntPtr buffer = pointerSize == 8
+                    ? new IntPtr(BitConverter.ToInt64(unicodeBytes, 8))
+                    : new IntPtr(BitConverter.ToInt32(unicodeBytes, 4));
+                if (length == 0 || buffer == IntPtr.Zero || (length % 2) != 0 || length > 32766)
+                    return null;
+                byte[] pathBytes = new byte[length];
+                if (!ReadProcessMemory(process, buffer, pathBytes, pathBytes.Length, out bytesRead) ||
+                    bytesRead.ToInt64() != length)
+                    return null;
+                return Encoding.Unicode.GetString(pathBytes);
+            }
+            finally { Marshal.FreeHGlobal(info); }
+        }
+        catch { return null; }
+        finally { CloseHandle(process); }
+    }
+}
+}
+'@
+        }
+        return [XiaoAn.NativeProcessWorkingDirectory]::Get($ProcessId)
+    } catch {
+        return $null
+    }
+}
+
 function Test-NativeChildOwnership {
     param([Parameter(Mandatory)][string]$Name)
     $record = Get-NativeChildRecord $Name
@@ -404,9 +504,10 @@ function Test-NativeChildOwnership {
     $processPath = [string]$nativeProcess.ExecutablePath
     if ([string]::IsNullOrWhiteSpace($processPath) -or
         [IO.Path]::GetFullPath($processPath) -ine $record.FilePath) { return $false }
-    if (-not (Test-Path -LiteralPath $record.WorkingDirectory -PathType Container)) { return $false }
-    $workingDirectoryToken = $record.WorkingDirectory.TrimEnd('\')
-    if (-not $commandLine.Contains($workingDirectoryToken)) { return $false }
+    $actualWorkingDirectory = Get-NativeProcessWorkingDirectory $record.Pid
+    if ([string]::IsNullOrWhiteSpace($actualWorkingDirectory) -or
+        [IO.Path]::GetFullPath($actualWorkingDirectory).TrimEnd('\') -ine $record.WorkingDirectory.TrimEnd('\')) { return $false }
+    if (-not $commandLine.Contains($record.WorkingDirectory.TrimEnd('\'))) { return $false }
     foreach ($argument in $record.Arguments) {
         if (-not $commandLine.Contains($argument)) { return $false }
     }
