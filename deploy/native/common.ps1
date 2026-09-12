@@ -405,6 +405,8 @@ function Test-NativeChildOwnership {
     if ([string]::IsNullOrWhiteSpace($processPath) -or
         [IO.Path]::GetFullPath($processPath) -ine $record.FilePath) { return $false }
     if (-not (Test-Path -LiteralPath $record.WorkingDirectory -PathType Container)) { return $false }
+    $workingDirectoryToken = $record.WorkingDirectory.TrimEnd('\')
+    if (-not $commandLine.Contains($workingDirectoryToken)) { return $false }
     foreach ($argument in $record.Arguments) {
         if (-not $commandLine.Contains($argument)) { return $false }
     }
@@ -441,6 +443,8 @@ function Stop-NativeWatchdogProcess {
 
 function Start-NativeChild {
     param([string]$Name, [string]$FilePath, [string[]]$Arguments, [string]$WorkingDirectory)
+    $normalizedFilePath = [IO.Path]::GetFullPath((Resolve-Path -LiteralPath $FilePath).Path)
+    $normalizedWorkingDirectory = [IO.Path]::GetFullPath((Resolve-Path -LiteralPath $WorkingDirectory).Path)
     $native = Get-NativeDirectory
     New-Item -ItemType Directory -Force -Path (Join-Path $native 'logs') | Out-Null
     $logs = Join-Path $native 'logs'
@@ -460,13 +464,13 @@ function Start-NativeChild {
         Remove-Item -LiteralPath $pidPath -Force
         Remove-Item -LiteralPath $recordPath -Force -ErrorAction SilentlyContinue
     }
-    $process = Start-Process -FilePath $FilePath -ArgumentList $Arguments -WorkingDirectory $WorkingDirectory -WindowStyle Hidden -PassThru `
+    $process = Start-Process -FilePath $normalizedFilePath -ArgumentList $Arguments -WorkingDirectory $normalizedWorkingDirectory -WindowStyle Hidden -PassThru `
         -RedirectStandardOutput (Join-Path $logs "$Name.out.log") -RedirectStandardError (Join-Path $logs "$Name.err.log")
     [IO.File]::WriteAllText($pidPath, $process.Id, [Text.UTF8Encoding]::new($false))
     [IO.File]::WriteAllText($recordPath, (@{
         pid = $process.Id
-        filePath = [IO.Path]::GetFullPath((Resolve-Path -LiteralPath $FilePath).Path)
-        workingDirectory = [IO.Path]::GetFullPath((Resolve-Path -LiteralPath $WorkingDirectory).Path)
+        filePath = $normalizedFilePath
+        workingDirectory = $normalizedWorkingDirectory
         arguments = @($Arguments)
     } | ConvertTo-Json -Compress), [Text.UTF8Encoding]::new($false))
     return $process

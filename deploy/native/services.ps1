@@ -41,7 +41,8 @@ function Start-NativeApiService {
     $env:CICSIC_EVIDENCE_DIR = Join-Path $Context.Root 'server/data/event-evidence'
     $env:SECURITY_MODEL_PATH = Join-Path $Context.Root 'server/models/yolov8-pose.pt'
     $env:SECURITY_VIDEO_BASE_URL = $Context.DetectorBase
-    Start-NativeChild 'api' $Context.ApiPython @('-m', 'uvicorn', 'app.main:app', '--app-dir', 'server', '--host', '127.0.0.1', '--port', $Context.Settings['API_PORT']) $Context.Root | Out-Null
+    $serverPath = [IO.Path]::GetFullPath((Join-Path $Context.Root 'server'))
+    Start-NativeChild 'api' $Context.ApiPython @('-m', 'uvicorn', 'app.main:app', '--app-dir', $serverPath, '--host', '127.0.0.1', '--port', $Context.Settings['API_PORT']) $Context.Root | Out-Null
     Wait-NativeHttp "$($Context.ApiBase)/api/health/ready"
 }
 
@@ -76,7 +77,9 @@ function Start-NativeDetectorService {
 
 function Start-NativeWebService {
     param([hashtable]$Context)
-    Start-NativeChild 'web' $Context.ApiPython @((Join-Path $PSScriptRoot 'static_server.py'), '--directory', (Join-Path $Context.Root 'apps/dashboard/dist'), '--port', $Context.Settings['WEB_PORT']) $Context.Root | Out-Null
+    $dashboardDist = [IO.Path]::GetFullPath((Join-Path $Context.Root 'apps/dashboard/dist'))
+    $staticServer = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'static_server.py'))
+    Start-NativeChild 'web' $Context.ApiPython @($staticServer, '--directory', $dashboardDist, '--port', $Context.Settings['WEB_PORT']) $Context.Root | Out-Null
     Wait-NativeHttp $Context.WebUrl
 }
 
