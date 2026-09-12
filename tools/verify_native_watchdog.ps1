@@ -46,6 +46,9 @@ Assert-True (-not (Test-NativeChildOwnershipContractMock $true 'python.exe --oth
 . $commonPath
 . $watchdogPath
 
+Assert-True ($null -ne (Get-Command Test-NativeChildOwnership -ErrorAction SilentlyContinue)) `
+    'Missing ownership helper contract: Test-NativeChildOwnership'
+
 foreach ($name in @(
     'Get-NativeHealthSnapshot',
     'Test-NativeRealCameraSnapshot',
@@ -60,6 +63,8 @@ $script:mockState = $null
 $script:actions = @()
 $script:mockNow = [DateTime]::Parse('2026-09-12T12:00:00Z').ToUniversalTime()
 $script:frameCounts = @{}
+$script:ownershipRecordPresent = $true
+$script:ownershipCommandLine = 'python.exe --owned --port 8010'
 
 function Get-NativeJson {
     param([string]$Url, [hashtable]$Headers = @{})
@@ -86,7 +91,7 @@ function Get-NativeJson {
         }
         ':8010/api/device-bridges/readiness' {
             return @{
-                ready = $script:mockState.Camera
+                ready = $script:mockState.BridgeReady
                 requiredBindings = @('camera-1')
                 reasons = @()
             }
@@ -100,7 +105,17 @@ function Start-NativeService {
     $script:actions += $Name
 }
 
+function Start-NativeServiceLayer {
+    param([string]$Name)
+    $script:actions += $Name
+}
+
 function Stop-NativeChild {
+    param([string]$Name)
+    $script:actions += "stop:$Name"
+}
+
+function Stop-NativeServiceLayer {
     param([string]$Name)
     $script:actions += "stop:$Name"
 }
@@ -113,12 +128,67 @@ function Get-Date {
     return $script:mockNow
 }
 
+function Get-NativeDirectory {
+    return 'C:\native-watchdog-contract'
+}
+
+function Test-Path {
+    param([string]$LiteralPath)
+    if ($LiteralPath -like '*api.pid' -or $LiteralPath -like '*api.json') {
+        return $script:ownershipRecordPresent
+    }
+    return $false
+}
+
+function Get-Content {
+    param([string]$LiteralPath, [int]$TotalCount)
+    if ($LiteralPath -like '*api.pid') { return '4242' }
+    if ($LiteralPath -like '*api.json') {
+        return '{"pid":4242,"file":"python.exe","arguments":["--owned"]}'
+    }
+    throw "Unexpected ownership content path: $LiteralPath"
+}
+
+function Get-Process {
+    param([int]$Id)
+    if ($Id -eq 4242) { return [pscustomobject]@{ Id = 4242 } }
+    return $null
+}
+
+function Get-CimInstance {
+    param([string]$ClassName, [string]$Filter)
+    return [pscustomobject]@{ CommandLine = $script:ownershipCommandLine }
+}
+
+function Invoke-NativeOwnershipProductionContract {
+    $command = Get-Command Test-NativeChildOwnership
+    $arguments = @{}
+    if ($command.Parameters.ContainsKey('Name')) {
+        $arguments.Name = 'api'
+    } else {
+        throw 'Test-NativeChildOwnership must expose a -Name contract for this test.'
+    }
+    return [bool](& $command.Name @arguments)
+}
+
+$script:ownershipRecordPresent = $false
+Assert-True (-not (Invoke-NativeOwnershipProductionContract)) `
+    'Production ownership helper must reject a missing PID/JSON record.'
+$script:ownershipRecordPresent = $true
+$script:ownershipCommandLine = 'python.exe --owned --port 8010'
+Assert-True (Invoke-NativeOwnershipProductionContract) `
+    'Production ownership helper must accept matching PID/JSON command ownership.'
+$script:ownershipCommandLine = 'python.exe --other --port 8010'
+Assert-True (-not (Invoke-NativeOwnershipProductionContract)) `
+    'Production ownership helper must reject an unrelated process command.'
+
 $cases = @(
     @{ Name = 'healthy'; Web = $true; Api = $true; Detector = $true; Camera = $true; BridgeReady = $true; Expected = @() },
     @{ Name = 'web down'; Web = $false; Api = $true; Detector = $true; Camera = $true; BridgeReady = $true; Expected = @('web') },
     @{ Name = 'api down'; Web = $true; Api = $false; Detector = $true; Camera = $true; BridgeReady = $true; Expected = @('api') },
     @{ Name = 'detector down'; Web = $true; Api = $true; Detector = $false; Camera = $true; BridgeReady = $true; Expected = @('detector') },
-    @{ Name = 'real frames stale'; Web = $true; Api = $true; Detector = $true; Camera = $false; BridgeReady = $false; Expected = @('detector') }
+    @{ Name = 'bridge down with fresh camera'; Web = $true; Api = $true; Detector = $true; Camera = $true; BridgeReady = $false; Expected = @('detector') },
+    @{ Name = 'bridge ready with stale camera'; Web = $true; Api = $true; Detector = $true; Camera = $false; BridgeReady = $true; Expected = @('detector') }
 )
 
 foreach ($case in $cases) {
@@ -149,6 +219,12 @@ foreach ($case in $cases) {
         "lastFrameAt mismatch for $($case.Name)"
     $actions = @(Get-NativeRecoveryAction -Snapshot $snapshot)
     Assert-Equal $case.Expected $actions "Recovery action mismatch for $($case.Name)"
+    if ($actions.Count -gt 0) {
+        $script:actions = @()
+        Invoke-NativeRecoveryAction -Action $actions[0] -Context @{} | Out-Null
+        Assert-True ($script:actions -contains $actions[0]) `
+            "Invoke-NativeRecoveryAction did not execute $($actions[0]) for $($case.Name)"
+    }
 }
 
 Write-Output 'PASS: native watchdog health and recovery contracts.'

@@ -37,6 +37,30 @@ class NativeDeploymentTests(unittest.TestCase):
         positions = [text.index(marker) for marker in markers]
         self.assertEqual(positions, sorted(positions))
 
+    def test_stop_contract_mock_executes_expected_call_order(self):
+        import re
+
+        text = (NATIVE / "stop.ps1").read_text(encoding="utf-8-sig")
+        calls = []
+        if "Stop-NativeWatchdogProcess" in text:
+            calls.append("watchdog")
+        direct_calls = re.findall(r"Stop-NativeChild '([^']+)'", text)
+        loop = re.search(
+            r"foreach\s*\(\$name\s+in\s+@\((.*?)\)\)",
+            text,
+            flags=re.DOTALL,
+        )
+        if loop:
+            calls.extend(re.findall(r"'([^']+)'", loop.group(1)))
+        else:
+            calls.extend(direct_calls)
+        if "pg_ctl.exe" in text:
+            calls.append("postgres")
+        self.assertEqual(
+            calls,
+            ["watchdog", "web", "detector", "api", "postgres"],
+        )
+
     def test_force_start_and_watchdog_entry_points_exist(self):
         for path in (
             NATIVE / "services.ps1",
