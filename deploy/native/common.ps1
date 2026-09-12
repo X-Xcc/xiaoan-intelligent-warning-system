@@ -261,22 +261,62 @@ function Get-NativeJson {
 function Wait-NativeRealCameraReadiness {
     param([string]$ApiBase, [string]$DetectorBase, [int]$Seconds = 90)
     $deadline = [DateTime]::UtcNow.AddSeconds($Seconds)
+    $freshnessSeconds = 10
     $lastReason = 'real camera readiness has not been confirmed'
     do {
         try {
             $bridge = Get-NativeJson "$ApiBase/api/device-bridges/readiness"
             $detector = Get-NativeJson "$DetectorBase/api/detection/status"
-            $data = if ($detector.data) { $detector.data } else { $detector }
-            $required = @($bridge.requiredBindings).Count
-            $frameCameras = @($data.frames.cameras | Where-Object {
-                $_.online -eq $true -and [int64]$_.frameCount -gt 0
-            }).Count
-            if ($bridge.ready -eq $true -and $data.running -eq $true -and $frameCameras -gt 0) {
+            $dataProperty = $detector.PSObject.Properties['data']
+            $data = if ($dataProperty -and $null -ne $dataProperty.Value) { $dataProperty.Value } else { $detector }
+            $requiredBindings = @($bridge.requiredBindings | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) })
+            $cameras = @($data.frames.cameras)
+            $now = [DateTime]::UtcNow
+            $missing = @()
+            foreach ($binding in $requiredBindings) {
+                $camera = $null
+                foreach ($entry in $cameras) {
+                    $ids = @()
+                    foreach ($property in @('id', 'cameraId', 'deviceId', 'sourceId')) {
+                        $value = if ($entry -is [System.Collections.IDictionary] -and $entry.Contains($property)) {
+                            $entry[$property]
+                        } elseif ($null -ne $entry.PSObject.Properties[$property]) {
+                            $entry.PSObject.Properties[$property].Value
+                        } else { $null }
+                        if (-not [string]::IsNullOrWhiteSpace([string]$value)) { $ids += [string]$value }
+                    }
+                    if ($ids -contains ([string]$binding)) {
+                        $camera = $entry
+                        break
+                    }
+                }
+                $fresh = $false
+                $online = if ($camera -and $camera -is [System.Collections.IDictionary] -and $camera.Contains('online')) {
+                    $camera['online']
+                } elseif ($camera -and $camera.PSObject.Properties['online']) { $camera.PSObject.Properties['online'].Value } else { $false }
+                $frameCount = if ($camera -and $camera -is [System.Collections.IDictionary] -and $camera.Contains('frameCount')) {
+                    $camera['frameCount']
+                } elseif ($camera -and $camera.PSObject.Properties['frameCount']) { $camera.PSObject.Properties['frameCount'].Value } else { 0 }
+                $lastFrameAt = if ($camera -and $camera -is [System.Collections.IDictionary] -and $camera.Contains('lastFrameAt')) {
+                    $camera['lastFrameAt']
+                } elseif ($camera -and $camera.PSObject.Properties['lastFrameAt']) { $camera.PSObject.Properties['lastFrameAt'].Value } else { $null }
+                if ($camera -and $online -eq $true -and [int64]$frameCount -gt 0) {
+                    try {
+                        $lastFrame = ([DateTime]::Parse([string]$lastFrameAt)).ToUniversalTime()
+                        $age = ($now - $lastFrame).TotalSeconds
+                        $fresh = $age -ge 0 -and $age -le $freshnessSeconds
+                    } catch { $fresh = $false }
+                }
+                if (-not $fresh) { $missing += [string]$binding }
+            }
+            $allRequiredFramesFresh = $requiredBindings.Count -gt 0 -and $missing.Count -eq 0
+            if ($bridge.ready -eq $true -and $data.running -eq $true -and $allRequiredFramesFresh) {
                 return
             }
             $codes = @($bridge.reasons | ForEach-Object { $_.code })
             if ($data.running -ne $true) { $codes += 'detector_not_running' }
-            if ($frameCameras -eq 0) { $codes += 'detector_has_no_real_frame' }
+            if ($requiredBindings.Count -eq 0) { $codes += 'no_required_bindings' }
+            if ($missing.Count -gt 0) { $codes += 'real_frame_missing_or_stale' }
             $lastReason = ($codes | Select-Object -Unique) -join ', '
         } catch {
             $lastReason = $_.Exception.Message
@@ -335,11 +375,14 @@ function Get-NativeChildRecord {
     try {
         $record = Get-Content -LiteralPath $recordPath -Raw | ConvertFrom-Json
         $recordPid = [int](Get-Content -LiteralPath $pidPath -Raw).Trim()
-        if ([int]$record.pid -ne $recordPid) { return $null }
+        if ([int]$record.pid -ne $recordPid -or
+            [string]::IsNullOrWhiteSpace([string]$record.filePath) -or
+            [string]::IsNullOrWhiteSpace([string]$record.workingDirectory)) { return $null }
         return [pscustomobject]@{
             Name = $Name
             Pid = $recordPid
-            File = [string]$record.file
+            FilePath = [IO.Path]::GetFullPath([string]$record.filePath)
+            WorkingDirectory = [IO.Path]::GetFullPath([string]$record.workingDirectory)
             Arguments = @($record.arguments | ForEach-Object { [string]$_ })
             PidPath = $pidPath
             RecordPath = $recordPath
@@ -358,7 +401,10 @@ function Test-NativeChildOwnership {
     $nativeProcess = Get-CimInstance Win32_Process -Filter "ProcessId=$($record.Pid)" -ErrorAction SilentlyContinue
     $commandLine = [string]$nativeProcess.CommandLine
     if ([string]::IsNullOrWhiteSpace($commandLine)) { return $false }
-    if ($record.File -and -not $commandLine.Contains($record.File)) { return $false }
+    $processPath = [string]$nativeProcess.ExecutablePath
+    if ([string]::IsNullOrWhiteSpace($processPath) -or
+        [IO.Path]::GetFullPath($processPath) -ine $record.FilePath) { return $false }
+    if (-not (Test-Path -LiteralPath $record.WorkingDirectory -PathType Container)) { return $false }
     foreach ($argument in $record.Arguments) {
         if (-not $commandLine.Contains($argument)) { return $false }
     }
@@ -406,14 +452,8 @@ function Start-NativeChild {
         $old = Get-Content -LiteralPath $pidPath -Raw
         $process = Get-Process -Id $old.Trim() -ErrorAction SilentlyContinue
         if ($process) {
-            if (-not (Test-Path -LiteralPath $recordPath)) {
-                throw "Existing $Name process cannot be verified; run stop.cmd before starting it."
-            }
-            $record = Get-Content -LiteralPath $recordPath -Raw | ConvertFrom-Json
-            $commandLine = (Get-CimInstance Win32_Process -Filter "ProcessId=$($process.Id)" -ErrorAction SilentlyContinue).CommandLine
-            if (-not $commandLine -or $record.file -and -not $commandLine.Contains([string]$record.file) -or
-                @($record.arguments | Where-Object { -not $commandLine.Contains([string]$_) }).Count -gt 0) {
-                throw "Existing $Name PID $($process.Id) does not match the recorded command."
+            if (-not (Test-NativeChildOwnership $Name)) {
+                throw "Existing $Name PID $($process.Id) is not owned by this project."
             }
             return $process
         }
@@ -425,7 +465,8 @@ function Start-NativeChild {
     [IO.File]::WriteAllText($pidPath, $process.Id, [Text.UTF8Encoding]::new($false))
     [IO.File]::WriteAllText($recordPath, (@{
         pid = $process.Id
-        file = (Split-Path -Leaf $FilePath)
+        filePath = [IO.Path]::GetFullPath((Resolve-Path -LiteralPath $FilePath).Path)
+        workingDirectory = [IO.Path]::GetFullPath((Resolve-Path -LiteralPath $WorkingDirectory).Path)
         arguments = @($Arguments)
     } | ConvertTo-Json -Compress), [Text.UTF8Encoding]::new($false))
     return $process
@@ -439,14 +480,8 @@ function Stop-NativeChild {
     $childPid = [int](Get-Content -LiteralPath $path -Raw).Trim()
     $process = Get-Process -Id $childPid -ErrorAction SilentlyContinue
     if ($process) {
-        if (-not (Test-Path -LiteralPath $recordPath)) {
-            throw "Refusing to stop unverified $Name PID $childPid."
-        }
-        $record = Get-Content -LiteralPath $recordPath -Raw | ConvertFrom-Json
-        $commandLine = (Get-CimInstance Win32_Process -Filter "ProcessId=$childPid" -ErrorAction SilentlyContinue).CommandLine
-        if (-not $commandLine -or $record.file -and -not $commandLine.Contains([string]$record.file) -or
-            @($record.arguments | Where-Object { -not $commandLine.Contains([string]$_) }).Count -gt 0) {
-            throw "Refusing to stop $Name PID $childPid because its command does not match the project record."
+        if (-not (Test-NativeChildOwnership $Name)) {
+            throw "Refusing to stop $Name PID $childPid because its process ownership record does not match."
         }
         Stop-Process -Id $process.Id -Force
     }
