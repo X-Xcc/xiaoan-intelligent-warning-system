@@ -296,6 +296,103 @@ function Open-NativeDashboard {
     }
 }
 
+function Enter-NativeProjectLock {
+    param([int]$TimeoutSeconds = 10)
+    $root = [IO.Path]::GetFullPath((Get-NativeProjectRoot)).TrimEnd('\').ToLowerInvariant()
+    $bytes = [Text.Encoding]::UTF8.GetBytes($root)
+    $hash = [Security.Cryptography.SHA256]::Create().ComputeHash($bytes)
+    $suffix = ([BitConverter]::ToString($hash) -replace '-', '').Substring(0, 24)
+    $mutex = [Threading.Mutex]::new($false, "Local\XiaoAn.Native.$suffix")
+    try {
+        if (-not $mutex.WaitOne([TimeSpan]::FromSeconds($TimeoutSeconds))) {
+            $mutex.Dispose()
+            throw "Another XiaoAn native operation is already running for project $root."
+        }
+    } catch [Threading.AbandonedMutexException] {
+        # An abandoned lock is safe to take; the previous owner exited unexpectedly.
+    } catch {
+        $mutex.Dispose()
+        throw
+    }
+    return $mutex
+}
+
+function Exit-NativeProjectLock {
+    param([Threading.Mutex]$Lock)
+    if ($null -eq $Lock) { return }
+    try { $Lock.ReleaseMutex() } catch [InvalidOperationException] { }
+    $Lock.Dispose()
+}
+
+function Get-NativeChildRecord {
+    param([Parameter(Mandatory)][string]$Name)
+    $native = Get-NativeDirectory
+    $pidPath = Join-Path $native "run/$Name.pid"
+    $recordPath = Join-Path $native "run/$Name.json"
+    if (-not (Test-Path -LiteralPath $pidPath) -or -not (Test-Path -LiteralPath $recordPath)) {
+        return $null
+    }
+    try {
+        $record = Get-Content -LiteralPath $recordPath -Raw | ConvertFrom-Json
+        $recordPid = [int](Get-Content -LiteralPath $pidPath -Raw).Trim()
+        if ([int]$record.pid -ne $recordPid) { return $null }
+        return [pscustomobject]@{
+            Name = $Name
+            Pid = $recordPid
+            File = [string]$record.file
+            Arguments = @($record.arguments | ForEach-Object { [string]$_ })
+            PidPath = $pidPath
+            RecordPath = $recordPath
+        }
+    } catch {
+        return $null
+    }
+}
+
+function Test-NativeChildOwnership {
+    param([Parameter(Mandatory)][string]$Name)
+    $record = Get-NativeChildRecord $Name
+    if ($null -eq $record) { return $false }
+    $process = Get-Process -Id $record.Pid -ErrorAction SilentlyContinue
+    if ($null -eq $process) { return $false }
+    $nativeProcess = Get-CimInstance Win32_Process -Filter "ProcessId=$($record.Pid)" -ErrorAction SilentlyContinue
+    $commandLine = [string]$nativeProcess.CommandLine
+    if ([string]::IsNullOrWhiteSpace($commandLine)) { return $false }
+    if ($record.File -and -not $commandLine.Contains($record.File)) { return $false }
+    foreach ($argument in $record.Arguments) {
+        if (-not $commandLine.Contains($argument)) { return $false }
+    }
+    return $true
+}
+
+function Start-NativeWatchdogProcess {
+    param([switch]$EnableCameras)
+    $scriptPath = Join-Path (Get-NativeDirectory) 'watchdog.ps1'
+    if (-not (Test-Path -LiteralPath $scriptPath)) {
+        throw "Native watchdog script was not found: $scriptPath"
+    }
+    if (Test-NativeChildOwnership 'watchdog') {
+        return Get-Process -Id ((Get-NativeChildRecord 'watchdog').Pid)
+    }
+    $powershell = (Get-Command powershell.exe -ErrorAction Stop).Source
+    $arguments = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $scriptPath)
+    if ($EnableCameras) { $arguments += '-RequireRealCamera' }
+    return Start-NativeChild 'watchdog' $powershell $arguments (Get-NativeProjectRoot)
+}
+
+function Stop-NativeWatchdogProcess {
+    if (Test-NativeChildOwnership 'watchdog') {
+        Stop-NativeChild 'watchdog'
+        return
+    }
+    $record = Get-NativeChildRecord 'watchdog'
+    if ($null -ne $record) {
+        throw "Refusing to stop unverified watchdog PID $($record.Pid)."
+    }
+    Remove-Item -LiteralPath (Join-Path (Get-NativeDirectory) 'run/watchdog.pid') -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath (Join-Path (Get-NativeDirectory) 'run/watchdog.json') -Force -ErrorAction SilentlyContinue
+}
+
 function Start-NativeChild {
     param([string]$Name, [string]$FilePath, [string[]]$Arguments, [string]$WorkingDirectory)
     $native = Get-NativeDirectory
@@ -314,7 +411,8 @@ function Start-NativeChild {
             }
             $record = Get-Content -LiteralPath $recordPath -Raw | ConvertFrom-Json
             $commandLine = (Get-CimInstance Win32_Process -Filter "ProcessId=$($process.Id)" -ErrorAction SilentlyContinue).CommandLine
-            if (-not $commandLine -or -not ($record.arguments | Where-Object { $commandLine.Contains([string]$_) })) {
+            if (-not $commandLine -or $record.file -and -not $commandLine.Contains([string]$record.file) -or
+                @($record.arguments | Where-Object { -not $commandLine.Contains([string]$_) }).Count -gt 0) {
                 throw "Existing $Name PID $($process.Id) does not match the recorded command."
             }
             return $process
@@ -338,16 +436,17 @@ function Stop-NativeChild {
     $path = Join-Path (Get-NativeDirectory) "run/$Name.pid"
     if (-not (Test-Path -LiteralPath $path)) { return }
     $recordPath = Join-Path (Get-NativeDirectory) "run/$Name.json"
-    $pid = [int](Get-Content -LiteralPath $path -Raw).Trim()
-    $process = Get-Process -Id $pid -ErrorAction SilentlyContinue
+    $childPid = [int](Get-Content -LiteralPath $path -Raw).Trim()
+    $process = Get-Process -Id $childPid -ErrorAction SilentlyContinue
     if ($process) {
         if (-not (Test-Path -LiteralPath $recordPath)) {
-            throw "Refusing to stop unverified $Name PID $pid."
+            throw "Refusing to stop unverified $Name PID $childPid."
         }
         $record = Get-Content -LiteralPath $recordPath -Raw | ConvertFrom-Json
-        $commandLine = (Get-CimInstance Win32_Process -Filter "ProcessId=$pid" -ErrorAction SilentlyContinue).CommandLine
-        if (-not $commandLine -or -not ($record.arguments | Where-Object { $commandLine.Contains([string]$_) })) {
-            throw "Refusing to stop $Name PID $pid because its command does not match the project record."
+        $commandLine = (Get-CimInstance Win32_Process -Filter "ProcessId=$childPid" -ErrorAction SilentlyContinue).CommandLine
+        if (-not $commandLine -or $record.file -and -not $commandLine.Contains([string]$record.file) -or
+            @($record.arguments | Where-Object { -not $commandLine.Contains([string]$_) }).Count -gt 0) {
+            throw "Refusing to stop $Name PID $childPid because its command does not match the project record."
         }
         Stop-Process -Id $process.Id -Force
     }
