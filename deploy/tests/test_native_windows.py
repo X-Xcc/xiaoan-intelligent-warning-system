@@ -19,9 +19,99 @@ class NativeDeploymentTests(unittest.TestCase):
             self.assertIn(f'call "%~dp0{target}" %*', text)
             self.assertIn("exit /b %errorlevel%", text)
         start = (ROOT / "start.cmd").read_text(encoding="utf-8-sig")
-        self.assertIn("-OpenBrowser %*", start)
+        self.assertIn("-Force -EnableCameras -OpenBrowser %*", start)
         self.assertIn('set "result=%errorlevel%"', start)
         self.assertIn("exit /b %result%", start)
+
+    def test_stop_handles_watchdog_before_application_services(self):
+        text = (NATIVE / "stop.ps1").read_text(encoding="utf-8-sig")
+        markers = (
+            "Stop-NativeWatchdogProcess",
+            "Stop-NativeChild 'web'",
+            "Stop-NativeChild 'detector'",
+            "Stop-NativeChild 'api'",
+            "pg_ctl.exe",
+        )
+        for marker in markers:
+            self.assertIn(marker, text)
+        positions = [text.index(marker) for marker in markers]
+        self.assertEqual(positions, sorted(positions))
+
+    def test_force_start_and_watchdog_entry_points_exist(self):
+        for path in (
+            NATIVE / "services.ps1",
+            NATIVE / "watchdog.ps1",
+            ROOT / "install-login-autostart.cmd",
+            ROOT / "remove-login-autostart.cmd",
+        ):
+            self.assertTrue(path.is_file(), f"Missing force-start entry point: {path}")
+
+    def test_watchdog_contract_owns_processes_and_requires_fresh_real_frames(self):
+        paths = (
+            NATIVE / "common.ps1",
+            NATIVE / "services.ps1",
+            NATIVE / "watchdog.ps1",
+            ROOT / "install-login-autostart.cmd",
+            ROOT / "remove-login-autostart.cmd",
+        )
+        text = "\n".join(
+            path.read_text(encoding="utf-8-sig")
+            for path in paths
+            if path.is_file()
+        )
+        for required in (
+            "XiaoAn.Native",
+            "watchdog.pid",
+            "watchdog.json",
+            "Test-NativeChildOwnership",
+            "device-bridges/readiness",
+            "frameCount",
+            "lastFrameAt",
+            "XiaoAn Native Force Start",
+        ):
+            self.assertIn(required, text)
+        for forbidden in (
+            "USB",
+            "placeholder",
+            "占位",
+            "sample://",
+            "pre-recorded",
+        ):
+            self.assertNotIn(forbidden.lower(), text.lower())
+
+    def test_login_autostart_contract_is_fixed_and_narrow(self):
+        install = ROOT / "install-login-autostart.cmd"
+        remove = ROOT / "remove-login-autostart.cmd"
+        self.assertTrue(install.is_file(), f"Missing login install script: {install}")
+        self.assertTrue(remove.is_file(), f"Missing login removal script: {remove}")
+        install_text = install.read_text(encoding="utf-8-sig")
+        remove_text = remove.read_text(encoding="utf-8-sig")
+        self.assertIn("/Create /F", install_text)
+        self.assertIn("ONLOGON", install_text)
+        self.assertIn("XiaoAn Native Force Start", install_text)
+        self.assertIn('/Delete /TN "XiaoAn Native Force Start" /F', remove_text)
+        for text in (install_text, remove_text):
+            self.assertNotIn("/Delete /F", text.replace(
+                '/Delete /TN "XiaoAn Native Force Start" /F', ""
+            ))
+            self.assertNotIn(" /Delete *", text)
+            self.assertNotIn(" /Delete /TN *", text)
+
+    def test_watchdog_checks_health_layers_and_uses_minimal_recovery_actions(self):
+        text = (NATIVE / "watchdog.ps1").read_text(encoding="utf-8-sig")
+        for required in (
+            "Get-NativeHealthSnapshot",
+            "Test-NativeRealCameraSnapshot",
+            "Get-NativeRecoveryAction",
+            "Invoke-NativeRecoveryAction",
+            "web",
+            "api",
+            "detector",
+            "Start-Sleep -Seconds 2",
+            "60",
+            "15",
+        ):
+            self.assertIn(required, text)
 
     def test_browser_opens_only_after_all_services_are_ready(self):
         text = (NATIVE / "start.ps1").read_text(encoding="utf-8-sig")
