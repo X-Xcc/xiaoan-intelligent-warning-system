@@ -1,5 +1,5 @@
 import {
-  AlertCircle, ArrowLeft, ArrowRight, BookOpen, Check, CheckCircle2, ChevronRight,
+  AlertCircle, ArrowLeft, ArrowRight, BookOpen, CheckCircle2, ChevronRight,
   ClipboardCheck, Clock3, LoaderCircle, ListChecks, RefreshCw, RotateCcw, ShieldCheck,
   Timer, UserRound,
 } from 'lucide-react';
@@ -37,26 +37,6 @@ function TrainingLoading({ label }: { label: string }) {
     <div className="ot-loading-caption"><Spin size="small" /><span>{label}</span></div>
     <Skeleton active title={{ width: '42%' }} paragraph={{ rows: 4, width: ['90%', '100%', '76%', '84%'] }} />
     <Skeleton active title={false} paragraph={{ rows: 3, width: ['96%', '82%', '65%'] }} />
-  </div>;
-}
-
-function GroupProgress({
-  subjectIndex, phase, completed,
-}: { subjectIndex: number; phase: GroupTrainingPhase; completed: number[] }) {
-  return <div className="ot-steps ot-group-steps" aria-label="三人协同训练流程">
-    {GROUP_SUBJECT_NAMES.map((subject, index) => (
-      <div key={subject} className={`ot-group-step ${index === subjectIndex && phase !== 'summary' ? 'active' : ''} ${completed.includes(index) ? 'done' : ''}`}>
-        <span>{completed.includes(index) ? <Check size={15} /> : index + 1}</span>
-        <b>{subject}</b>
-        <small>{index === subjectIndex && phase !== 'summary' ? (phase === 'prepare' ? '科目建议' : '训练记录') : completed.includes(index) ? '已完成' : '待训练'}</small>
-        {index < GROUP_SUBJECT_NAMES.length - 1 && <ChevronRight className="ot-step-chevron" size={14} />}
-      </div>
-    ))}
-    <div className={`ot-group-step ot-group-summary-step ${phase === 'summary' ? 'active' : ''}`}>
-      <span>{phase === 'summary' ? <CheckCircle2 size={15} /> : '总'}</span>
-      <b>总结评分</b>
-      <small>{phase === 'summary' ? '已生成' : '三项完成后进入'}</small>
-    </div>
   </div>;
 }
 
@@ -221,11 +201,6 @@ export function OfficerTrainingPage({ onSituation }: { onSituation: () => void }
         <div className="ot-rail-bottom"><ShieldCheck size={15} /><span>本页仅用于三人协同训练演示</span></div>
       </aside>
       <section className="ot-detail">
-        <div className="ot-detail-heading">
-          <div><span className="ot-task-number">GROUP-DEMO-3P</span><h2 className="ot-task-title">{phase === 'summary' ? '三人协同训练总结' : currentSubject?.subject}</h2><p>{phase === 'summary' ? '三名参训人员 · 三项科目已完成' : `固定三人小组 · ${phase === 'prepare' ? '科目建议' : '训练记录'}`}</p></div>
-          <span className={`ot-status ${phase === 'summary' ? 'success' : 'active'}`}><i />{phase === 'summary' ? '已完成' : phase === 'prepare' ? '科目建议' : '训练记录'}</span>
-        </div>
-        <GroupProgress subjectIndex={subjectIndex} phase={phase} completed={completedSubjectIndexes} />
         <div ref={stagePanelRef} id="ot-stage-panel" role="tabpanel" aria-busy={loading} className="ot-stage-panel">
           {loading && !lastSync ? <TrainingLoading label="正在读取三人训练演示" /> : <div className="ot-stage-content">
             {phase === 'summary' && summary ? <GroupSummary items={summary} /> : phase === 'prepare' && recommendations && currentTask ? <section className="ot-preparation">
