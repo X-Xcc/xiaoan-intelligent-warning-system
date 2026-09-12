@@ -199,6 +199,12 @@ foreach ($case in $cases) {
         -WebUrl 'http://127.0.0.1:8080/' `
         -ApiBase 'http://127.0.0.1:8010' `
         -DetectorBase 'http://127.0.0.1:5000'
+    $realFrameFresh = Test-NativeRealCameraSnapshot `
+        -Snapshot $snapshot `
+        -Now $script:mockNow `
+        -FreshnessSeconds 10
+    Assert-Equal $case.Camera ([bool]$realFrameFresh) `
+        "Test-NativeRealCameraSnapshot freshness mismatch for $($case.Name)"
     $firstFrameCount = [int]$snapshot.FrameCount
     $secondSnapshot = Get-NativeHealthSnapshot `
         -WebUrl 'http://127.0.0.1:8080/' `

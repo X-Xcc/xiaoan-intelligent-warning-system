@@ -42,8 +42,17 @@ class NativeDeploymentTests(unittest.TestCase):
 
         text = (NATIVE / "stop.ps1").read_text(encoding="utf-8-sig")
         calls = []
-        if "Stop-NativeWatchdogProcess" in text:
+        def stop_watchdog():
             calls.append("watchdog")
+
+        def stop_child(name):
+            calls.append(name)
+
+        def stop_postgres():
+            calls.append("postgres")
+
+        if "Stop-NativeWatchdogProcess" in text:
+            stop_watchdog()
         direct_calls = re.findall(r"Stop-NativeChild '([^']+)'", text)
         loop = re.search(
             r"foreach\s*\(\$name\s+in\s+@\((.*?)\)\)",
@@ -51,14 +60,25 @@ class NativeDeploymentTests(unittest.TestCase):
             flags=re.DOTALL,
         )
         if loop:
-            calls.extend(re.findall(r"'([^']+)'", loop.group(1)))
+            for name in re.findall(r"'([^']+)'", loop.group(1)):
+                stop_child(name)
         else:
-            calls.extend(direct_calls)
+            for name in direct_calls:
+                stop_child(name)
         if "pg_ctl.exe" in text:
-            calls.append("postgres")
+            stop_postgres()
         self.assertEqual(
             calls,
             ["watchdog", "web", "detector", "api", "postgres"],
+        )
+
+    def test_stop_does_not_shadow_powershell_pid_variable(self):
+        import re
+
+        text = (NATIVE / "common.ps1").read_text(encoding="utf-8-sig")
+        self.assertIsNone(
+            re.search(r"^\s*\$pid\s*=", text, flags=re.IGNORECASE | re.MULTILINE),
+            "PowerShell $PID is read-only; use a differently named local variable.",
         )
 
     def test_force_start_and_watchdog_entry_points_exist(self):
