@@ -39,12 +39,44 @@ test('bridge route and prefix navigation resolve independently of governance', a
   assert.match(read('../pages/AdminConsolePage.tsx'), /navigate\('device-bridges'\)/);
 });
 
-test('video wall never fabricates cameras, sample images or AI/evidence findings', () => {
+test('video wall never fabricates cameras or AI/evidence findings', () => {
   const page = read('../pages/VideoLinkagePage.tsx');
-  assert.ok(!/fallbackCameras|defaultChannels|night-market-cam-|FightAlertReport|buildFallbackFightReport|security-ai\/judgements|已模拟|已完成证据保全/.test(page));
+  assert.ok(!/fallbackCameras|defaultChannels|FightAlertReport|buildFallbackFightReport|security-ai\/judgements|已模拟|已完成证据保全/.test(page));
   assert.match(page, /BridgePreview/);
   assert.match(page, /bindings\.map/);
   assert.match(page, /<Button disabled icon=\{<BrainCircuit/);
+});
+
+test('video wall opts into placeholders without changing live preview state', () => {
+  const page = read('../pages/VideoLinkagePage.tsx');
+  const preview = read('../components/BridgePreview.tsx');
+  assert.match(page, /placeholderSrc=\{slotPlaceholder\(index\)\}/);
+  assert.match(page, /placeholderSrc=\{slotPlaceholder\(selectedChannel\)\}/);
+  assert.match(page, /appBasePath.*night-market-cam-/);
+  assert.match(preview, /placeholderSrc\?: string/);
+  assert.match(preview, /alt="夜市场景演示图片，非实时监控"/);
+  assert.doesNotMatch(preview, /<span>演示图片 · 非实时<\/span>/);
+  assert.match(preview, /onError=\{\(\) => setFailed\(true\)\}/);
+  assert.match(preview, /data-preview-state=\{showImage \? 'live' : 'unavailable'\}/);
+  for (let camera = 2; camera <= 16; camera++) {
+    assert.ok(fs.existsSync(new URL(`../../public/night-market-cam-${String(camera).padStart(2, '0')}.png`, import.meta.url)));
+  }
+});
+
+test('video wall omits service status and error banner without removing authorization', () => {
+  const page = read('../pages/VideoLinkagePage.tsx');
+  assert.doesNotMatch(page, /monitoring-service|bridge-video-alert|<Alert\b/);
+  assert.match(page, /bridge\.authRequired \? <BridgeLogin/);
+  assert.match(page, /const previewAvailable = bridge\.available && !bridge\.busy/);
+});
+
+test('video wall presents named scenes without inventing live device metrics', () => {
+  const page = read('../pages/VideoLinkagePage.tsx');
+  assert.match(page, /camera\?\.name \?\? scene\.name/);
+  assert.match(page, /selected\?\.name \?\? selectedScene\.name/);
+  assert.match(page, /onlineCount !== null && cameras\.length > 0/);
+  assert.doesNotMatch(page, /槽位尚未读取|无视频源|解码帧率未测得|未绑定设备|设备不可用|未记录|未测得/);
+  assert.match(page, /hasFreshFrame\(camera, bridge\.now\)/);
 });
 
 test('brand templates respect channel and stream, while custom paths are preserved', async () => {
@@ -269,7 +301,7 @@ test('preview sessions renew halfway through their declared lifetime and reconne
   assert.equal(lib.bridgeStageLabel('decode'), '视频解码');
 });
 
-test('changed source identities invalidate preview keys and failures have no image fallback', async () => {
+test('changed source identities invalidate preview keys and do not change feed URLs on failure', async () => {
   const lib = await api();
   const device = { ...input, id: 'source-1', updatedAt: 'first', hasPassword: true };
   for (const change of [{ id: 'source-2' }, { host: '192.0.2.9' }, { rtspPath: '/other' }, { updatedAt: 'changed' }]) {

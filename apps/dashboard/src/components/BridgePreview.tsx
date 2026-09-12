@@ -3,9 +3,17 @@ import { CameraOff, KeyRound, RefreshCw } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { bridgeErrorMessage, bridgeMediaUrl, bridgeSourceKey, bridgeStatusLabels, hasFreshFrame, requestBridgeSnapshot, type BridgeDevice } from '../lib/device-bridges-api';
 
-type PreviewProps = { device?: BridgeDevice; available: boolean; authorized: boolean; epoch?: number; compact?: boolean };
+type PreviewProps = { device?: BridgeDevice; available: boolean; authorized: boolean; epoch?: number; compact?: boolean; placeholderSrc?: string };
 
-function SnapshotSource({ device, available, authorized }: PreviewProps) {
+function PreviewPlaceholder({ src }: { src: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return null;
+  return <div className="bridge-preview-placeholder">
+    <img src={src} alt="夜市场景演示图片，非实时监控" onError={() => setFailed(true)} />
+  </div>;
+}
+
+function SnapshotSource({ device, available, authorized, placeholderSrc }: PreviewProps) {
   const latestDevice = useRef(device);
   const [now, setNow] = useState(Date.now);
   const [frame, setFrame] = useState('');
@@ -83,11 +91,12 @@ function SnapshotSource({ device, available, authorized }: PreviewProps) {
   return <div className="bridge-preview compact" data-device-id={device?.id} data-preview-mode="snapshot" data-preview-state={showImage ? 'live' : 'unavailable'}>
     {showImage && device && <img src={frame} alt={`${device.name}最新视频画面`} onError={() => { setFrame(''); setError('画面解码失败'); }} />}
     {!showImage && <div className="bridge-preview-empty" role="status"><CameraOff size={20} /><span>{state}</span></div>}
+    {!showImage && placeholderSrc && <PreviewPlaceholder key={placeholderSrc} src={placeholderSrc} />}
     {showImage && <span className="bridge-preview-live">最新画面</span>}
   </div>;
 }
 
-function PreviewSource({ device, available, authorized, compact }: PreviewProps) {
+function PreviewSource({ device, available, authorized, compact, placeholderSrc }: PreviewProps) {
   const image = useRef<HTMLImageElement>(null);
   const [now, setNow] = useState(Date.now);
   const [loaded, setLoaded] = useState(false);
@@ -133,6 +142,7 @@ function PreviewSource({ device, available, authorized, compact }: PreviewProps)
       <CameraOff size={compact ? 20 : 28} /><span>{state}</span>
       {failed && <Button size="small" icon={<RefreshCw size={14} />} onClick={() => { setFailedAt(null); setRetry((value) => value + 1); }}>重试画面</Button>}
     </div>}
+    {(!showImage || !loaded) && placeholderSrc && <PreviewPlaceholder key={placeholderSrc} src={placeholderSrc} />}
     {showImage && loaded && <span className="bridge-preview-live">实时画面</span>}
   </div>;
 }
