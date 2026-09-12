@@ -125,7 +125,8 @@ test('group subjects prefer the newest retry and ignore malformed task records',
   ]);
   assert.equal(subjects[0].participantTasks[0].taskId, 'TRAIN-DEMO-017-01-RETRY-02');
   assert.equal(subjects[0].participantTasks[1].taskId, 'TRAIN-DEMO-018-01-RETRY-12');
-  assert.equal(subjects[0].participantTasks[2].taskId, null);
+  assert.equal(subjects[0].participantTasks[2].taskId, 'TRAIN-DEMO-019-01');
+  assert.equal(subjects[0].participantTasks[2].completed, false);
 });
 
 test('group summaries generate one total per participant from the three completed subjects', async () => {
