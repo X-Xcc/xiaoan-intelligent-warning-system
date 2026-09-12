@@ -481,3 +481,72 @@
   .ot-standard-band { padding-bottom: 10px; }
   .ot-action-bar { padding-top: 10px; padding-bottom: 10px; }
 }
+
+.ot-group-mode, .ot-group-subnav-label { display: inline-flex; align-items: center; gap: 7px; color: var(--ot-primary); font-size: 12px; font-weight: 600; }
+.ot-group-workbench { grid-template-columns: 268px minmax(0, 1fr); }
+.ot-group-rail { gap: 12px; }
+.ot-group-members { display: grid; gap: 8px; }
+.ot-group-member { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 2px 8px; min-width: 0; padding: 10px 12px; border: 1px solid var(--ot-border); border-radius: 5px; background: #fff; }
+.ot-group-member > span { grid-row: 1 / span 2; display: grid; place-items: center; width: 24px; height: 24px; color: var(--ot-primary); background: var(--ot-primary-soft); border-radius: 4px; }
+.ot-group-member strong, .ot-group-member small { min-width: 0; overflow-wrap: anywhere; }
+.ot-group-member strong { font-size: 13px; font-weight: 600; }
+.ot-group-member small { color: var(--ot-muted); font-family: Consolas, monospace; font-size: 10px; }
+.ot-group-rail-sequence { display: grid; gap: 6px; padding-top: 14px; border-top: 1px solid var(--ot-border); }
+.ot-group-rail-sequence > strong { color: var(--ot-muted); font-size: 12px; font-weight: 600; }
+.ot-group-rail-sequence > div { display: grid; grid-template-columns: 24px minmax(0, 1fr); align-items: start; gap: 8px; min-width: 0; padding: 7px 8px; color: var(--ot-muted); border-radius: 4px; }
+.ot-group-rail-sequence > div.active { color: var(--ot-primary); background: var(--ot-primary-soft); }
+.ot-group-rail-sequence > div.done { color: #26775e; }
+.ot-group-rail-sequence > div > span { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #eef2f1; font-size: 11px; }
+.ot-group-rail-sequence > div > b { min-width: 0; padding-top: 3px; font-size: 12px; font-weight: 500; overflow-wrap: anywhere; }
+.ot-group-steps { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.ot-group-step { display: grid; grid-template-columns: 28px minmax(0, 1fr); align-items: center; gap: 3px 8px; min-width: 0; color: var(--ot-muted); }
+.ot-group-step > span { grid-row: 1 / span 2; display: grid; place-items: center; width: 28px; height: 28px; color: #63747c; background: #f0f3f4; border-radius: 50%; font-size: 12px; }
+.ot-group-step > b, .ot-group-step > small { min-width: 0; overflow-wrap: anywhere; }
+.ot-group-step > b { font-size: 12px; font-weight: 600; line-height: 1.35; }
+.ot-group-step > small { color: inherit; font-size: 11px; }
+.ot-group-step.active { color: var(--ot-primary); }
+.ot-group-step.active > span { color: #fff; background: var(--ot-primary); }
+.ot-group-step.done { color: #26775e; }
+.ot-group-step.done > span { color: #26775e; background: #e8f5ee; }
+.ot-group-step .ot-step-chevron { grid-column: 3; grid-row: 1 / span 2; margin-left: auto; color: #b9c4c7; }
+.ot-group-summary { display: grid; gap: 14px; min-height: 100%; }
+.ot-group-summary-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--ot-border); }
+.ot-group-summary-heading > div > span { display: inline-flex; align-items: center; gap: 7px; color: var(--ot-primary); font-size: 12px; }
+.ot-group-summary-heading h3 { margin-top: 7px; font-size: 19px; font-weight: 650; }
+.ot-group-summary-heading > strong { color: #26775e; font-size: 12px; font-weight: 600; }
+.ot-group-summary-list { display: grid; gap: 10px; }
+.ot-group-summary-row { display: grid; grid-template-columns: minmax(145px, .8fr) minmax(115px, .3fr) minmax(0, 1.5fr); gap: 16px; align-items: start; min-width: 0; padding: 16px; border: 1px solid var(--ot-border); border-radius: 5px; background: #fff; }
+.ot-group-summary-person { display: flex; align-items: flex-start; gap: 9px; min-width: 0; color: var(--ot-primary); }
+.ot-group-summary-person > div { display: grid; gap: 4px; min-width: 0; }
+.ot-group-summary-person strong, .ot-group-summary-person small { overflow-wrap: anywhere; }
+.ot-group-summary-person strong { color: var(--ot-text); font-size: 14px; font-weight: 650; }
+.ot-group-summary-person small { color: var(--ot-muted); font-family: Consolas, monospace; font-size: 10px; }
+.ot-group-summary-score { display: grid; gap: 3px; min-width: 0; }
+.ot-group-summary-score > span { color: var(--ot-muted); font-size: 12px; }
+.ot-group-summary-score > strong { color: var(--ot-primary); font-size: 30px; line-height: 1.15; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ot-group-summary-score small { margin-left: 5px; color: var(--ot-muted); font-size: 12px; font-weight: 400; }
+.ot-group-summary-notes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; min-width: 0; }
+.ot-group-summary-notes section { min-width: 0; padding-left: 12px; border-left: 2px solid #75b59d; }
+.ot-group-summary-notes section:last-child { border-left-color: #d3a06a; }
+.ot-group-summary-notes h4 { margin-bottom: 5px; color: #26775e; font-size: 12px; font-weight: 650; }
+.ot-group-summary-notes section:last-child h4 { color: #a26731; }
+.ot-group-summary-notes p { color: var(--ot-muted); font-size: 12px; line-height: 1.75; overflow-wrap: anywhere; }
+.ot-group-recording-note { display: flex; align-items: flex-start; gap: 9px; padding: 13px 0; border-top: 1px solid var(--ot-border); color: var(--ot-primary); }
+.ot-group-recording-note > div { min-width: 0; }
+.ot-group-recording-note strong { color: var(--ot-text); font-size: 13px; }
+.ot-group-recording-note p { margin-top: 4px; color: var(--ot-muted); font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+@media (max-width: 900px) {
+  .ot-group-workbench { grid-template-columns: minmax(0, 1fr); }
+  .ot-group-rail { display: grid; grid-template-columns: minmax(0, 1fr) minmax(190px, .8fr); align-items: start; gap: 12px 18px; }
+  .ot-group-rail .ot-rail-heading, .ot-group-rail .ot-rail-bottom { grid-column: 1 / -1; }
+  .ot-group-rail-sequence { padding-top: 0; border-top: 0; }
+}
+@media (max-width: 600px) {
+  .ot-group-mode { max-width: 150px; overflow-wrap: anywhere; }
+  .ot-group-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 8px; }
+  .ot-group-step .ot-step-chevron { display: none; }
+  .ot-group-rail { grid-template-columns: minmax(0, 1fr); }
+  .ot-group-summary-heading { flex-direction: column; gap: 8px; }
+  .ot-group-summary-row { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .ot-group-summary-notes { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+}
