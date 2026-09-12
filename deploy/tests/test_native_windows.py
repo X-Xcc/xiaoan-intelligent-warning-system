@@ -38,39 +38,105 @@ class NativeDeploymentTests(unittest.TestCase):
         self.assertEqual(positions, sorted(positions))
 
     def test_stop_contract_mock_executes_expected_call_order(self):
+        import os
         import re
+        import subprocess
+        import tempfile
 
         text = (NATIVE / "stop.ps1").read_text(encoding="utf-8-sig")
-        calls = []
-        def stop_watchdog():
-            calls.append("watchdog")
-
-        def stop_child(name):
-            calls.append(name)
-
-        def stop_postgres():
-            calls.append("postgres")
-
-        if "Stop-NativeWatchdogProcess" in text:
-            stop_watchdog()
-        direct_calls = re.findall(r"Stop-NativeChild '([^']+)'", text)
-        loop = re.search(
-            r"foreach\s*\(\$name\s+in\s+@\((.*?)\)\)",
-            text,
-            flags=re.DOTALL,
+        postgres_call = re.compile(
+            r"(?m)^[ \t]*& \(Join-Path \(Get-NativePostgresBin\) 'pg_ctl\.exe'\).*$"
         )
-        if loop:
-            for name in re.findall(r"'([^']+)'", loop.group(1)):
-                stop_child(name)
-        else:
-            for name in direct_calls:
-                stop_child(name)
-        if "pg_ctl.exe" in text:
-            stop_postgres()
+        self.assertRegex(text, postgres_call)
+
+        harness = r"""
+$ErrorActionPreference = 'Stop'
+$global:NativeStopCalls = @()
+$global:NativePostgresBinLookups = 0
+
+function Stop-NativeWatchdogProcess {
+    $global:NativeStopCalls += 'watchdog'
+}
+function Stop-NativeChild {
+    param([string]$Name)
+    $global:NativeStopCalls += $Name
+}
+function Get-NativeDirectory {
+    return $env:NATIVE_STOP_TEST_ROOT
+}
+function Get-NativePostgresBin {
+    $global:NativePostgresBinLookups += 1
+    return $env:NATIVE_STOP_TEST_ROOT
+}
+function Invoke-NativePostgresStop {
+    param([string]$Path, [string[]]$Arguments)
+    $global:NativeStopCalls += 'postgres'
+}
+
+. (Join-Path $env:NATIVE_STOP_TEST_ROOT 'stop.ps1')
+Write-Output ('CALLS:' + ($global:NativeStopCalls -join ','))
+Write-Output ('POSTGRES_LOOKUPS:' + $global:NativePostgresBinLookups)
+"""
+
+        with tempfile.TemporaryDirectory(prefix="native-stop-contract-") as temporary:
+            temp_root = Path(temporary)
+            temp_native = temp_root / "native"
+            temp_native.mkdir()
+            stop_copy = temp_native / "stop.ps1"
+            stop_copy.write_text(
+                postgres_call.sub(
+                    "    Invoke-NativePostgresStop -Path (Join-Path (Get-NativePostgresBin) 'pg_ctl.exe') -Arguments @('-D', $data, '-m', 'fast', '-w', 'stop')",
+                    text,
+                    count=1,
+                ),
+                encoding="utf-8",
+                newline="\r\n",
+            )
+            (temp_native / "common.ps1").write_text(
+                "# Mocks are supplied by the executable harness.",
+                encoding="utf-8",
+                newline="\r\n",
+            )
+            (temp_native / "data" / "postgres").mkdir(parents=True)
+            (temp_native / "data" / "postgres" / "PG_VERSION").write_text(
+                "18",
+                encoding="ascii",
+            )
+            harness_path = temp_root / "harness.ps1"
+            harness_path.write_text(harness, encoding="utf-8", newline="\r\n")
+            environment = os.environ.copy()
+            environment["NATIVE_STOP_TEST_ROOT"] = str(temp_native)
+            result = subprocess.run(
+                [
+                    "powershell.exe",
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-File",
+                    str(harness_path),
+                ],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                env=environment,
+                check=False,
+            )
+
         self.assertEqual(
-            calls,
+            result.returncode,
+            0,
+            msg=result.stdout + result.stderr,
+        )
+        output = result.stdout + result.stderr
+        calls = re.search(r"CALLS:([^\r\n]*)", output)
+        lookups = re.search(r"POSTGRES_LOOKUPS:(\d+)", output)
+        self.assertIsNotNone(calls, output)
+        self.assertIsNotNone(lookups, output)
+        self.assertEqual(
+            calls.group(1).split(","),
             ["watchdog", "web", "detector", "api", "postgres"],
         )
+        self.assertGreaterEqual(int(lookups.group(1)), 1)
 
     def test_stop_does_not_shadow_powershell_pid_variable(self):
         import re
