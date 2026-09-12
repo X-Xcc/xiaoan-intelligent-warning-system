@@ -8,6 +8,27 @@ NATIVE = ROOT / "deploy" / "native"
 
 
 class NativeDeploymentTests(unittest.TestCase):
+    def test_one_click_entries_forward_arguments_and_preserve_exit_code(self):
+        for name, target in (
+            ("\u4e00\u952e\u542f\u52a8.cmd", "start.cmd"),
+            ("\u4e00\u952e\u505c\u6b62.cmd", "stop.cmd"),
+        ):
+            path = ROOT / name
+            self.assertTrue(path.is_file(), f"Missing one-click entry: {name}")
+            text = path.read_text(encoding="utf-8-sig")
+            self.assertIn(f'call "%~dp0{target}" %*', text)
+            self.assertIn("exit /b %errorlevel%", text)
+        start = (ROOT / "start.cmd").read_text(encoding="utf-8-sig")
+        self.assertIn("-OpenBrowser %*", start)
+        self.assertIn('set "result=%errorlevel%"', start)
+        self.assertIn("exit /b %result%", start)
+
+    def test_browser_opens_only_after_all_services_are_ready(self):
+        text = (NATIVE / "start.ps1").read_text(encoding="utf-8-sig")
+        self.assertIn("[switch]$OpenBrowser", text)
+        self.assertIn("if ($OpenBrowser) { Open-NativeDashboard", text)
+        self.assertGreater(text.index("if ($OpenBrowser)"), text.rindex("Wait-NativeHttp"))
+
     def test_native_entry_points_exist(self):
         files = {
             NATIVE / "bootstrap.ps1",
