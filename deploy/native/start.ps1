@@ -3,7 +3,7 @@
 Starts the complete Windows-native XiaoAn deployment on loopback ports.
 #>
 [CmdletBinding()]
-param([switch]$SkipBuild, [switch]$EnableCameras)
+param([switch]$SkipBuild, [switch]$EnableCameras, [switch]$OpenBrowser)
 
 . (Join-Path $PSScriptRoot 'common.ps1')
 
@@ -86,10 +86,12 @@ function Ensure-NativeBuild {
 try {
     $root = Get-NativeProjectRoot
     $native = Get-NativeDirectory
+    Write-Host '[1/5] Checking prerequisites...'
     & (Join-Path $PSScriptRoot 'bootstrap.ps1') -InstallMissing
     if ($LASTEXITCODE -ne 0) { throw 'Prerequisite check did not pass.' }
     $python = Get-NativePython -RequirePrivateAcl
     Ensure-NativeConfiguration $python $native
+    Write-Host '[2/5] Checking application dependencies and builds (first launch may take longer)...'
     if (-not $SkipBuild) { Ensure-NativeBuild $python $root $native }
     $settings = Read-NativeEnv (Join-Path $native '.env')
     if ($EnableCameras) {
@@ -98,6 +100,7 @@ try {
         }
         $settings = Read-NativeEnv (Join-Path $native '.env')
     }
+    Write-Host '[3/5] Starting database and API...'
     Initialize-NativeDatabase $settings
     Set-NativeEnvironment $settings
     Set-NativeEnvironment (Read-NativeEnv (Join-Path $native 'runtime.env'))
@@ -112,6 +115,7 @@ try {
     Start-NativeChild 'api' $apiPython @('-m', 'uvicorn', 'app.main:app', '--app-dir', 'server', '--host', '127.0.0.1', '--port', $settings['API_PORT']) $root | Out-Null
     Wait-NativeHttp "http://127.0.0.1:$($settings['API_PORT'])/api/health/ready"
 
+    Write-Host '[4/5] Starting detector service...'
     Set-NativeEnvironment (Read-NativeEnv (Join-Path $native 'detector.env'))
     $detector = Join-Path $root 'integrations/detector'
     $runtimeDir = Join-Path $detector 'runtime'
@@ -136,13 +140,16 @@ try {
     $javaArgs += @('-jar', (Join-Path $detector 'server/target/yolov8-security.war'), "--server.port=$($settings['DETECTOR_PORT'])")
     Start-NativeChild 'detector' (Get-NativeJava) $javaArgs (Join-Path $detector 'server') | Out-Null
     Wait-NativeHttp "http://127.0.0.1:$($settings['DETECTOR_PORT'])/api/detection/status"
+    Write-Host '[5/5] Starting dashboard...'
     Start-NativeChild 'web' $apiPython @((Join-Path $PSScriptRoot 'static_server.py'), '--directory', (Join-Path $root 'apps/dashboard/dist'), '--port', $settings['WEB_PORT']) $root | Out-Null
     Wait-NativeHttp "http://127.0.0.1:$($settings['WEB_PORT'])/"
     Write-Host "READY: http://127.0.0.1:$($settings['WEB_PORT'])"
     Write-Host "Detector: http://127.0.0.1:$($settings['DETECTOR_PORT'])"
     if (-not $EnableCameras) { Write-Host 'Cameras are restored but not connected. Double-click enable-cameras.cmd after checking the target computer network.' }
+    if ($OpenBrowser) { Open-NativeDashboard "http://127.0.0.1:$($settings['WEB_PORT'])" }
 } catch {
     Write-Host "Startup stopped: $($_.Exception.Message)"
+    Write-Host "Logs: $(Join-Path (Get-NativeDirectory) 'logs')"
     if ($_.InvocationInfo.ScriptLineNumber) {
         Write-Host "Location: $($_.InvocationInfo.ScriptName):$($_.InvocationInfo.ScriptLineNumber)"
     }

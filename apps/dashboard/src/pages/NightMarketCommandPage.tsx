@@ -431,8 +431,6 @@ function CommandPage({
   const [selectedId, setSelectedId] = useState(overview.events[0]?.id ?? '');
   const [updating, setUpdating] = useState(false);
   const [selectedMarketId, setSelectedMarketId] = useState(overview.night_markets?.[0]?.id ?? fallbackMarkets[0].id);
-  const [demoStage, setDemoStage] = useState(0);
-  const [demoRunning, setDemoRunning] = useState(false);
 
   const filtered = useMemo(() => overview.events.filter((event) => filter === '全部' || event.status === filter), [overview.events, filter]);
   const selected = filtered.find((event) => event.id === selectedId) ?? filtered[0];
@@ -448,29 +446,6 @@ function CommandPage({
     longitude: market.longitude,
   })), [nightMarkets]);
   const dispatchStaff = overview.patrol_staff?.length ? overview.patrol_staff.filter((staff) => staff.online).map((staff) => staff.name) : ['王队', '李敏', '陈安'];
-
-  const demoSteps = [
-    { title: '授权目标出现于夜市 A', detail: '临时目标 TARGET-DEMO-07 · 绳金塔美食街 · 21:08', icon: '01' },
-    { title: '授权目标出现于夜市 B', detail: '临时目标 TARGET-DEMO-07 · 蛤蟆街夜市 · 21:21', icon: '02' },
-    { title: '系统关联两条现场线索', detail: '商户上报 1 条 · 视频行为提示 1 条 · 关联案件 CASE-DEMO-001', icon: '03' },
-    { title: '生成跨夜市联防预警', detail: '事件风险：高 · 依据：2 个夜市、2 条证据、人工待核验', icon: '04' },
-    { title: '人工确认并派发巡防任务', detail: '指挥席 02 已确认 · 巡防组 A 前往蛤蟆街夜市', icon: '05' },
-  ];
-
-  const runDemo = () => {
-    if (demoRunning) return;
-    setDemoRunning(true);
-    setDemoStage(1);
-    let stage = 1;
-    const timer = window.setInterval(() => {
-      stage += 1;
-      setDemoStage(stage);
-      if (stage >= demoSteps.length) {
-        window.clearInterval(timer);
-        setDemoRunning(false);
-      }
-    }, 1100);
-  };
 
   useEffect(() => {
     if (!overview.events.some((event) => event.id === selectedId)) setSelectedId(overview.events[0]?.id ?? '');
@@ -551,31 +526,6 @@ function CommandPage({
         <Metric icon={<Users size={18} />} label="在线巡防" value={overview.stats.online_staff} detail={`${nightMarkets.length} 个夜市点位`} tone="blue" />
         <Metric icon={<ShieldCheck size={18} />} label="闭环率" value={`${overview.stats.completion_rate}%`} detail={`平均响应 ${overview.stats.avg_response_minutes} 分钟`} tone="green" />
       </div>
-
-      <section className="demo-proof-panel" aria-label="跨夜市联防演示">
-        <div className="demo-proof-heading">
-          <div>
-            <span className="panel-kicker">PPT DEMO / AUTHORIZED CASE LINKAGE</span>
-            <h2>跨夜市案件线索关联演示</h2>
-            <p>仅使用脱敏演示目标，展示线索上报、风险研判和全域预警的完整链路。</p>
-          </div>
-          <button className="demo-run-button" onClick={runDemo} disabled={demoRunning}>
-            <Sparkles size={15} />{demoRunning ? '演示进行中' : demoStage ? '重新演示' : '开始演示'}
-          </button>
-        </div>
-        <div className="demo-proof-track">
-          {demoSteps.map((step, index) => (
-            <div className={`demo-proof-step ${demoStage > index ? 'done' : ''} ${demoStage === index + 1 ? 'active' : ''}`} key={step.icon}>
-              <span className="demo-proof-number">{demoStage > index ? <CheckCircle2 size={15} /> : step.icon}</span>
-              <div><strong>{step.title}</strong><small>{step.detail}</small></div>
-            </div>
-          ))}
-        </div>
-        <div className="demo-proof-footer">
-          <span><ShieldCheck size={14} />{demoStage >= 4 ? '已生成联防预警，等待人工确认' : 'AI 只提供线索关联建议，不直接认定个人风险'}</span>
-          <span>{demoStage >= 5 ? '处置任务已派发' : `演示进度 ${demoStage}/5`}</span>
-        </div>
-      </section>
 
       <div className="command-grid">
         <section className="glass-panel queue-panel">
