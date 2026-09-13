@@ -1,4 +1,4 @@
-import { Route, ShieldAlert } from 'lucide-react';
+import { Compass, Route, ShieldAlert } from 'lucide-react';
 import type { DemoDispatchData } from '../lib/demo-dispatch-data';
 import '../styles/command-dispatch.css';
 
@@ -11,6 +11,11 @@ export function DemoDispatchMap({ data }: { data: DemoDispatchData }) {
       <div className="demo-map-road demo-map-road-a" aria-hidden="true" />
       <div className="demo-map-road demo-map-road-b" aria-hidden="true" />
       <div className="demo-map-road demo-map-road-c" aria-hidden="true" />
+      <div className="demo-map-minor-road demo-map-minor-road-a" aria-hidden="true" />
+      <div className="demo-map-minor-road demo-map-minor-road-b" aria-hidden="true" />
+      <div className="demo-map-minor-road demo-map-minor-road-c" aria-hidden="true" />
+      <div className="demo-map-map-meta">5公里态势范围</div>
+      <div className="demo-map-north" aria-label="北向"><Compass size={18} /><b>北</b></div>
       <svg className="demo-map-route" viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="最近警力路线">
         <polyline points={route} />
       </svg>
@@ -25,6 +30,7 @@ export function DemoDispatchMap({ data }: { data: DemoDispatchData }) {
       >
         <span /><b>{unit.name}</b>
       </div>)}
+      <div className="demo-map-scale"><span />1 公里</div>
     </div>
     <footer className="demo-map-footer">
       <span><i className="demo-legend-dot incident" />报警处</span>
