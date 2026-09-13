@@ -23,4 +23,6 @@ test('demo dispatch data exposes multiple fictional routes and congestion', () =
   assert.match(source, /congestion/);
   assert.match(source, /status:\s*'congested'/);
   assert.ok((source.match(/id:\s*'demo-route-/g) ?? []).length >= 3);
+  assert.match(source, /x: 40, y: 31/);
+  assert.match(source, /x: 70, y: 45/);
 });
