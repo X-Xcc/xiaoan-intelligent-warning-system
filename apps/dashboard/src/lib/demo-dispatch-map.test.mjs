@@ -19,6 +19,9 @@ test('demo map renders fictional grid, incident, units and route', () => {
   assert.match(source, /demo-map-candidate-route/);
   assert.match(source, /demo-map-congestion/);
   assert.match(source, /候选路线/);
+  assert.match(source, /demo-map-route-callout/);
+  assert.match(source, /demo-map-start/);
+  assert.match(source, /demo-map-end/);
   assert.doesNotMatch(source, /地图控制|推荐通勤|dispatch-panel|缩小地图|放大地图/);
   assert.doesNotMatch(source, /AMap|amap|latitude|longitude|高德|百度|南昌/);
 });

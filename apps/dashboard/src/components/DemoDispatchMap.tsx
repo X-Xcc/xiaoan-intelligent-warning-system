@@ -31,11 +31,14 @@ export function DemoDispatchMap({ data }: { data: DemoDispatchData }) {
           />
         ))}
       </svg>
-      <div className="demo-map-route-label">系统推荐</div>
+      <div className="demo-map-route-callout demo-map-start">
+        <span><Route size={15} /></span><b>最近警力 · 警力点 01</b>
+      </div>
+      <div className="demo-map-route-callout demo-map-route-label">系统推荐</div>
       <div className="demo-map-congestion-label" style={{ left: `${data.congestion.x}%`, top: `${data.congestion.y}%` }}>
         <span />前方拥堵
       </div>
-      <div className="demo-map-marker demo-map-incident" style={{ left: `${data.incident.x}%`, top: `${data.incident.y}%` }}>
+      <div className="demo-map-marker demo-map-incident demo-map-end" style={{ left: `${data.incident.x}%`, top: `${data.incident.y}%` }}>
         <span><ShieldAlert size={16} /></span><b>报警处</b>
       </div>
       {data.units.map((unit) => <div
