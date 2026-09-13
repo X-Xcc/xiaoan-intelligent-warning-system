@@ -9,5 +9,6 @@ test('demo map renders fictional grid, incident, units and route', () => {
   assert.match(source, /incident/);
   assert.match(source, /routePoints/);
   assert.match(source, /units/);
+  assert.doesNotMatch(source, /地图控制|推荐通勤|dispatch-panel|缩小地图|放大地图/);
   assert.doesNotMatch(source, /AMap|amap|latitude|longitude|高德|百度|南昌/);
 });
