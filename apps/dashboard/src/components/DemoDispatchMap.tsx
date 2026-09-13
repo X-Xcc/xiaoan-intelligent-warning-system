@@ -9,21 +9,22 @@ export function DemoDispatchMap({ data }: { data: DemoDispatchData }) {
   const routeOptions: DemoDispatchRoute[] = data.routeOptions.length > 0
     ? data.routeOptions
     : [{ id: 'demo-route-fallback', label: '系统推荐', points: data.routePoints, status: 'recommended' }];
+  const recommendedRoute = routeOptions.find((routeOption) => routeOption.id === data.recommendedRouteId) ?? routeOptions[0];
+  const candidateRoutes = routeOptions.filter((routeOption) => routeOption.id !== recommendedRoute.id);
+  const startUnit = data.units.find((unit) => unit.id === 'demo-unit-01') ?? data.units[0];
 
   return <section className="demo-map-panel" aria-label="脱敏演示警力分布图">
     <div className="demo-map-canvas">
       <img className="demo-map-art" src={mapArtwork} alt="" aria-hidden="true" />
       <div className="demo-map-map-meta">5公里态势范围</div>
       <div className="demo-map-north" aria-label="北向"><Compass size={18} /><b>北</b></div>
-      <svg className="demo-map-routes" viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="多路线可达示意">
-        {routeOptions.map((routeOption) => (
-          <polyline
-            className={routeOption.id === data.recommendedRouteId ? 'demo-map-recommended-route' : 'demo-map-candidate-route'}
-            key={routeOption.id}
-            points={toRoutePoints(routeOption.points)}
-          />
+      <svg className="demo-map-routes" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="多路线可达示意">
+        {candidateRoutes.map((routeOption) => (
+          <polyline className="demo-map-candidate-route" key={routeOption.id} points={toRoutePoints(routeOption.points)} />
         ))}
-        {routeOptions.filter((routeOption) => routeOption.congestionSegment).map((routeOption) => (
+        <polyline className="demo-map-route-halo" points={toRoutePoints(recommendedRoute.points)} />
+        <polyline className="demo-map-recommended-route" points={toRoutePoints(recommendedRoute.points)} />
+        {candidateRoutes.filter((routeOption) => routeOption.id === data.congestion.routeId && routeOption.congestionSegment).map((routeOption) => (
           <polyline
             className="demo-map-congestion"
             key={`${routeOption.id}-congestion`}
@@ -31,23 +32,23 @@ export function DemoDispatchMap({ data }: { data: DemoDispatchData }) {
           />
         ))}
       </svg>
-      <div className="demo-map-route-callout demo-map-start">
+      <div className="demo-map-route-callout demo-map-start" style={{ left: `${startUnit?.x ?? 34}%`, top: `${startUnit?.y ?? 27}%` }}>
         <span><Route size={15} /></span><b>最近警力 · 警力点 01</b>
       </div>
-      <div className="demo-map-route-callout demo-map-route-label">系统推荐</div>
+      <div className="demo-map-route-callout demo-map-route-label">{recommendedRoute.label}</div>
       <div className="demo-map-congestion-label" style={{ left: `${data.congestion.x}%`, top: `${data.congestion.y}%` }}>
-        <span />前方拥堵
+        <span />{data.congestion.label}
       </div>
       <div className="demo-map-marker demo-map-incident demo-map-end" style={{ left: `${data.incident.x}%`, top: `${data.incident.y}%` }}>
         <span><ShieldAlert size={16} /></span><b>报警处</b>
       </div>
       {data.units.map((unit) => <div
-        className={`demo-map-marker demo-map-unit${unit.x > 68 ? ' demo-map-marker--left-label' : ''}`}
+        className={`demo-map-marker demo-map-unit${unit.id === 'demo-unit-01' ? ' demo-map-unit-start' : ''}${unit.x > 68 ? ' demo-map-marker--left-label' : ''}`}
         key={unit.id}
         style={{ left: `${unit.x}%`, top: `${unit.y}%` }}
         aria-label={unit.name}
       >
-        <span /><b>{unit.name}</b>
+        <span>{unit.id === 'demo-unit-01' && <Route size={10} />}</span><b>{unit.name}</b>
       </div>)}
       <div className="demo-map-scale"><span />1 公里</div>
     </div>

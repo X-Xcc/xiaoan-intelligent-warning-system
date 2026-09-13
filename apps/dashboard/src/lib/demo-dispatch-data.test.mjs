@@ -13,7 +13,7 @@ test('demo dispatch data contains only fictional canvas coordinates', () => {
 
 test('demo dispatch data exposes only points and one route', () => {
   assert.match(source, /units:\s*\[/);
-  assert.match(source, /routePoints:\s*\[/);
+  assert.match(source, /routePoints:\s*recommendedRoutePoints/);
   assert.doesNotMatch(source, /commuteOptions|selectRecommendedUnit/);
 });
 
@@ -25,4 +25,6 @@ test('demo dispatch data exposes multiple fictional routes and congestion', () =
   assert.ok((source.match(/id:\s*'demo-route-/g) ?? []).length >= 3);
   assert.match(source, /x: 40, y: 31/);
   assert.match(source, /x: 70, y: 45/);
+  assert.match(source, /const recommendedRoutePoints/);
+  assert.match(source, /points: recommendedRoutePoints/);
 });

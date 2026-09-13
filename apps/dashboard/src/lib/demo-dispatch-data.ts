@@ -28,79 +28,75 @@ export type DemoDispatchData = {
   units: Array<{ id: string; name: string; x: number; y: number }>;
 };
 
+const recommendedRoutePoints = [
+  { x: 34, y: 27 },
+  { x: 36, y: 29 },
+  { x: 40, y: 31 },
+  { x: 44, y: 34 },
+  { x: 48, y: 36 },
+  { x: 52, y: 39 },
+  { x: 56, y: 42 },
+  { x: 60, y: 45 },
+  { x: 64, y: 47 },
+  { x: 68, y: 50 },
+  { x: 74, y: 54 },
+];
+
+const congestedRoutePoints = [
+  { x: 34, y: 27 },
+  { x: 31, y: 29 },
+  { x: 29, y: 33 },
+  { x: 27, y: 37 },
+  { x: 28, y: 41 },
+  { x: 32, y: 44 },
+  { x: 38, y: 47 },
+  { x: 45, y: 49 },
+  { x: 52, y: 51 },
+  { x: 61, y: 53 },
+  { x: 74, y: 54 },
+];
+
+const alternateRoutePoints = [
+  { x: 34, y: 27 },
+  { x: 40, y: 24 },
+  { x: 46, y: 22 },
+  { x: 52, y: 23 },
+  { x: 58, y: 27 },
+  { x: 63, y: 32 },
+  { x: 66, y: 37 },
+  { x: 70, y: 45 },
+  { x: 72, y: 50 },
+  { x: 74, y: 54 },
+];
+
+const congestionSegment = [
+  { x: 27, y: 37 },
+  { x: 28, y: 41 },
+  { x: 32, y: 44 },
+];
+
 export const demoDispatchData: DemoDispatchData = {
   incident: { id: 'demo-incident', label: '报警处', x: 74, y: 54, status: 'incident' },
-  routePoints: [
-    { x: 34, y: 27 },
-    { x: 36, y: 29 },
-    { x: 40, y: 31 },
-    { x: 44, y: 34 },
-    { x: 48, y: 36 },
-    { x: 52, y: 39 },
-    { x: 56, y: 42 },
-    { x: 60, y: 45 },
-    { x: 64, y: 47 },
-    { x: 68, y: 50 },
-    { x: 74, y: 54 },
-  ],
+  routePoints: recommendedRoutePoints,
   routeOptions: [
     {
       id: 'demo-route-01',
       label: '系统推荐',
       status: 'recommended',
-      points: [
-        { x: 34, y: 27 },
-        { x: 36, y: 29 },
-        { x: 40, y: 31 },
-        { x: 44, y: 34 },
-        { x: 48, y: 36 },
-        { x: 52, y: 39 },
-        { x: 56, y: 42 },
-        { x: 60, y: 45 },
-        { x: 64, y: 47 },
-        { x: 68, y: 50 },
-        { x: 74, y: 54 },
-      ],
+      points: recommendedRoutePoints,
     },
     {
       id: 'demo-route-02',
       label: '候选路线 02',
       status: 'congested',
-      points: [
-        { x: 34, y: 27 },
-        { x: 31, y: 29 },
-        { x: 29, y: 33 },
-        { x: 27, y: 37 },
-        { x: 28, y: 41 },
-        { x: 32, y: 44 },
-        { x: 38, y: 47 },
-        { x: 45, y: 49 },
-        { x: 52, y: 51 },
-        { x: 61, y: 53 },
-        { x: 74, y: 54 },
-      ],
-      congestionSegment: [
-        { x: 27, y: 37 },
-        { x: 28, y: 41 },
-        { x: 32, y: 44 },
-      ],
+      points: congestedRoutePoints,
+      congestionSegment,
     },
     {
       id: 'demo-route-03',
       label: '候选路线 03',
       status: 'candidate',
-      points: [
-        { x: 34, y: 27 },
-        { x: 40, y: 24 },
-        { x: 46, y: 22 },
-        { x: 52, y: 23 },
-        { x: 58, y: 27 },
-        { x: 63, y: 32 },
-        { x: 66, y: 37 },
-        { x: 70, y: 45 },
-        { x: 72, y: 50 },
-        { x: 74, y: 54 },
-      ],
+      points: alternateRoutePoints,
     },
   ],
   recommendedRouteId: 'demo-route-01',
