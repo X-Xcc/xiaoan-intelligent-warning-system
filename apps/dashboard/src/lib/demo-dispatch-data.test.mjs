@@ -16,3 +16,11 @@ test('demo dispatch data exposes only points and one route', () => {
   assert.match(source, /routePoints:\s*\[/);
   assert.doesNotMatch(source, /commuteOptions|selectRecommendedUnit/);
 });
+
+test('demo dispatch data exposes multiple fictional routes and congestion', () => {
+  assert.match(source, /routeOptions:\s*\[/);
+  assert.match(source, /recommendedRouteId/);
+  assert.match(source, /congestion/);
+  assert.match(source, /status:\s*'congested'/);
+  assert.ok((source.match(/id:\s*'demo-route-/g) ?? []).length >= 3);
+});
