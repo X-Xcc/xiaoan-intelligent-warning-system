@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-label="脱敏演示地图底图">
+  <defs>
+    <pattern id="grain" width="18" height="18" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="3" r="0.8" fill="#c5d0cb" opacity="0.25"/>
+      <circle cx="13" cy="11" r="0.7" fill="#c5d0cb" opacity="0.2"/>
+    </pattern>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="675" fill="#dfe9e6"/>
+  <path d="M-30 548 C160 470 224 570 386 516 C540 463 655 490 754 574 C870 672 1012 584 1230 622 L1230 710 L-30 710Z" fill="#c7dcca"/>
+  <path d="M-40 0 C88 92 145 70 244 116 C340 161 368 92 483 103 C605 115 671 54 742 0Z" fill="#d6e5da"/>
+  <path d="M1040 -35 C963 55 1018 132 949 201 C900 251 926 319 1000 348 C1060 372 1115 333 1230 360 L1230 -35Z" fill="#c6dadd"/>
+  <path d="M1018 -30 C968 63 1013 128 937 210 C899 253 928 306 1001 332" fill="none" stroke="#b5cdd0" stroke-width="18" opacity="0.65"/>
+  <g fill="#edf1e9" stroke="#c5d1ca" stroke-width="2" opacity="0.9">
+    <path d="M80 120 220 88 294 152 262 258 118 242Z"/>
+    <path d="M328 138 467 116 532 202 477 282 332 251Z"/>
+    <path d="M612 86 756 70 808 153 770 258 623 234Z"/>
+    <path d="M90 330 214 292 306 348 274 457 134 470Z"/>
+    <path d="M367 332 518 298 594 367 563 474 404 460Z"/>
+    <path d="M650 302 793 273 869 342 842 455 692 468Z"/>
+    <path d="M954 415 1102 372 1192 438 1162 554 1001 570Z"/>
+  </g>
+  <g fill="#d5e2d8" stroke="#b9cabd" stroke-width="2" opacity="0.9">
+    <path d="M38 44 122 26 166 70 136 118 56 106Z"/>
+    <path d="M246 330 326 310 363 356 342 415 260 427Z"/>
+    <path d="M508 18 584 2 626 44 601 98 520 86Z"/>
+    <path d="M830 420 908 398 952 450 930 508 846 514Z"/>
+    <path d="M1040 120 1118 102 1165 150 1136 215 1057 205Z"/>
+  </g>
+  <g fill="#c0d8c0" opacity="0.9">
+    <path d="M74 505 C135 478 184 494 212 534 C179 569 126 572 72 548Z"/>
+    <path d="M460 520 C508 491 573 497 608 535 C583 578 511 590 454 556Z"/>
+    <path d="M728 122 C776 92 827 98 855 133 C838 177 778 188 730 165Z"/>
+    <path d="M887 282 C928 255 974 266 993 302 C971 341 919 345 883 319Z"/>
+  </g>
+  <g fill="none" stroke-linecap="round">
+    <path d="M-30 286 C158 247 285 304 414 276 C568 242 660 279 786 248 C923 214 1040 250 1230 202" stroke="#aebcbf" stroke-width="25" opacity="0.65"/>
+    <path d="M-30 286 C158 247 285 304 414 276 C568 242 660 279 786 248 C923 214 1040 250 1230 202" stroke="#f7faf8" stroke-width="17"/>
+    <path d="M146 -30 C197 91 178 174 238 263 C304 365 289 468 350 710" stroke="#abbabd" stroke-width="21" opacity="0.6"/>
+    <path d="M146 -30 C197 91 178 174 238 263 C304 365 289 468 350 710" stroke="#f7faf8" stroke-width="14"/>
+    <path d="M880 -30 C842 108 884 183 837 287 C783 403 830 507 789 710" stroke="#abbabd" stroke-width="18" opacity="0.6"/>
+    <path d="M880 -30 C842 108 884 183 837 287 C783 403 830 507 789 710" stroke="#f7faf8" stroke-width="12"/>
+  </g>
+  <g fill="none" stroke="#c1cdce" stroke-width="5" stroke-linecap="round" opacity="0.9">
+    <path d="M30 178 C112 151 208 171 280 211 C348 250 414 224 503 189"/>
+    <path d="M405 83 C470 147 535 148 594 115 C657 80 694 94 744 145"/>
+    <path d="M424 581 C481 525 526 522 585 563 C640 603 698 579 724 529"/>
+    <path d="M1005 281 C1052 310 1094 315 1168 292"/>
+    <path d="M101 398 C136 370 166 366 212 391"/>
+  </g>
+  <g fill="none" stroke="#d0d9d8" stroke-width="3.5" stroke-linecap="round" opacity="0.95">
+    <path d="M260 62 C282 128 272 190 304 236 C331 275 332 322 307 360"/>
+    <path d="M533 258 C575 232 617 232 660 258 C701 284 744 282 790 257"/>
+    <path d="M582 401 C621 369 660 365 700 391 C736 414 775 415 818 394"/>
+    <path d="M945 222 C913 267 912 310 944 350 C970 383 971 420 951 457"/>
+    <path d="M204 454 C249 430 292 432 337 458 C373 479 402 482 440 465"/>
+    <path d="M742 508 C770 482 803 480 837 501 C866 520 899 520 928 497"/>
+  </g>
+  <g fill="#f7faf8" stroke="#aebec0" stroke-width="2">
+    <circle cx="238" cy="263" r="5"/>
+    <circle cx="306" cy="360" r="5"/>
+    <circle cx="602" cy="244" r="5"/>
+    <circle cx="705" cy="282" r="5"/>
+    <circle cx="648" cy="378" r="5"/>
+    <circle cx="780" cy="405" r="5"/>
+    <circle cx="918" cy="304" r="5"/>
+    <circle cx="282" cy="443" r="5"/>
+    <circle cx="809" cy="493" r="5"/>
+  </g>
+  <g fill="#b2c5b5" opacity="0.55">
+    <rect x="116" y="148" width="24" height="13" rx="2" transform="rotate(-12 116 148)"/>
+    <rect x="154" y="168" width="30" height="14" rx="2" transform="rotate(-12 154 168)"/>
+    <rect x="378" y="174" width="27" height="13" rx="2" transform="rotate(-18 378 174)"/>
+    <rect x="429" y="197" width="35" height="14" rx="2" transform="rotate(-18 429 197)"/>
+    <rect x="691" y="345" width="28" height="13" rx="2" transform="rotate(-11 691 345)"/>
+    <rect x="738" y="367" width="36" height="15" rx="2" transform="rotate(-11 738 367)"/>
+    <rect x="1031" y="466" width="28" height="14" rx="2" transform="rotate(-15 1031 466)"/>
+    <rect x="1079" y="449" width="38" height="15" rx="2" transform="rotate(-15 1079 449)"/>
+  </g>
+  <rect width="1200" height="675" fill="url(#grain)"/>
+  <rect x="9" y="9" width="1182" height="657" rx="3" fill="none" stroke="#f7fbf8" stroke-width="2" opacity="0.7"/>
+</svg>
