@@ -2,11 +2,12 @@ import { Camera, Maximize2, RefreshCw, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useBridgeInventory } from '../lib/device-bridges-api';
 import { BridgePreview } from './BridgePreview';
+import { FakeThermalMonitor } from './FakeThermalMonitor';
 import '../styles/device-bridges.css';
 
 const channels = [
-  { slot: 1, title: '02路监控' },
-  { slot: 2, title: '03路监控' },
+  { slot: 1, title: '02路监控', source: 'fake-thermal' as const },
+  { slot: 2, title: '03路监控', source: 'bridge' as const },
 ];
 
 export function TrainingCameraPreview({ officer, teamName }: { taskId: string; officer: string; teamName: string }) {
@@ -20,7 +21,16 @@ export function TrainingCameraPreview({ officer, teamName }: { taskId: string; o
     else dialog.current?.close();
   }, [expanded]);
 
-  function renderFeed(slot: number, enlarged = false) {
+  function renderFeed(channel: typeof channels[number], enlarged = false) {
+    if (channel.source === 'fake-thermal') {
+      const animationKey = retry[channel.slot] ?? 0;
+      return <>
+        <FakeThermalMonitor key={`thermal:${animationKey}`} animationKey={animationKey} compact={!enlarged} />
+        <p className="ot-monitor-caption">机械狗巡检视角 · 热成像（演示画面）</p>
+      </>;
+    }
+
+    const slot = channel.slot;
     const id = bridge.inventory?.bindings[slot];
     const device = bridge.inventory?.items.find(item => item.id === id);
     return <>
@@ -41,12 +51,15 @@ export function TrainingCameraPreview({ officer, teamName }: { taskId: string; o
           <div>
             <button type="button" className="ui-icon-button" title={`重连${channel.title}`} aria-label={`重连${channel.title}`}
               disabled={bridge.busy || bridge.refreshing}
-              onClick={() => { setRetry(value => ({ ...value, [channel.slot]: (value[channel.slot] ?? 0) + 1 })); bridge.refresh(); }}><RefreshCw size={15} /></button>
+              onClick={() => {
+                setRetry(value => ({ ...value, [channel.slot]: (value[channel.slot] ?? 0) + 1 }));
+                if (channel.source === 'bridge') bridge.refresh();
+              }}><RefreshCw size={15} /></button>
             <button type="button" className="ui-icon-button" title={`放大${channel.title}`} aria-label={`放大${channel.title}`}
               onClick={() => setExpanded(channel.slot)}><Maximize2 size={15} /></button>
           </div>
         </header>
-        {renderFeed(channel.slot)}
+        {renderFeed(channel)}
       </section>)}
     </div>
     <dialog ref={dialog} className="ot-monitor-dialog" onCancel={() => setExpanded(null)} onClose={() => setExpanded(null)}>
@@ -54,7 +67,7 @@ export function TrainingCameraPreview({ officer, teamName }: { taskId: string; o
         <h3>{channels.find(channel => channel.slot === expanded)?.title}</h3>
         <button type="button" className="ui-icon-button" title="关闭画面" aria-label="关闭画面" onClick={() => setExpanded(null)}><X size={18} /></button>
       </header>
-      {expanded !== null && renderFeed(expanded, true)}
+      {expanded !== null && renderFeed(channels.find(channel => channel.slot === expanded)!, true)}
     </dialog>
   </section>;
 }

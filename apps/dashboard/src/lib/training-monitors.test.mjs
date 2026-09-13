@@ -33,6 +33,7 @@ function fixture() {
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx };
       if (name.endsWith('use-training-media')) return { useTrainingMedia: () => ({ cameras: [] }) };
       if (name.endsWith('device-bridges-api')) return { useBridgeInventory: () => bridge };
+      if (name.endsWith('FakeThermalMonitor')) return { FakeThermalMonitor: 'FakeThermalMonitor' };
       if (name.endsWith('BridgePreview')) return { BridgePreview: 'BridgePreview', BridgeLogin: 'BridgeLogin' };
       return {};
     },
@@ -52,21 +53,37 @@ function fixture() {
   return { bridge, render };
 }
 const feeds = nodes => nodes.filter(node => node.type === 'BridgePreview');
+const fakeFeeds = nodes => nodes.filter(node => node.type === 'FakeThermalMonitor');
 
-test('training uses bound channels 02 and 03, never channel 01 or item order', () => {
+test('training uses a fake thermal feed for 02 and the bound bridge feed for 03', () => {
   const f = fixture();
-  assert.deepEqual(feeds(f.render()).map(n => n.props.device?.id), ['second', 'third']);
+  const nodes = f.render();
+  assert.equal(fakeFeeds(nodes).length, 1);
+  assert.deepEqual(feeds(nodes).map(n => n.props.device?.id), ['third']);
   assert.equal(f.render().filter(n => n.type === 'video').length, 0);
 });
 
-test('empty channel stays empty and stale inventory pauses both previews', () => {
+test('refreshing the fake 02 feed resets only local animation state', () => {
+  const f = fixture();
+  let refreshCalls = 0;
+  f.bridge.refresh = () => { refreshCalls += 1; };
+  const before = fakeFeeds(f.render())[0].props.animationKey;
+  f.render().find(node => node.props?.['aria-label'] === '重连02路监控').props.onClick();
+  const after = fakeFeeds(f.render())[0].props.animationKey;
+  assert.equal(refreshCalls, 0);
+  assert.equal(after, before + 1);
+});
+
+test('empty bridge channel stays empty while the fake thermal feed remains local', () => {
   const f = fixture();
   f.bridge.inventory.bindings[1] = null;
   f.bridge.available = false;
-  const previews = feeds(f.render());
-  assert.equal(previews.length, 2);
-  assert.equal(previews[0].props.device, undefined);
-  assert.ok(previews.every(n => !n.props.available));
+  const nodes = f.render();
+  const previews = feeds(nodes);
+  assert.equal(previews.length, 1);
+  assert.equal(previews[0].props.device.id, 'third');
+  assert.equal(previews[0].props.available, false);
+  assert.equal(fakeFeeds(nodes).length, 1);
 });
 
 test('enlargement follows binding changes and ignores obsolete authorization flags', () => {
@@ -77,7 +94,7 @@ test('enlargement follows binding changes and ignores obsolete authorization fla
   f.bridge.inventory.bindings[2] = 'second';
   assert.equal(feeds(f.render()).at(-1).props.device.id, 'second');
   f.bridge.authRequired = true;
-  assert.equal(feeds(f.render()).length, 3);
+  assert.equal(feeds(f.render()).length, 2);
   assert.equal(f.render().filter(n => n.type === 'BridgeLogin').length, 0);
   assert.equal(f.render().filter(n => n.props?.className === 'ot-monitor-locked').length, 0);
   assert.ok(f.render().filter(n => /^(放大|重连)/.test(n.props?.['aria-label'] ?? '')).every(n => !n.props.disabled));
