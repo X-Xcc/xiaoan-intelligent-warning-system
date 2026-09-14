@@ -12,7 +12,7 @@ import type {
   SecurityNotification,
   SecurityOpsOverview,
 } from '@/types/events'
-import { getErrorMessage, resetGuestReceiptSession } from '@/utils/event-state'
+import { getErrorMessage, getReceiptSessionKey, resetGuestReceiptSession } from '@/utils/event-state'
 
 const CONFIGURED_API_BASE = (process.env.TARO_APP_API_BASE_URL || 'http://127.0.0.1:8010/api').replace(/\/+$/, '')
 const H5_ORIGIN = process.env.TARO_ENV === 'h5' && typeof window !== 'undefined'
@@ -35,13 +35,6 @@ export type WechatAuthUser = {
   permissions?: string[]
 }
 
-export type WechatLoginSession = {
-  token: string
-  user: WechatAuthUser
-  provider: 'wechat'
-  dev?: boolean
-}
-
 function withDeadline<T>(task: PromiseLike<T> & { abort?: () => void }, timeout: number): Promise<T> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
@@ -55,7 +48,6 @@ function withDeadline<T>(task: PromiseLike<T> & { abort?: () => void }, timeout:
 
 export async function requestApi<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const timeout = Math.min(15000, Math.max(1, Number(options.timeout) || 15000))
-  const token = getAuthToken()
   const response = await withDeadline(Taro.request<T>({
     ...options,
     url: `${API_BASE_URL}${path}`,
@@ -63,7 +55,6 @@ export async function requestApi<T>(path: string, options: RequestOptions = {}):
     timeout,
     header: {
       'content-type': 'application/json',
-      ...(token ? { authorization: `Bearer ${token}` } : {}),
       ...options.header,
     },
   }), timeout)
@@ -118,6 +109,7 @@ export async function fetchSafetyEvent(id: string): Promise<SafetyEvent> {
 }
 
 export function getAuthToken(): string {
+  // Legacy values only partition existing local receipts; never send them as credentials.
   const token = Taro.getStorageSync(AUTH_TOKEN_KEY)
   return typeof token === 'string' ? token : ''
 }
@@ -132,17 +124,6 @@ export function clearAuthSession(): void {
 export async function getCurrentUser(): Promise<WechatAuthUser> {
   const data = await request<{ user: WechatAuthUser }>('/auth/me')
   return data.user
-}
-
-export async function loginWithWechat(): Promise<WechatLoginSession> {
-  const loginResult = await Taro.login({ timeout: 8000 })
-  if (!loginResult.code) throw new Error('微信登录没有返回 code')
-  const session = await request<WechatLoginSession>('/auth/wechat-login', {
-    method: 'POST',
-    data: { code: loginResult.code },
-  })
-  Taro.setStorageSync(AUTH_TOKEN_KEY, session.token)
-  return session
 }
 
 export async function createHelpEvent(payload: {
@@ -172,8 +153,6 @@ export async function uploadEventEvidence(filePath: string, fileType: 'image' | 
     timeout: 30000,
     ...(eventId ? { formData: { eventId } } : {}),
   }
-  const token = getAuthToken()
-  if (token) uploadOptions.header = { authorization: `Bearer ${token}` }
   const response = await withDeadline(Taro.uploadFile(uploadOptions), 30000)
   let payload: { evidence?: EvidenceItem }
   try {
@@ -221,9 +200,9 @@ export async function refreshEventRoute(id: string, payload: {
 }
 
 export async function createReportEvent(form: ReportForm, files: number | LocalEvidence[]): Promise<SafetyEvent> {
-  const token = getAuthToken()
+  const sessionKey = getReceiptSessionKey(getAuthToken())
   const assertSession = () => {
-    if (getAuthToken() !== token) throw new Error('登录会话已变更，请在当前账号重新确认上报')
+    if (getReceiptSessionKey(getAuthToken()) !== sessionKey) throw new Error('本机回执会话已变更，请重新确认上报')
   }
   const evidence: EvidenceItem[] = []
   if (Array.isArray(files)) {
@@ -257,7 +236,7 @@ export async function createLostClaimEvent(itemName: string, bay: string): Promi
 }
 
 export async function updateSafetyEventStatus(id: string, status: EventStatus, owner?: string, result?: string, commandVersion?: number): Promise<SafetyEvent> {
-  if (commandVersion !== undefined) return submitCommandTaskAction(id, commandVersion, 'status', { status, result })
+  if (commandVersion !== undefined) return submitCommandTaskAction(id, commandVersion, 'status', { status, result }, owner)
   const data = await request<{ event: SafetyEvent }>(`/events/${encodeURIComponent(id)}/status`, {
     method: 'PATCH',
     data: { status, owner, result },
@@ -266,10 +245,8 @@ export async function updateSafetyEventStatus(id: string, status: EventStatus, o
 }
 
 const pendingCommandWrites = new Map<string, { payload: Record<string, unknown>; fingerprint: string }>()
-export async function submitCommandTaskAction(id: string, version: number, action: string, fields: Record<string, unknown>): Promise<SafetyEvent> {
-  const token = getAuthToken()
-  if (!token) throw new Error('请登录获授权的处警账号')
-  const key = `${token}:${id}:${action}`
+export async function submitCommandTaskAction(id: string, version: number, action: string, fields: Record<string, unknown>, staff = ''): Promise<SafetyEvent> {
+  const key = JSON.stringify([getReceiptSessionKey(getAuthToken()), staff, id, action])
   const fingerprint = JSON.stringify(fields)
   const previous = pendingCommandWrites.get(key)
   if (previous && previous.fingerprint !== fingerprint) {
@@ -370,8 +347,7 @@ export async function fetchSecurityFeeds(): Promise<SecurityFeed[]> {
 export function connectRealtimeEvents(onMessage: (message: { type?: string; eventId?: string; staff?: string }) => void) {
   let closed = false
   let socketTask: Taro.SocketTask | null = null
-  const token = getAuthToken()
-  Taro.connectSocket({ url: token ? `${REALTIME_URL}?token=${encodeURIComponent(token)}` : REALTIME_URL }).then((task) => {
+  Taro.connectSocket({ url: REALTIME_URL }).then((task) => {
     socketTask = task
     if (closed) {
       task.close({})

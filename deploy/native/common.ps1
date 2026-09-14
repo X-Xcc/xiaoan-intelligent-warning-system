@@ -249,6 +249,83 @@ function Wait-NativeHttp {
     throw "Service did not become ready: $Url"
 }
 
+function Get-NativeJson {
+    param([string]$Url, [hashtable]$Headers = @{})
+    $response = Invoke-WebRequest -UseBasicParsing -Uri $Url -Headers $Headers -TimeoutSec 3
+    if ($response.StatusCode -lt 200 -or $response.StatusCode -ge 300) {
+        throw "Unexpected HTTP status $($response.StatusCode): $Url"
+    }
+    return ($response.Content | ConvertFrom-Json)
+}
+
+function Wait-NativeRealCameraReadiness {
+    param([string]$ApiBase, [string]$DetectorBase, [int]$Seconds = 90)
+    $deadline = [DateTime]::UtcNow.AddSeconds($Seconds)
+    $freshnessSeconds = 10
+    $lastReason = 'real camera readiness has not been confirmed'
+    do {
+        try {
+            $bridge = Get-NativeJson "$ApiBase/api/device-bridges/readiness"
+            $detector = Get-NativeJson "$DetectorBase/api/detection/status"
+            $dataProperty = $detector.PSObject.Properties['data']
+            $data = if ($dataProperty -and $null -ne $dataProperty.Value) { $dataProperty.Value } else { $detector }
+            $requiredBindings = @($bridge.requiredBindings | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) })
+            $cameras = @($data.frames.cameras)
+            $now = [DateTime]::UtcNow
+            $missing = @()
+            foreach ($binding in $requiredBindings) {
+                $camera = $null
+                foreach ($entry in $cameras) {
+                    $ids = @()
+                    foreach ($property in @('id', 'cameraId', 'deviceId', 'sourceId')) {
+                        $value = if ($entry -is [System.Collections.IDictionary] -and $entry.Contains($property)) {
+                            $entry[$property]
+                        } elseif ($null -ne $entry.PSObject.Properties[$property]) {
+                            $entry.PSObject.Properties[$property].Value
+                        } else { $null }
+                        if (-not [string]::IsNullOrWhiteSpace([string]$value)) { $ids += [string]$value }
+                    }
+                    if ($ids -contains ([string]$binding)) {
+                        $camera = $entry
+                        break
+                    }
+                }
+                $fresh = $false
+                $online = if ($camera -and $camera -is [System.Collections.IDictionary] -and $camera.Contains('online')) {
+                    $camera['online']
+                } elseif ($camera -and $camera.PSObject.Properties['online']) { $camera.PSObject.Properties['online'].Value } else { $false }
+                $frameCount = if ($camera -and $camera -is [System.Collections.IDictionary] -and $camera.Contains('frameCount')) {
+                    $camera['frameCount']
+                } elseif ($camera -and $camera.PSObject.Properties['frameCount']) { $camera.PSObject.Properties['frameCount'].Value } else { 0 }
+                $lastFrameAt = if ($camera -and $camera -is [System.Collections.IDictionary] -and $camera.Contains('lastFrameAt')) {
+                    $camera['lastFrameAt']
+                } elseif ($camera -and $camera.PSObject.Properties['lastFrameAt']) { $camera.PSObject.Properties['lastFrameAt'].Value } else { $null }
+                if ($camera -and $online -eq $true -and [int64]$frameCount -gt 0) {
+                    try {
+                        $lastFrame = ([DateTime]::Parse([string]$lastFrameAt)).ToUniversalTime()
+                        $age = ($now - $lastFrame).TotalSeconds
+                        $fresh = $age -ge 0 -and $age -le $freshnessSeconds
+                    } catch { $fresh = $false }
+                }
+                if (-not $fresh) { $missing += [string]$binding }
+            }
+            $allRequiredFramesFresh = $requiredBindings.Count -gt 0 -and $missing.Count -eq 0
+            if ($bridge.ready -eq $true -and $data.running -eq $true -and $allRequiredFramesFresh) {
+                return
+            }
+            $codes = @($bridge.reasons | ForEach-Object { $_.code })
+            if ($data.running -ne $true) { $codes += 'detector_not_running' }
+            if ($requiredBindings.Count -eq 0) { $codes += 'no_required_bindings' }
+            if ($missing.Count -gt 0) { $codes += 'real_frame_missing_or_stale' }
+            $lastReason = ($codes | Select-Object -Unique) -join ', '
+        } catch {
+            $lastReason = $_.Exception.Message
+        }
+        Start-Sleep -Seconds 1
+    } while ([DateTime]::UtcNow -lt $deadline)
+    throw "Real camera readiness failed: $lastReason"
+}
+
 function Open-NativeDashboard {
     [CmdletBinding()]
     param([string]$Url)
@@ -259,23 +336,247 @@ function Open-NativeDashboard {
     }
 }
 
+function Enter-NativeProjectLock {
+    param([int]$TimeoutSeconds = 10)
+    $root = [IO.Path]::GetFullPath((Get-NativeProjectRoot)).TrimEnd('\').ToLowerInvariant()
+    $bytes = [Text.Encoding]::UTF8.GetBytes($root)
+    $hash = [Security.Cryptography.SHA256]::Create().ComputeHash($bytes)
+    $suffix = ([BitConverter]::ToString($hash) -replace '-', '').Substring(0, 24)
+    $mutex = [Threading.Mutex]::new($false, "Local\XiaoAn.Native.$suffix")
+    try {
+        if (-not $mutex.WaitOne([TimeSpan]::FromSeconds($TimeoutSeconds))) {
+            $mutex.Dispose()
+            throw "Another XiaoAn native operation is already running for project $root."
+        }
+    } catch [Threading.AbandonedMutexException] {
+        # An abandoned lock is safe to take; the previous owner exited unexpectedly.
+    } catch {
+        $mutex.Dispose()
+        throw
+    }
+    return $mutex
+}
+
+function Exit-NativeProjectLock {
+    param([Threading.Mutex]$Lock)
+    if ($null -eq $Lock) { return }
+    try { $Lock.ReleaseMutex() } catch [InvalidOperationException] { }
+    $Lock.Dispose()
+}
+
+function Get-NativeChildRecord {
+    param([Parameter(Mandatory)][string]$Name)
+    $native = Get-NativeDirectory
+    $pidPath = Join-Path $native "run/$Name.pid"
+    $recordPath = Join-Path $native "run/$Name.json"
+    if (-not (Test-Path -LiteralPath $pidPath) -or -not (Test-Path -LiteralPath $recordPath)) {
+        return $null
+    }
+    try {
+        $record = Get-Content -LiteralPath $recordPath -Raw | ConvertFrom-Json
+        $recordPid = [int](Get-Content -LiteralPath $pidPath -Raw).Trim()
+        if ([int]$record.pid -ne $recordPid -or
+            [string]::IsNullOrWhiteSpace([string]$record.filePath) -or
+            [string]::IsNullOrWhiteSpace([string]$record.workingDirectory)) { return $null }
+        return [pscustomobject]@{
+            Name = $Name
+            Pid = $recordPid
+            FilePath = [IO.Path]::GetFullPath([string]$record.filePath)
+            WorkingDirectory = [IO.Path]::GetFullPath([string]$record.workingDirectory)
+            Arguments = @($record.arguments | ForEach-Object { [string]$_ })
+            PidPath = $pidPath
+            RecordPath = $recordPath
+        }
+    } catch {
+        return $null
+    }
+}
+
+function Get-NativeProcessWorkingDirectory {
+    param([Parameter(Mandatory)][Alias('Pid')][int]$ProcessId)
+    try {
+        if (-not ('XiaoAn.NativeProcessWorkingDirectory' -as [type])) {
+            Add-Type @'
+using System;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
+using System.Text;
+
+namespace XiaoAn
+{
+public static class NativeProcessWorkingDirectory
+{
+    private const uint PROCESS_QUERY_INFORMATION = 0x0400;
+    private const uint PROCESS_VM_READ = 0x0010;
+    private const uint PROCESS_BASIC_INFORMATION = 0;
+    private const int STATUS_SUCCESS = 0;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct UnicodeString
+    {
+        public ushort Length;
+        public ushort MaximumLength;
+        public IntPtr Buffer;
+    }
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern IntPtr OpenProcess(uint access, bool inheritHandle, int processId);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool CloseHandle(IntPtr handle);
+
+    [DllImport("ntdll.dll")]
+    private static extern int NtQueryInformationProcess(
+        IntPtr processHandle, uint informationClass, IntPtr information, int informationLength, out int returnLength);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool ReadProcessMemory(
+        IntPtr processHandle, IntPtr address, byte[] buffer, int size, out IntPtr bytesRead);
+
+    public static string Get(int processId)
+    {
+        IntPtr process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, processId);
+        if (process == IntPtr.Zero) return null;
+        try
+        {
+            int pointerSize = IntPtr.Size;
+            int pebOffset = pointerSize == 8 ? 0x20 : 0x10;
+            int currentDirectoryOffset = pointerSize == 8 ? 0x38 : 0x24;
+            int infoSize = pointerSize == 8 ? 0x38 : 0x1c;
+            IntPtr info = Marshal.AllocHGlobal(infoSize);
+            try
+            {
+                int returnLength;
+                if (NtQueryInformationProcess(process, PROCESS_BASIC_INFORMATION, info, infoSize, out returnLength) != STATUS_SUCCESS)
+                    return null;
+                IntPtr peb = Marshal.ReadIntPtr(info, pointerSize == 8 ? 0x8 : 0x4);
+                if (peb == IntPtr.Zero) return null;
+                byte[] pointerBytes = new byte[pointerSize];
+                IntPtr bytesRead;
+                if (!ReadProcessMemory(process, IntPtr.Add(peb, pebOffset), pointerBytes, pointerBytes.Length, out bytesRead) ||
+                    bytesRead.ToInt64() != pointerSize)
+                    return null;
+                IntPtr parameters = pointerSize == 8
+                    ? new IntPtr(BitConverter.ToInt64(pointerBytes, 0))
+                    : new IntPtr(BitConverter.ToInt32(pointerBytes, 0));
+                if (parameters == IntPtr.Zero) return null;
+                int unicodeSize = pointerSize == 8 ? 16 : 8;
+                byte[] unicodeBytes = new byte[unicodeSize];
+                if (!ReadProcessMemory(process, IntPtr.Add(parameters, currentDirectoryOffset), unicodeBytes, unicodeBytes.Length, out bytesRead) ||
+                    bytesRead.ToInt64() != unicodeSize)
+                    return null;
+                ushort length = BitConverter.ToUInt16(unicodeBytes, 0);
+                IntPtr buffer = pointerSize == 8
+                    ? new IntPtr(BitConverter.ToInt64(unicodeBytes, 8))
+                    : new IntPtr(BitConverter.ToInt32(unicodeBytes, 4));
+                if (length == 0 || buffer == IntPtr.Zero || (length % 2) != 0 || length > 32766)
+                    return null;
+                byte[] pathBytes = new byte[length];
+                if (!ReadProcessMemory(process, buffer, pathBytes, pathBytes.Length, out bytesRead) ||
+                    bytesRead.ToInt64() != length)
+                    return null;
+                return Encoding.Unicode.GetString(pathBytes);
+            }
+            finally { Marshal.FreeHGlobal(info); }
+        }
+        catch { return null; }
+        finally { CloseHandle(process); }
+    }
+}
+}
+'@
+        }
+        return [XiaoAn.NativeProcessWorkingDirectory]::Get($ProcessId)
+    } catch {
+        return $null
+    }
+}
+
+function Test-NativeChildOwnership {
+    param([Parameter(Mandatory)][string]$Name)
+    $record = Get-NativeChildRecord $Name
+    if ($null -eq $record) { return $false }
+    $process = Get-Process -Id $record.Pid -ErrorAction SilentlyContinue
+    if ($null -eq $process) { return $false }
+    $nativeProcess = Get-CimInstance Win32_Process -Filter "ProcessId=$($record.Pid)" -ErrorAction SilentlyContinue
+    $commandLine = [string]$nativeProcess.CommandLine
+    if ([string]::IsNullOrWhiteSpace($commandLine)) { return $false }
+    $processPath = [string]$nativeProcess.ExecutablePath
+    if ([string]::IsNullOrWhiteSpace($processPath) -or
+        [IO.Path]::GetFullPath($processPath) -ine $record.FilePath) { return $false }
+    $actualWorkingDirectory = Get-NativeProcessWorkingDirectory $record.Pid
+    if ([string]::IsNullOrWhiteSpace($actualWorkingDirectory)) {
+        if (-not $commandLine.Contains($record.WorkingDirectory.TrimEnd('\'))) { return $false }
+    } elseif ([IO.Path]::GetFullPath($actualWorkingDirectory).TrimEnd('\') -ine $record.WorkingDirectory.TrimEnd('\')) {
+        return $false
+    }
+    if (-not $commandLine.Contains($record.WorkingDirectory.TrimEnd('\'))) { return $false }
+    foreach ($argument in $record.Arguments) {
+        if (-not $commandLine.Contains($argument)) { return $false }
+    }
+    return $true
+}
+
+function Start-NativeWatchdogProcess {
+    param([switch]$EnableCameras)
+    $scriptPath = Join-Path (Get-NativeDirectory) 'watchdog.ps1'
+    if (-not (Test-Path -LiteralPath $scriptPath)) {
+        throw "Native watchdog script was not found: $scriptPath"
+    }
+    if (Test-NativeChildOwnership 'watchdog') {
+        return Get-Process -Id ((Get-NativeChildRecord 'watchdog').Pid)
+    }
+    $powershell = (Get-Command powershell.exe -ErrorAction Stop).Source
+    $arguments = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $scriptPath)
+    if ($EnableCameras) { $arguments += '-RequireRealCamera' }
+    return Start-NativeChild 'watchdog' $powershell $arguments (Get-NativeProjectRoot)
+}
+
+function Stop-NativeWatchdogProcess {
+    if (Test-NativeChildOwnership 'watchdog') {
+        Stop-NativeChild 'watchdog'
+        return
+    }
+    $record = Get-NativeChildRecord 'watchdog'
+    if ($null -ne $record) {
+        throw "Refusing to stop unverified watchdog PID $($record.Pid)."
+    }
+    Remove-Item -LiteralPath (Join-Path (Get-NativeDirectory) 'run/watchdog.pid') -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath (Join-Path (Get-NativeDirectory) 'run/watchdog.json') -Force -ErrorAction SilentlyContinue
+}
+
 function Start-NativeChild {
     param([string]$Name, [string]$FilePath, [string[]]$Arguments, [string]$WorkingDirectory)
+    $normalizedFilePath = [IO.Path]::GetFullPath((Resolve-Path -LiteralPath $FilePath).Path)
+    $normalizedWorkingDirectory = [IO.Path]::GetFullPath((Resolve-Path -LiteralPath $WorkingDirectory).Path)
     $native = Get-NativeDirectory
     New-Item -ItemType Directory -Force -Path (Join-Path $native 'logs') | Out-Null
     $logs = Join-Path $native 'logs'
     New-Item -ItemType Directory -Force -Path $logs | Out-Null
     $pidPath = Join-Path $native "run/$Name.pid"
+    $recordPath = Join-Path $native "run/$Name.json"
     New-Item -ItemType Directory -Force -Path (Split-Path -Parent $pidPath) | Out-Null
     if (Test-Path -LiteralPath $pidPath) {
         $old = Get-Content -LiteralPath $pidPath -Raw
         $process = Get-Process -Id $old.Trim() -ErrorAction SilentlyContinue
-        if ($process) { return $process }
+        if ($process) {
+            if (-not (Test-NativeChildOwnership $Name)) {
+                throw "Existing $Name PID $($process.Id) is not owned by this project."
+            }
+            return $process
+        }
         Remove-Item -LiteralPath $pidPath -Force
+        Remove-Item -LiteralPath $recordPath -Force -ErrorAction SilentlyContinue
     }
-    $process = Start-Process -FilePath $FilePath -ArgumentList $Arguments -WorkingDirectory $WorkingDirectory -WindowStyle Hidden -PassThru `
+    $process = Start-Process -FilePath $normalizedFilePath -ArgumentList $Arguments -WorkingDirectory $normalizedWorkingDirectory -WindowStyle Hidden -PassThru `
         -RedirectStandardOutput (Join-Path $logs "$Name.out.log") -RedirectStandardError (Join-Path $logs "$Name.err.log")
     [IO.File]::WriteAllText($pidPath, $process.Id, [Text.UTF8Encoding]::new($false))
+    [IO.File]::WriteAllText($recordPath, (@{
+        pid = $process.Id
+        filePath = $normalizedFilePath
+        workingDirectory = $normalizedWorkingDirectory
+        arguments = @($Arguments)
+    } | ConvertTo-Json -Compress), [Text.UTF8Encoding]::new($false))
     return $process
 }
 
@@ -283,9 +584,17 @@ function Stop-NativeChild {
     param([string]$Name)
     $path = Join-Path (Get-NativeDirectory) "run/$Name.pid"
     if (-not (Test-Path -LiteralPath $path)) { return }
-    $process = Get-Process -Id (Get-Content -LiteralPath $path -Raw).Trim() -ErrorAction SilentlyContinue
-    if ($process) { Stop-Process -Id $process.Id -Force }
+    $recordPath = Join-Path (Get-NativeDirectory) "run/$Name.json"
+    $childPid = [int](Get-Content -LiteralPath $path -Raw).Trim()
+    $process = Get-Process -Id $childPid -ErrorAction SilentlyContinue
+    if ($process) {
+        if (-not (Test-NativeChildOwnership $Name)) {
+            throw "Refusing to stop $Name PID $childPid because its process ownership record does not match."
+        }
+        Stop-Process -Id $process.Id -Force
+    }
     Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $recordPath -Force -ErrorAction SilentlyContinue
 }
 
 function Test-NativePostgresConnection {

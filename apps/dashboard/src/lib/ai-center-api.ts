@@ -33,8 +33,8 @@ export class AiCenterApiError extends Error {
 
   constructor(status: number) {
     const messages: Record<number, string> = {
-      401: '业务令牌无效或已过期，请重新登录。',
-      403: '当前账号没有 AI 审核权限，请联系管理员。',
+      401: 'AI 服务拒绝了请求，请检查服务配置。',
+      403: 'AI 服务拒绝了请求，请检查服务配置。',
       404: '审核结果不存在，请刷新运行态后核对。',
       408: '请求超时，请重试。',
       422: '审核内容不符合要求，请核对后重试。',
@@ -117,13 +117,8 @@ export async function getAiRuntime(signal?: AbortSignal): Promise<AiRuntimeSnaps
   return payload as AiRuntimeSnapshot;
 }
 
-function authorization(token: string): { Authorization: string } {
-  if (!token.trim()) throw new AiCenterApiError(401);
-  return { Authorization: `Bearer ${token.trim()}` };
-}
-
-export async function authenticateAiReviewer(token: string, signal?: AbortSignal): Promise<AiReviewUser> {
-  const payload = await request('/auth/me', { method: 'GET', headers: authorization(token) }, signal);
+export async function authenticateAiReviewer(signal?: AbortSignal): Promise<AiReviewUser> {
+  const payload = await request('/auth/me', { method: 'GET' }, signal);
   const user = record(payload) ? payload.user : null;
   if (!fields(user, ['openid']) || !(user.openid as string).trim()
     || (user.permissions !== undefined && !strings(user.permissions))
@@ -133,9 +128,9 @@ export async function authenticateAiReviewer(token: string, signal?: AbortSignal
 }
 
 export async function submitAiReview(
-  token: string, auditId: string, decision: 'confirmed' | 'rejected', reason: string, signal?: AbortSignal,
+  auditId: string, decision: 'confirmed' | 'rejected', reason: string, signal?: AbortSignal,
 ): Promise<AIResultContract> {
-  const headers = { ...authorization(token), 'Content-Type': 'application/json' };
+  const headers = { 'Content-Type': 'application/json' };
   if (!auditId.trim() || !reason.trim()) throw new AiCenterApiError(422);
   const payload = await request('/ai-center/review', {
     method: 'POST', headers, body: JSON.stringify({ auditId, decision, reason: reason.trim() }),

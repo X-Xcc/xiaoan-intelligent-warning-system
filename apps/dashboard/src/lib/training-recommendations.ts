@@ -11,11 +11,17 @@ type TrainingDrill = {
 
 type TrainingRecommendations = { items: TrainingDrill[]; safety: string };
 
+const sprayScenarios: TrainingDrill = {
+  id: 'spray-scenarios', title: '催泪不同场景使用训练', minutes: 5,
+  goal: '通过模拟场景熟悉催泪装备使用条件、风险判断与安全要求。',
+  practice: '建议 3 组情景练习，使用惰性训练器材，由教官设置场景并组织讲评。',
+  check: '场景判断与教官设定要求一致，安全检查完整，训练后完成复盘。',
+};
 const baton: TrainingDrill = {
-  id: 'baton-deployment', title: '伸缩警棍（甩棍）快速开棍', minutes: 5,
-  goal: '熟悉训练警棍的取用、展开与收纳，减少停顿和误操作。',
-  practice: '建议 3 组，每组 5 次；由教官示范后分组练习，逐次记录完成情况。',
-  check: '取用、展开确认和收纳环节完整；教官确认操作规范后，再记录用时。',
+  id: 'baton-deployment', title: '甩棍快速取用与战术动作', minutes: 4,
+  goal: '熟悉训练警棍的快速取用与教官指定的基础战术动作，保持动作连贯。',
+  practice: '建议 3 组分解与连贯练习，由教官示范后逐人指导，使用训练用警棍。',
+  check: '取用、动作衔接与收纳环节完整，教官确认动作规范及安全要求。',
 };
 const radio: TrainingDrill = {
   id: 'radio-report', title: '对讲机快速取用与简短报告', minutes: 4,
@@ -30,15 +36,18 @@ const recorder: TrainingDrill = {
   check: '录制状态明确，画面无遮挡、声音可辨，测试文件可回放。',
 };
 const safety = '建议项目与练习量由教官结合现场条件确认，不替代本单位考核要求。确认场地、装备与个人防护；出现异常立即停止并登记。';
-const batonSafety = '开棍项目仅使用经教官确认的训练用警棍，在专用训练区由教官现场指导，不对人开展击打练习。建议练习量不作为考核阈值；出现装备或身体异常立即停止并登记。';
+const batonSafety = '警棍项目仅使用经教官确认的训练用警棍，在专用训练区由教官现场指导，不对人开展击打练习。建议练习量不作为考核阈值；出现装备或身体异常立即停止并报告教官。';
 
 export function getTrainingRecommendations(task: Pick<TrainingTask, 'subject'>): TrainingRecommendations {
   const subject = task.subject.trim();
-  if (subject === '单警装备快速取用') return { items: [baton, radio, recorder], safety: batonSafety };
+  if (subject === '单警装备快速取用') return {
+    items: [sprayScenarios, baton],
+    safety: `催泪项目仅使用惰性或模拟器材，不向人员喷射。${batonSafety}`,
+  };
   if (/警棍|甩棍/.test(subject)) return { items: [baton], safety: batonSafety };
   if (/执法记录仪/.test(subject)) return { items: [recorder], safety };
   if (/对讲|警用通信/.test(subject)) return { items: [radio], safety };
-  if (subject === '弱光队形转换') return {
+  if (subject === '弱光执法场景战术协同' || subject === '弱光队形转换') return {
     items: [
       { id: 'light-check', title: '弱光照明与反光标识检查', minutes: 3,
         goal: '确认训练区域内照明设备和人员标识可用。',
@@ -54,7 +63,7 @@ export function getTrainingRecommendations(task: Pick<TrainingTask, 'subject'>):
         check: '到位人员齐全，无碰撞与漏位；具体队形由现场教官确认。' },
     ], safety,
   };
-  if (subject === '防爆警戒圈设置' || subject === '现场警戒与人员疏散') return {
+  if (subject === '防爆先期处置' || subject === '防爆警戒圈设置' || subject === '现场警戒与人员疏散') return {
     items: [
       { id: 'cordon-layout', title: '模拟场地警戒标识布设', minutes: 5,
         goal: '在预先划定的训练边界上完成标识布设。',

@@ -9,7 +9,6 @@ import com.yolov8.security.config.AppConfig;
 import com.yolov8.security.config.AuthFilter;
 import com.yolov8.security.service.CameraConfigService;
 import com.yolov8.security.service.CameraConfigService.Camera;
-import com.yolov8.security.service.JwtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -43,7 +42,6 @@ class CameraConfigInternalTest {
     @TempDir Path directory;
     private final ObjectMapper mapper = new ObjectMapper();
     private CameraConfigService service;
-    private JwtService jwt;
     private MockMvc mvc;
     private int reads;
     private boolean failRead;
@@ -74,10 +72,6 @@ class CameraConfigInternalTest {
                 return persisted;
             }
         };
-        jwt = new JwtService();
-        ReflectionTestUtils.setField(jwt, "jwtSecret", "fixture-only-jwt-key-at-least-32-characters");
-        ReflectionTestUtils.setField(jwt, "jwtExpiration", 60000L);
-        jwt.init();
         mvc = configuredMvc(KEY);
     }
 
@@ -97,41 +91,41 @@ class CameraConfigInternalTest {
     }
 
     @Test
-    void missingKeyIsRejectedByAuthFilter() throws Exception {
-        mvc.perform(get(ENDPOINT)).andExpect(status().isUnauthorized());
-        assertEquals(0, reads);
+    void missingKeyAllowsAnonymousSourceAccess() throws Exception {
+        mvc.perform(get(ENDPOINT)).andExpect(status().isOk());
+        assertEquals(1, reads);
     }
 
     @Test
-    void wrongKeyIsRejectedByAuthFilter() throws Exception {
+    void obsoleteKeyIsIgnored() throws Exception {
         mvc.perform(get(ENDPOINT).header("X-API-Key", "wrong-fixture-key"))
-                .andExpect(status().isUnauthorized());
-        assertEquals(0, reads);
+                .andExpect(status().isOk());
+        assertEquals(1, reads);
     }
 
     @Test
-    void validJwtAloneIsForbidden() throws Exception {
+    void legacyBearerHeaderIsIgnored() throws Exception {
         mvc.perform(get(ENDPOINT).header("Authorization", bearer()))
-                .andExpect(status().isForbidden())
+                .andExpect(status().isOk())
                 .andExpect(header().string("Cache-Control", org.hamcrest.Matchers.containsString("no-store")));
-        assertEquals(0, reads);
+        assertEquals(1, reads);
     }
 
     @Test
-    void validJwtCannotSubstituteForWrongServiceKey() throws Exception {
+    void legacyHeadersDoNotRestrictSourceAccess() throws Exception {
         mvc.perform(get(ENDPOINT).header("Authorization", bearer()).header("X-API-Key", "wrong-fixture-key"))
-                .andExpect(status().isForbidden());
-        assertEquals(0, reads);
+                .andExpect(status().isOk());
+        assertEquals(1, reads);
     }
 
     @ParameterizedTest
     @NullAndEmptySource
     @ValueSource(strings = {" ", "\t"})
-    void missingOrBlankConfiguredKeyFailsClosedEvenWithJwt(String configuredKey) throws Exception {
+    void missingOrBlankConfiguredKeyDoesNotRestrictAccess(String configuredKey) throws Exception {
         configuredMvc(configuredKey).perform(get(ENDPOINT).header("Authorization", bearer())
                         .header("X-API-Key", KEY))
-                .andExpect(status().isForbidden());
-        assertEquals(0, reads);
+                .andExpect(status().isOk());
+        assertEquals(1, reads);
     }
 
     @Test
@@ -170,7 +164,7 @@ class CameraConfigInternalTest {
     }
 
     private String bearer() {
-        return "Bearer " + jwt.generateToken("fixture-user");
+        return "Bearer legacy-token";
     }
 
     private MockMvc configuredMvc(String configuredKey) {
@@ -182,7 +176,7 @@ class CameraConfigInternalTest {
         AutowiredAnnotationBeanPostProcessor injector = new AutowiredAnnotationBeanPostProcessor();
         injector.setBeanFactory(beans);
         CameraConfigController controller = new CameraConfigController(service);
-        AuthFilter filter = new AuthFilter(jwt);
+        AuthFilter filter = new AuthFilter();
         injector.processInjection(controller);
         injector.processInjection(filter);
         return MockMvcBuilders.standaloneSetup(controller).addFilters(filter).build();

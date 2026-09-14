@@ -1,0 +1,129 @@
+{
+  "status": "preview-only; not wired to workflow",
+  "volume": 90,
+  "clips": [
+    {
+      "text": "小安提醒您，有新的警情。",
+      "cue": "new-incident",
+      "voice": "Microsoft Huihui Desktop",
+      "file": "huihui/new-incident.wav"
+    },
+    {
+      "text": "报警位置已确认。",
+      "cue": "location-confirmed",
+      "voice": "Microsoft Huihui Desktop",
+      "file": "huihui/location-confirmed.wav"
+    },
+    {
+      "text": "派警指令已下达。",
+      "cue": "dispatch-sent",
+      "voice": "Microsoft Huihui Desktop",
+      "file": "huihui/dispatch-sent.wav"
+    },
+    {
+      "text": "任务已签收。",
+      "cue": "task-accepted",
+      "voice": "Microsoft Huihui Desktop",
+      "file": "huihui/task-accepted.wav"
+    },
+    {
+      "text": "处警人员已到场。",
+      "cue": "field-arrived",
+      "voice": "Microsoft Huihui Desktop",
+      "file": "huihui/field-arrived.wav"
+    },
+    {
+      "text": "核验线索已返回，请人工复核。",
+      "cue": "verification-ready",
+      "voice": "Microsoft Huihui Desktop",
+      "file": "huihui/verification-ready.wav"
+    },
+    {
+      "text": "现场材料已登记。",
+      "cue": "evidence-registered",
+      "voice": "Microsoft Huihui Desktop",
+      "file": "huihui/evidence-registered.wav"
+    },
+    {
+      "text": "研判移交已提交。",
+      "cue": "handover-submitted",
+      "voice": "Microsoft Huihui Desktop",
+      "file": "huihui/handover-submitted.wav"
+    },
+    {
+      "text": "研判移交已接收。",
+      "cue": "handover-accepted",
+      "voice": "Microsoft Huihui Desktop",
+      "file": "huihui/handover-accepted.wav"
+    },
+    {
+      "text": "现场处置已完成。",
+      "cue": "field-completed",
+      "voice": "Microsoft Huihui Desktop",
+      "file": "huihui/field-completed.wav"
+    },
+    {
+      "text": "小安提醒您，有新的警情。",
+      "cue": "new-incident",
+      "voice": "Microsoft Yaoyao",
+      "file": "yaoyao/new-incident.wav"
+    },
+    {
+      "text": "报警位置已确认。",
+      "cue": "location-confirmed",
+      "voice": "Microsoft Yaoyao",
+      "file": "yaoyao/location-confirmed.wav"
+    },
+    {
+      "text": "派警指令已下达。",
+      "cue": "dispatch-sent",
+      "voice": "Microsoft Yaoyao",
+      "file": "yaoyao/dispatch-sent.wav"
+    },
+    {
+      "text": "任务已签收。",
+      "cue": "task-accepted",
+      "voice": "Microsoft Yaoyao",
+      "file": "yaoyao/task-accepted.wav"
+    },
+    {
+      "text": "处警人员已到场。",
+      "cue": "field-arrived",
+      "voice": "Microsoft Yaoyao",
+      "file": "yaoyao/field-arrived.wav"
+    },
+    {
+      "text": "核验线索已返回，请人工复核。",
+      "cue": "verification-ready",
+      "voice": "Microsoft Yaoyao",
+      "file": "yaoyao/verification-ready.wav"
+    },
+    {
+      "text": "现场材料已登记。",
+      "cue": "evidence-registered",
+      "voice": "Microsoft Yaoyao",
+      "file": "yaoyao/evidence-registered.wav"
+    },
+    {
+      "text": "研判移交已提交。",
+      "cue": "handover-submitted",
+      "voice": "Microsoft Yaoyao",
+      "file": "yaoyao/handover-submitted.wav"
+    },
+    {
+      "text": "研判移交已接收。",
+      "cue": "handover-accepted",
+      "voice": "Microsoft Yaoyao",
+      "file": "yaoyao/handover-accepted.wav"
+    },
+    {
+      "text": "现场处置已完成。",
+      "cue": "field-completed",
+      "voice": "Microsoft Yaoyao",
+      "file": "yaoyao/field-completed.wav"
+    }
+  ],
+  "rate": 0,
+  "source": "Windows installed speech voices; synthesized teaching preview",
+  "generatedAt": "2026-09-07T09:33:14.4377758+08:00"
+}

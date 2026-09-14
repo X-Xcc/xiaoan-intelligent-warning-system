@@ -5,7 +5,6 @@ import com.yolov8.security.model.CameraConfigDTO;
 import com.yolov8.security.service.CameraConfigService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -14,8 +13,6 @@ import org.springframework.web.bind.annotation.*;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -26,8 +23,6 @@ public class CameraConfigController {
 
     private static final Logger log = LoggerFactory.getLogger(CameraConfigController.class);
     private final CameraConfigService cameraConfigService;
-    @Value("${app.api-key:}")
-    private String serviceApiKey;
 
     public CameraConfigController(CameraConfigService cameraConfigService) {
         this.cameraConfigService = cameraConfigService;
@@ -52,15 +47,7 @@ public class CameraConfigController {
     }
 
     @GetMapping("/internal/camera_config")
-    public ResponseEntity<ApiResponse<List<CameraConfigService.Camera>>> getPrivateCameraSources(
-            @RequestHeader(value = "X-API-Key", required = false) String suppliedKey) {
-        // Browser JWTs may manage display configuration, but cannot read machine source credentials.
-        if (serviceApiKey == null || serviceApiKey.isBlank() || suppliedKey == null
-                || !MessageDigest.isEqual(serviceApiKey.getBytes(StandardCharsets.UTF_8),
-                suppliedKey.getBytes(StandardCharsets.UTF_8))) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).header("Cache-Control", "private, no-store")
-                    .body(ApiResponse.error("Service authentication required"));
-        }
+    public ResponseEntity<ApiResponse<List<CameraConfigService.Camera>>> getPrivateCameraSources() {
         try {
             return ResponseEntity.ok().header("Cache-Control", "private, no-store")
                     .body(ApiResponse.success(cameraConfigService.getAllCameras()));

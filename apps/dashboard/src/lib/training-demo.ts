@@ -3,8 +3,8 @@ import type { TrainingArchive, TrainingAssessment, TrainingSnapshot, TrainingSub
 const officerIds = ['DEMO-OFFICER-017', 'DEMO-OFFICER-018', 'DEMO-OFFICER-019'];
 const catalog: TrainingSubject[] = [
   ['单警装备快速取用', '装备应用', '训练装备包', 45],
-  ['弱光队形转换', '协同训练', '反光标识', 90],
-  ['现场警戒与人员疏散', '现场处置', '模拟警戒带', 120],
+  ['弱光执法场景战术协同', '协同训练', '反光标识', 90],
+  ['防爆先期处置', '现场处置', '模拟警戒带', 120],
   ['对讲机通联与信息报告', '装备应用', '模拟对讲机', 60],
   ['执法记录仪佩戴检查', '装备应用', '模拟记录仪', 45],
   ['现场沟通与矛盾调解', '沟通规范', '情景练习卡', 180],
@@ -20,6 +20,62 @@ const catalog: TrainingSubject[] = [
   standard: { label: `虚拟考核标准：${seconds} 秒内完成，模拟总分 80 分达标`, thresholdSeconds: Number(seconds) },
   basis: ['虚拟勤务画像', '合成训练计划'],
 }));
+
+const workspaceSubjects = new Set(['单警装备快速取用', '弱光执法场景战术协同', '防爆先期处置']);
+const demoTimeZone = 'Asia/Shanghai';
+const demoMinimumSecond = 20 * 3600 + 13 * 60 + 50;
+
+function shanghaiParts(value: string | Date, withTime = true): Record<string, string> | null {
+  const date = value instanceof Date ? value : new Date(value);
+  if (!Number.isFinite(date.getTime())) return null;
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: demoTimeZone, year: 'numeric', month: '2-digit', day: '2-digit',
+    ...(withTime ? { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false } : {}),
+  }).formatToParts(date);
+  return Object.fromEntries(parts.filter((part) => part.type !== 'literal').map((part) => [part.type, part.value]));
+}
+
+function secondsOfDay(parts: Record<string, string>): number {
+  return Number(parts.hour) * 3600 + Number(parts.minute) * 60 + Number(parts.second);
+}
+
+function dateAtShanghaiOffset(value: string | Date, dayOffset: number, secondOffset: number): string {
+  const parts = shanghaiParts(value, false);
+  if (!parts) return typeof value === 'string' ? value : '';
+  const date = new Date(Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day) + dayOffset));
+  const shifted = new Date(Date.UTC(
+    date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 20, 13, 50,
+  ) - 8 * 3600000 + secondOffset * 1000);
+  const shiftedParts = shanghaiParts(shifted);
+  if (!shiftedParts) return typeof value === 'string' ? value : '';
+  return `${shiftedParts.year}-${shiftedParts.month}-${shiftedParts.day}T${shiftedParts.hour}:${shiftedParts.minute}:${shiftedParts.second}+08:00`;
+}
+
+function normalizeSyntheticTimestamp(value: string): string {
+  const parts = shanghaiParts(value);
+  if (!parts) return value;
+  const displayedSeconds = Math.max(demoMinimumSecond, secondsOfDay(parts));
+  const hour = String(Math.floor(displayedSeconds / 3600)).padStart(2, '0');
+  const minute = String(Math.floor((displayedSeconds % 3600) / 60)).padStart(2, '0');
+  const second = String(displayedSeconds % 60).padStart(2, '0');
+  return `${parts.year}-${parts.month}-${parts.day}T${hour}:${minute}:${second}+08:00`;
+}
+
+// Synthetic records are shown in the evening while their actual timer timestamps remain untouched.
+export function formatTrainingDemoTime(value: string | Date, mode: 'datetime' | 'time' = 'datetime'): string {
+  const parts = shanghaiParts(value);
+  if (!parts) return value instanceof Date ? '' : value;
+  const displayedSeconds = Math.max(demoMinimumSecond, secondsOfDay(parts));
+  const hour = String(Math.floor(displayedSeconds / 3600)).padStart(2, '0');
+  const minute = String(Math.floor((displayedSeconds % 3600) / 60)).padStart(2, '0');
+  const second = String(displayedSeconds % 60).padStart(2, '0');
+  const time = `${hour}:${minute}:${second}`;
+  return mode === 'time' ? time : `${parts.year}-${parts.month}-${parts.day} ${time}`;
+}
+
+export function isTrainingWorkspaceSubject(item: Pick<TrainingTask, 'subject'>): boolean {
+  return workspaceSubjects.has(item.subject);
+}
 
 export function demoTrainingSelection(selection: { taskId: string; officerId: string }) {
   const readiness = /^TRAIN-READINESS-00([1-3])$/.exec(selection.taskId);
@@ -42,7 +98,7 @@ function assessmentFor(task: TrainingTask, index: number, time: string): Trainin
     assessmentId: `DEMO-ASSESS-${task.taskId}`, taskId: task.taskId, inputMode: 'synthetic_demo',
     score: { standardization: score + 2, completionTime: score - 2, coordination: score, total: score },
     confidence: 1, evidence: ['合成动作记录', '虚拟训练计时', '演示评分，不代表实际能力'],
-    evidenceTime: time, ruleVersion: 'DEMO-RULE-2026.09', humanReviewRequired: true,
+    evidenceTime: normalizeSyntheticTimestamp(time), ruleVersion: 'DEMO-RULE-2026.09', humanReviewRequired: true,
     reviewStatus: task.status === '已归档' ? 'confirmed' : rejected ? 'rejected' : 'pending',
     reviewerId: ['已归档', '待复训'].includes(task.status) ? 'DEMO-INSTRUCTOR-01' : null,
     reviewComment: rejected ? '虚拟复核：信息复诵环节需补练，安排一次模拟复训。'
@@ -57,7 +113,7 @@ function archiveFor(task: TrainingTask, assessment: TrainingAssessment, time: st
     result: (assessment.score.total ?? 0) >= 80 ? '合格' : '待加强',
     weakPoints: ['信息复诵完整性', '装备检查连续性'],
     retrainingRecommendation: '虚拟计划：下一训练周期安排 2 组通联复诵与装备检查，完成后进行模拟复核。',
-    auditId: assessment.auditId, createdAt: time,
+    auditId: assessment.auditId, createdAt: normalizeSyntheticTimestamp(time),
   };
 }
 
@@ -71,13 +127,13 @@ function seedSnapshot(): TrainingSnapshot {
     statuses.forEach((status, index) => {
       const subject = catalog[index];
       const completed = ['待复核', '待复训', '已归档'].includes(status);
-      const time = new Date(now - (index + 1) * 86400000).toISOString();
+      const startedAt = completed ? dateAtShanghaiOffset(new Date(now), -(index + 1), index * 90) : null;
+      const time = completed ? dateAtShanghaiOffset(new Date(now), -(index + 1), index * 90 + 32 + index * 5) : '';
       const task: TrainingTask = {
         taskId: `TRAIN-DEMO-${officer.slice(-3)}-${String(index + 1).padStart(2, '0')}`,
         subject: subject.subject, traineeId: officer, teamName: `虚拟训练${officer.slice(-1)}组`,
         equipment: [...subject.equipment], standard: { ...subject.standard }, basis: [...subject.basis], status,
-        startedAt: status === '待训练' ? null : status === '训练中' ? new Date(now - 42000).toISOString()
-          : new Date(Date.parse(time) - (32 + index * 5) * 1000).toISOString(),
+        startedAt: status === '待训练' ? null : status === '训练中' ? new Date(now - 42000).toISOString() : startedAt,
         completedAt: completed ? time : null, elapsedSeconds: completed ? 32 + index * 5 : null,
         exception: status === '待复训' ? { reason: '虚拟通联设备音量偏低，已登记检查。', auditId: `DEMO-EXCEPTION-${officer}` } : null,
       };

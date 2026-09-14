@@ -1,11 +1,22 @@
+.xiaoan-assistant-layer {
+  position: fixed; inset: 0; z-index: 900; pointer-events: none;
+  font-family: "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+}
+.xiaoan-assistant-group { position: absolute; pointer-events: none; }
+.xiaoan-assistant-layer .ant-popover { pointer-events: auto; }
+.xiaoan-assistant-layer :is(.ant-popover, .ant-tooltip) { transition-property: none !important; }
+.xiaoan-restore-button {
+  position: absolute; right: 24px; bottom: 24px; width: 40px; height: 40px;
+  display: grid; place-items: center; padding: 0; pointer-events: auto; cursor: pointer;
+  border: 1px solid #cbdcd3; border-radius: 6px; color: #187d6a; background: #fff;
+  box-shadow: 0 3px 12px #22352d24;
+}
+.xiaoan-restore-button:focus-visible { outline: 2px solid #258779; outline-offset: 2px; }
 .xiaoan-assistant-pet {
-  position: fixed; z-index: 80;
+  position: absolute; inset: 0; pointer-events: auto;
   font-family: inherit; color: #263b3a; user-select: none;
   filter: drop-shadow(0 13px 15px rgba(33, 56, 47, .14));
-  animation: xiaoan-pet-float 5.5s ease-in-out infinite;
 }
-.xiaoan-assistant-pet.is-concealed { visibility: hidden; pointer-events: none; }
-.xiaoan-assistant-pet.is-greeting { z-index: 100; }
 .xiaoan-pet-launcher {
   display: flex; align-items: center; flex-direction: column; justify-content: flex-end;
   width: 100%; height: 100%; padding: 0; border: 0; background: none;
@@ -38,22 +49,12 @@
   box-shadow: 0 2px 8px rgba(34, 57, 48, .13);
 }
 .xiaoan-pet-mute:hover { color: #166957; background: #f1f8f4; }
-.xiaoan-greeting-bubble {
-  position: absolute; right: calc(100% + 8px); top: 45px; width: 198px; padding: 10px 12px;
-  border: 1px solid #cfe3d8; border-radius: 12px 12px 3px 12px; background: #fff;
-  color: #35584a; font-size: 12px; line-height: 1.55; box-shadow: 0 9px 24px rgba(37, 66, 53, .14);
-  animation: xiaoan-bubble-in .2s ease-out;
-}
-.xiaoan-greeting-bubble::after {
-  content: ''; position: absolute; right: -6px; top: 17px; width: 10px; height: 10px;
-  background: #fff; border-top: 1px solid #cfe3d8; border-right: 1px solid #cfe3d8; transform: rotate(45deg);
-}
 .xiaoan-assistant-pet[data-phase="thinking"] .xiaoan-pet-caption i { background: #c0873d; }
 .xiaoan-assistant-pet[data-phase="answering"] .xiaoan-pet-caption { border-color: #99c3b3; }
 
 .xiaoan-assistant-panel {
-  position: fixed; z-index: 90; display: flex; flex-direction: column;
-  max-height: calc(100dvh - 96px); height: 546px; box-sizing: border-box;
+  position: absolute; display: flex; flex-direction: column; pointer-events: auto;
+  box-sizing: border-box;
   overflow: hidden; background: #fff; border: 1px solid #d6e3de; border-radius: 8px;
   box-shadow: 0 12px 42px #22352d24, 0 2px 8px #22352d0a;
   color: #273e37; font-family: inherit; font-size: 13px; letter-spacing: 0;
@@ -67,10 +68,12 @@
 .xiaoan-panel-header {
   flex: 0 0 69px; display: flex; align-items: center; gap: 9px;
   padding: 13px 14px; background: #f6faf8; border-bottom: 1px solid #e3ebe6;
+  cursor: grab; touch-action: none; user-select: none;
 }
+.xiaoan-panel-header:active { cursor: grabbing; }
+.xiaoan-panel-header:focus-visible { outline: 2px solid #258779; outline-offset: -3px; }
 .xiaoan-header-copy { flex: 1; min-width: 0; }
 .xiaoan-about { max-width: 244px; margin: 0; line-height: 1.8; font-size: 12px; }
-.xiaoan-panel-brand { display: grid; place-items: center; width: 34px; height: 34px; color: #187d6a; background: #e3f1eb; border-radius: 6px; flex-shrink: 0; }
 .xiaoan-panel-header h2 { margin: 0; font-size: 15px; font-weight: 650; line-height: 21px; color: #243e34; white-space: nowrap; }
 .xiaoan-panel-header h2 span { padding-left: 4px; font-size: 11px; font-weight: 400; color: #71827b; }
 .xiaoan-panel-header p { margin: 2px 0 0; display: flex; align-items: center; gap: 5px; font-size: 10px; line-height: 15px; color: #76847b; white-space: nowrap; }
@@ -131,11 +134,8 @@
 @keyframes xiaoan-cursor { to { opacity: 0; } }
 @keyframes xiaoan-dot { from { opacity: .3; transform: translateY(0); } to { opacity: 1; transform: translateY(-2px); } }
 @keyframes xiaoan-panel-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes xiaoan-pet-float { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-4px) rotate(-.6deg); } }
-@keyframes xiaoan-bubble-in { from { opacity: 0; transform: translateY(4px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @media (max-width: 600px) {
   .xiaoan-pet-mute { right: 5px; top: 42px; }
-  .xiaoan-assistant-panel { max-height: calc(100dvh - 92px); height: 560px; bottom: 12px; }
   .xiaoan-panel-header { gap: 7px; }
   .xiaoan-pet-tools { opacity: 1; }
   .xiaoan-transcript { padding: 19px 19px 13px; }
@@ -149,5 +149,5 @@
   .xiaoan-assistant-pet, .xiaoan-assistant-pet *, .xiaoan-assistant-panel, .xiaoan-assistant-panel * { animation: none !important; transition: none !important; }
 }
 @media print {
-  .xiaoan-assistant-pet, .xiaoan-assistant-panel, .xiaoan-shell-entry { display: none !important; }
+  .xiaoan-assistant-layer, .xiaoan-shell-entry { display: none !important; }
 }

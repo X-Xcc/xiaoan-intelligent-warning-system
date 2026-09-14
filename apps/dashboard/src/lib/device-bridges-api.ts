@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-export type BridgeKind = 'go2' | 'hikvision' | 'dahua' | 'rtsp' | 'usb' | 'http_snapshot' | 'http_mjpeg';
+export type BridgeKind = 'go2' | 'hikvision' | 'dahua' | 'rtsp' | 'http_snapshot' | 'http_mjpeg';
 export type BridgeStatus = 'stopped' | 'connecting' | 'online' | 'reconnecting' | 'error';
 export type DeviceInput = {
   name: string;
@@ -13,7 +13,6 @@ export type DeviceInput = {
   channel: number;
   stream: 'main' | 'sub';
   go2Mode?: 'LocalSTA' | 'LocalAP';
-  usbIndex?: number;
   httpScheme?: 'http' | 'https';
   httpPath?: string;
   autoStart?: boolean;
@@ -33,6 +32,7 @@ export type BridgeDevice = Omit<DeviceInput, 'password'> & {
   logs: Array<{ at: string; level: string; message: string }>;
   feedUrl?: string;
   snapshotUrl?: string;
+  webrtc?: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -47,10 +47,18 @@ export type BridgeTestResult = {
   device: BridgeDevice;
   checks: Array<{ stage: string; ok: boolean; message: string }>;
 };
+export type BridgeReadiness = {
+  ready: boolean;
+  reasons: Array<{ code: string; message: string; slot?: number; deviceId?: string }>;
+  requiredBindings: Array<{ slot: number; id: string }>;
+  devices: Array<{ slot: number; id: string; name: string; kind: BridgeKind; online: boolean; status: BridgeStatus; frameCount: number; lastFrameAt: string | number | null; stale: boolean }>;
+  runtime: BridgeInventory['runtime'];
+  staleAfterSeconds: number;
+};
 
 export const bridgeKindLabels: Record<BridgeKind, string> = {
   go2: 'Go2 摄像头', hikvision: '海康威视', dahua: '大华', rtsp: '通用 RTSP',
-  usb: 'USB 摄像头', http_snapshot: 'HTTP 快照', http_mjpeg: 'HTTP MJPEG',
+  http_snapshot: 'HTTP 快照', http_mjpeg: 'HTTP MJPEG',
 };
 export function isHttpBridge(kind: BridgeKind): boolean {
   return kind === 'http_snapshot' || kind === 'http_mjpeg';
@@ -218,6 +226,15 @@ export async function getBridgeInventory(signal?: AbortSignal): Promise<BridgeIn
   return { ...payload, bindings: validateBindings(payload.bindings) };
 }
 
+export async function getBridgeReadiness(signal?: AbortSignal): Promise<BridgeReadiness> {
+  const payload = await bridgeRequest<BridgeReadiness>('/readiness', { signal });
+  if (typeof payload.ready !== 'boolean' || !Array.isArray(payload.reasons)
+      || !Array.isArray(payload.requiredBindings) || !Array.isArray(payload.devices)) {
+    throw new BridgeApiError('实时摄像头就绪状态格式不完整，请检查服务版本', 502);
+  }
+  return payload;
+}
+
 export function rtspTemplate(kind: BridgeKind, channel: number, stream: 'main' | 'sub'): string {
   if (kind === 'hikvision') return `/Streaming/Channels/${channel}${stream === 'sub' ? '02' : '01'}`;
   if (kind === 'dahua') return `/cam/realmonitor?channel=${channel}&subtype=${stream === 'sub' ? 1 : 0}`;
@@ -243,11 +260,9 @@ export function bridgeModeFields(input: DeviceInput, changed: Partial<DeviceInpu
       port: http ? scheme === 'https' ? 443 : 80 : 554,
       channel: 1, stream: 'main',
       rtspPath: rtspTemplate(changed.kind, 1, 'main'),
-      usbIndex: changed.kind === 'usb' ? input.usbIndex ?? 0 : 0,
       httpScheme: http ? scheme : 'http',
       httpPath: http ? input.httpPath ?? '' : '',
-      ...(changed.kind === 'usb' ? { host: '' }
-        : changed.kind === 'go2' && input.go2Mode === 'LocalAP' ? { host: '192.168.12.1' } : {}),
+      ...(changed.kind === 'go2' && input.go2Mode === 'LocalAP' ? { host: '192.168.12.1' } : {}),
     };
   }
   if (changed.httpScheme && isHttpBridge(input.kind)) return { port: changed.httpScheme === 'https' ? 443 : 80 };
@@ -272,8 +287,7 @@ function validBridgePath(path: string): boolean {
   return false;
 }
 
-export function bridgeDeviceAddress(device: Pick<DeviceInput, 'kind' | 'host' | 'port' | 'usbIndex' | 'httpScheme'>): string {
-  if (device.kind === 'usb') return `USB #${device.usbIndex ?? 0}`;
+export function bridgeDeviceAddress(device: Pick<DeviceInput, 'kind' | 'host' | 'port' | 'httpScheme'>): string {
   const host = device.host.includes(':') && !device.host.startsWith('[') ? `[${device.host}]` : device.host;
   if (device.kind === 'go2') return host;
   return `${isHttpBridge(device.kind) ? `${device.httpScheme ?? 'http'}://` : ''}${host}:${device.port}`;
@@ -283,11 +297,6 @@ export function validateDeviceInput(input: DeviceInput): Partial<Record<keyof De
   const errors: Partial<Record<keyof DeviceInput, string>> = {};
   if (!input.name?.trim() || input.name.trim().length > 80) errors.name = '请输入 1 至 80 字的设备名称';
   if (!(input.kind in bridgeKindLabels)) errors.kind = '请选择设备类型';
-  if (input.kind === 'usb') {
-    const index = input.usbIndex === undefined ? 0 : input.usbIndex;
-    if (!Number.isInteger(index) || index < 0 || index > 15) errors.usbIndex = 'USB 设备序号范围为 0 至 15';
-    return errors;
-  }
   if (!input.host?.trim() || /[\s/@?#\\]/.test(input.host) || input.host.includes('://')) errors.host = '仅填写 IP 或主机名，不含协议、端口或凭据';
   else if (input.host.includes(':') && !/^\[?[0-9a-f:]+\]?$/i.test(input.host)) errors.host = '端口请单独填写';
   if (!Number.isInteger(input.port) || input.port < 1 || input.port > 65535) errors.port = '端口范围为 1 至 65535';
@@ -308,12 +317,11 @@ export function validateDeviceInput(input: DeviceInput): Partial<Record<keyof De
 export function deviceInput(input: DeviceInput, previousKind?: BridgeKind): DeviceInput {
   const network = isRtspBridge(input.kind) || isHttpBridge(input.kind);
   const clean: DeviceInput = {
-    name: input.name.trim(), kind: input.kind, host: input.kind === 'usb' ? '' : input.host.trim(), port: network ? input.port : 554,
+    name: input.name.trim(), kind: input.kind, host: input.host.trim(), port: network ? input.port : 554,
     channel: isRtspBridge(input.kind) ? input.channel : 1, stream: isRtspBridge(input.kind) ? input.stream : 'main',
     go2Mode: input.kind === 'go2' ? input.go2Mode ?? 'LocalSTA' : 'LocalSTA',
     autoStart: input.autoStart ?? false,
   };
-  if (input.kind === 'usb') clean.usbIndex = input.usbIndex ?? 0;
   if (network) {
     clean.username = input.username?.trim() ?? '';
     // Blank same-kind edits preserve credentials; a type change discards old secrets.
@@ -349,6 +357,73 @@ export async function saveBridgeBindings(bindings: Array<string | null>, signal?
   return { bindings: validateBindings(payload.bindings) };
 }
 
+export type BridgeConnectStage = 'validate' | 'start' | 'decode' | 'preview' | 'bind';
+
+export async function connectBridgeToSlot(
+  id: string, slot: number, signal?: AbortSignal, progress: (stage: BridgeConnectStage) => void = () => {},
+): Promise<BridgeTestResult & { bindings: Array<string | null> }> {
+  if (!Number.isInteger(slot) || slot < 1 || slot > 16) throw new BridgeApiError('请选择 1 至 16 的视频槽位', 400);
+  signal?.throwIfAborted();
+  progress('validate');
+  const before = await getBridgeInventory(signal);
+  const original = before.items.find((device) => device.id === id);
+  if (!original) throw new BridgeApiError('设备不存在或已删除', 404);
+  const index = slot - 1;
+  if (before.bindings[index] && before.bindings[index] !== id) throw new BridgeApiError('该视频槽位已被其他设备占用', 409);
+  const active = ['online', 'connecting', 'reconnecting'].includes(original.status);
+  let started = false;
+  let bindingAttempted = false;
+  try {
+    progress('start');
+    if (!active) {
+      const response = await controlBridge(id, 'start', signal);
+      started = true;
+      if (response.device?.id !== id) throw new BridgeApiError('服务端未确认设备启动结果', 502);
+    }
+    progress('decode');
+    const result = await testBridge(id, signal);
+    if (result.device?.id !== id || !Array.isArray(result.checks)) throw new BridgeApiError('连接检测返回格式不完整', 502);
+    if (result.ok !== true || !hasFreshFrame(result.device) || !result.checks.some((check) => check.stage === 'decode' && check.ok === true)) {
+      const failure = result.checks.find((check) => !check.ok);
+      throw new BridgeApiError(failure ? `${bridgeStageLabel(failure.stage)}：${redactBridgeMessage(failure.message)}` : '未收到可用的实时视频帧', 503);
+    }
+    progress('preview');
+    await requestBridgeSnapshot(id, signal);
+    signal?.throwIfAborted();
+    progress('bind');
+    const latest = await getBridgeInventory(signal);
+    const current = latest.items.find((device) => device.id === id);
+    if (!current || bridgeSourceKey(current) !== bridgeSourceKey(original)) {
+      throw new BridgeApiError('设备配置已被其他会话修改，请重新连接', 409);
+    }
+    if (JSON.stringify(latest.bindings) !== JSON.stringify(before.bindings)) {
+      throw new BridgeApiError('槽位已被其他会话修改，请重新选择后接入', 409);
+    }
+    const bindings = latest.bindings.map((value, position) => position === index ? id : value);
+    if (latest.bindings[index] !== id) {
+      // Do not stop a decoder after an ambiguous binding write; it may now serve the wall.
+      bindingAttempted = true;
+      const saved = await saveBridgeBindings(bindings, signal);
+      if (JSON.stringify(saved.bindings) !== JSON.stringify(bindings)) throw new BridgeApiError('服务端未确认槽位绑定，请刷新核对', 502);
+    }
+    const confirmed = await getBridgeInventory(signal);
+    const device = confirmed.items.find((item) => item.id === id);
+    if (confirmed.bindings[index] !== id) throw new BridgeApiError('槽位绑定已变化，请刷新核对', 409);
+    if (!device || !hasFreshFrame(device)) throw new BridgeApiError('槽位已绑定，但实时画面已中断，请检查设备', 503);
+    return { ...result, device, bindings: confirmed.bindings };
+  } catch (failure) {
+    if (started && !bindingAttempted) {
+      try {
+        // Cleanup must still run after the caller cancels the connection attempt.
+        await controlBridge(id, 'stop');
+      } catch {
+        throw new BridgeApiError(`${bridgeErrorMessage(failure)}；停止连接的结果未确认，请刷新设备状态`, 503);
+      }
+    }
+    throw failure;
+  }
+}
+
 export function frameTime(value: BridgeDevice['lastFrameAt']): number {
   return typeof value === 'number' ? value < 1e12 ? value * 1000 : value : typeof value === 'string' ? Date.parse(value) : NaN;
 }
@@ -357,7 +432,7 @@ export function hasFreshFrame(device: Pick<BridgeDevice, 'online' | 'status' | '
   return device.online === true && device.status === 'online' && device.frameCount > 0 && Number.isFinite(age) && age >= -5000 && age <= 10000;
 }
 export function bridgeSourceKey(device: BridgeDevice): string {
-  return JSON.stringify([device.id, device.kind, device.host, device.port, device.username, device.rtspPath, device.channel, device.stream, device.go2Mode, device.usbIndex ?? 0, device.httpScheme ?? 'http', device.httpPath ?? '', device.hasPassword, device.updatedAt]);
+  return JSON.stringify([device.id, device.kind, device.host, device.port, device.username, device.rtspPath, device.channel, device.stream, device.go2Mode, device.httpScheme ?? 'http', device.httpPath ?? '', device.hasPassword, device.updatedAt]);
 }
 export function bridgeErrorMessage(error: unknown): string {
   return error instanceof Error ? redactBridgeMessage(error.message) : '设备服务不可用，请重试';
@@ -365,8 +440,7 @@ export function bridgeErrorMessage(error: unknown): string {
 
 export function useBridgeInventory() {
   const [inventory, setInventory] = useState<BridgeInventory | null>(null);
-  const [auth, setAuth] = useState<BridgeAuth | null>(null);
-  const [authRequired, setAuthRequired] = useState(false);
+  const [readiness, setReadiness] = useState<BridgeReadiness | null>(null);
   const [previewReady, setPreviewReady] = useState(false);
   const [error, setError] = useState('');
   const [connected, setConnected] = useState(false);
@@ -388,9 +462,9 @@ export function useBridgeInventory() {
     setConnected(false);
     if (failure instanceof BridgeApiError && failure.status === 401) {
       sessionReady.current = false;
-      setAuthRequired(true);
       setPreviewReady(false);
       setInventory(null);
+      setReadiness(null);
     }
   }, []);
 
@@ -415,21 +489,18 @@ export function useBridgeInventory() {
       setRefreshing(true);
       try {
         if (!sessionReady.current || Date.now() >= sessionRenewAt.current) {
-          const authorization = await bridgeRequest<BridgeAuth>('/auth', { signal: controller.signal });
-          if (cancelled || controller.signal.aborted) return;
-          setAuth(authorization);
-          if (authorization.enabled && !authorization.authorized) throw new BridgeApiError('需要管理员授权', 401);
           const expiresIn = await createBridgeSession(undefined, controller.signal);
           if (cancelled || controller.signal.aborted) return;
           sessionRenewAt.current = bridgeSessionRenewAt(expiresIn);
           sessionReady.current = true;
           setPreviewReady(true);
           setPreviewEpoch((value) => value + 1);
-          setAuthRequired(false);
         }
         const payload = await getBridgeInventory(controller.signal);
+        const readinessPayload = await getBridgeReadiness(controller.signal);
         if (cancelled || controller.signal.aborted) return;
         setInventory(payload);
+        setReadiness(readinessPayload);
         setUpdatedAt(Date.now());
         setConnected(true);
         setError('');
@@ -467,29 +538,8 @@ export function useBridgeInventory() {
     }
   }, [onFailure, refresh]);
 
-  const login = useCallback(async (token: string) => {
-    await mutate(async (signal) => {
-      const expiresIn = await createBridgeSession(token, signal);
-      if (signal.aborted) return;
-      sessionRenewAt.current = bridgeSessionRenewAt(expiresIn);
-      sessionReady.current = true;
-      setPreviewReady(true);
-      setAuthRequired(false);
-    });
-  }, [mutate]);
-
-  const lock = useCallback(async () => {
-    sessionReady.current = false;
-    sessionRenewAt.current = 0;
-    setPreviewReady(false);
-    setInventory(null);
-    setConnected(false);
-    setAuthRequired(true);
-    await mutate((signal) => closeBridgeSession(signal));
-  }, [mutate]);
-
   return {
-    inventory, auth, authRequired, previewReady, error, refreshing, busy, updatedAt, now, previewEpoch,
-    available: connected && now - updatedAt <= 10000, refresh, mutate, login, lock,
+    inventory, readiness, previewReady, error, refreshing, busy, updatedAt, now, previewEpoch,
+    available: connected && now - updatedAt <= 10000, refresh, mutate,
   };
 }

@@ -1,0 +1,70 @@
+{
+  "title": "南昌市桃花夜市地图底图",
+  "kind": "cartographic-map-not-site-photograph",
+  "acquiredAt": "2026-09-08T14:19:55.838Z",
+  "attribution": "© OpenStreetMap contributors",
+  "attributionUrl": "https://www.openstreetmap.org/copyright",
+  "placeSource": "https://www.openstreetmap.org/way/1449309085",
+  "width": 1024,
+  "height": 768,
+  "zoom": 19,
+  "startX": 430898,
+  "startY": 218556,
+  "cols": 4,
+  "rows": 3,
+  "bounds": {
+    "west": 115.87417602539062,
+    "east": 115.87692260742188,
+    "north": 28.654440859984476,
+    "south": 28.652633192961698
+  },
+  "placeOutline": [
+    [
+      115.8751172,
+      28.6537962
+    ],
+    [
+      115.8750886,
+      28.6536393
+    ],
+    [
+      115.8748526,
+      28.6536706
+    ],
+    [
+      115.8747989,
+      28.6535891
+    ],
+    [
+      115.8747703,
+      28.6534102
+    ],
+    [
+      115.8756465,
+      28.6533474
+    ],
+    [
+      115.8756858,
+      28.6538464
+    ],
+    [
+      115.8752924,
+      28.6538495
+    ]
+  ],
+  "sources": [
+    "https://tile.openstreetmap.org/19/430898/218556.png",
+    "https://tile.openstreetmap.org/19/430899/218556.png",
+    "https://tile.openstreetmap.org/19/430900/218556.png",
+    "https://tile.openstreetmap.org/19/430901/218556.png",
+    "https://tile.openstreetmap.org/19/430898/218557.png",
+    "https://tile.openstreetmap.org/19/430899/218557.png",
+    "https://tile.openstreetmap.org/19/430900/218557.png",
+    "https://tile.openstreetmap.org/19/430901/218557.png",
+    "https://tile.openstreetmap.org/19/430898/218558.png",
+    "https://tile.openstreetmap.org/19/430899/218558.png",
+    "https://tile.openstreetmap.org/19/430900/218558.png",
+    "https://tile.openstreetmap.org/19/430901/218558.png"
+  ],
+  "note": "OSM geographic reference only. Not an aerial photograph, verified camera survey or actual-person trajectory."
+}

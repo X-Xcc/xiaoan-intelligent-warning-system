@@ -1,8 +1,6 @@
 import { EventSource } from 'eventsource';
 import { getWorkspaceApiUrl } from './api-config';
 import { apiFetch } from './api-http';
-import { clearToken, getToken } from './auth-token';
-import { clearRequestState } from './api-cache';
 
 type SseCallback = (data: unknown) => void;
 
@@ -15,8 +13,7 @@ let reconnectDelay = 1000;
 const MAX_RECONNECT_DELAY = 60000;
 
 function ensureSseConnection(): void {
-  const token = getToken();
-  if (!token || sseSubscribers.size === 0 || sseReconnectTimer) return;
+  if (sseSubscribers.size === 0 || sseReconnectTimer) return;
   if (sseEventSource && sseEventSource.readyState !== EventSource.CLOSED) return;
 
   const eventSource = new EventSource(getWorkspaceApiUrl('/api/sse/stream'), {
@@ -57,14 +54,8 @@ function ensureSseConnection(): void {
     // The library may schedule its retry after this handler; cancel it as well.
     queueMicrotask(() => eventSource.close());
     sseEventSource = null;
-    if (error.code === 401 && getToken() === token) {
-      clearToken();
-      clearRequestState();
-      window.dispatchEvent(new Event('rtk:token-invalid'));
-      return;
-    }
-    if (error.code === 403 || error.code === 204) return;
-    if (sseSubscribers.size > 0 && getToken()) {
+    if (error.code === 401 || error.code === 403 || error.code === 204) return;
+    if (sseSubscribers.size > 0) {
       const delay = reconnectDelay;
       sseReconnectTimer = setTimeout(() => {
         sseReconnectTimer = null;

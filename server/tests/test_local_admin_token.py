@@ -25,14 +25,14 @@ class LocalAdminTokenTests(unittest.TestCase):
             self.assertEqual(system_control._environment_admin_token(), "1234")
             self.assertTrue(system_control.admin_token_configured({}))
 
-    def test_local_override_does_not_authorize_wrong_or_missing_token(self):
+    def test_local_access_does_not_require_a_token(self):
         with self.token_environment(), \
                 patch.object(system_control, "get_platform_settings", return_value={"adminAuthEnabled": True}), \
                 patch.object(system_control, "_raw_platform_settings", return_value={}):
             self.assertTrue(system_control.verify_admin_token("1234"))
             for token in (None, "", "4321", "12345"):
                 with self.subTest(token=token):
-                    self.assertFalse(system_control.verify_admin_token(token))
+                    self.assertTrue(system_control.verify_admin_token(token))
 
     def test_local_environment_requires_explicit_override(self):
         for enabled in ("", "false", "0"):
@@ -70,7 +70,7 @@ class LocalAdminTokenTests(unittest.TestCase):
             self.assertEqual(system_control._environment_admin_token(), "1234")
             self.assertTrue(system_control.admin_token_configured({}))
 
-    def test_deployment_override_keeps_authentication_required(self):
+    def test_legacy_deployment_override_cannot_enable_authentication(self):
         with self.token_environment(environment="production"), \
                 patch.dict(os.environ, {
                     "CICSIC_ALLOW_SHORT_ADMIN_TOKEN": "true",
@@ -78,11 +78,11 @@ class LocalAdminTokenTests(unittest.TestCase):
                 }), \
                 patch.object(system_control, "_raw_platform_settings", return_value={}), \
                 patch.object(system_control, "get_platform_settings", return_value={"adminAuthEnabled": True}):
-            self.assertTrue(system_control._admin_auth_enabled({"adminAuthEnabled": False}))
+            self.assertFalse(system_control._admin_auth_enabled({"adminAuthEnabled": False}))
             self.assertTrue(system_control.verify_admin_token("1234"))
             for token in (None, "", "4321", "12345"):
                 with self.subTest(token=token):
-                    self.assertFalse(system_control.verify_admin_token(token))
+                    self.assertTrue(system_control.verify_admin_token(token))
 
     def test_deployment_override_length_boundaries(self):
         for length in (0, 3, 4, 15, 16, 256, 257):

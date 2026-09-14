@@ -1,0 +1,55 @@
+{
+  "type": "reference-derived-cutout-rig",
+  "source": "reference-cutout.webp",
+  "generated": false,
+  "width": 371,
+  "height": 1000,
+  "layers": [
+    "head",
+    "arm",
+    "relaxed-arm",
+    "legs",
+    "body",
+    "eye-left",
+    "eye-right",
+    "mouth"
+  ],
+  "eyes": [
+    [
+      133,
+      158,
+      181,
+      202
+    ],
+    [
+      205,
+      154,
+      258,
+      203
+    ]
+  ],
+  "mouth": [
+    170,
+    225,
+    224,
+    253
+  ],
+  "pivots": {
+    "head": [
+      208,
+      285
+    ],
+    "arm": [
+      117,
+      329
+    ],
+    "relaxedArm": [
+      292,
+      351
+    ],
+    "body": [
+      210,
+      634
+    ]
+  }
+}

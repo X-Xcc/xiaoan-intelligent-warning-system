@@ -29,6 +29,16 @@ ROLE_DEFAULTS: dict[str, dict[str, Any]] = {
 }
 
 
+def open_access_user() -> dict[str, Any]:
+    return {
+        "openid": "open-access",
+        "displayName": "公共工作台",
+        "role": "管理员",
+        "permissions": sorted({permission for role in ROLE_DEFAULTS.values()
+                               for permission in role["permissions"]}),
+    }
+
+
 def _role_to_dict(row: UserRole | None) -> dict[str, Any] | None:
     if not row:
         return None

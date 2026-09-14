@@ -42,7 +42,7 @@ class CameraServiceAuthTests(unittest.TestCase):
             result = self.camera.load_cameras_config("http://127.0.0.1:5000/")
         self.request.assert_called_once_with(
             "http://127.0.0.1:5000/api/internal/camera_config",
-            headers={"X-API-Key": "fixture-service-key"}, timeout=5, allow_redirects=False,
+            timeout=5, allow_redirects=False,
         )
         self.assertEqual(result[0]["address"], "rtsp://user:fixture-password@camera.invalid/live")
         self.assertEqual(result[1]["user"], "fixture-user")
@@ -50,11 +50,13 @@ class CameraServiceAuthTests(unittest.TestCase):
         self.assertEqual(result[2]["address"], 0)
         self.fallback.assert_not_called()
 
-    def test_no_key_uses_private_file_without_any_anonymous_request(self):
+    def test_no_key_loads_sources_anonymously(self):
+        self.request.return_value = self.response(200, {"data": []})
         for key in ("", "  "):
             with self.subTest(key=key), patch.dict(os.environ, {"API_KEY": key}):
-                self.assertEqual(self.camera.load_cameras_config(), ["private-file"])
-        self.request.assert_not_called()
+                self.assertEqual(self.camera.load_cameras_config(), [])
+        self.assertEqual(self.request.call_count, 2)
+        self.fallback.assert_not_called()
 
     def test_redirect_and_denied_responses_never_become_source_configuration(self):
         for status in (301, 302, 307, 401, 403, 500):
@@ -71,9 +73,10 @@ class CameraServiceAuthTests(unittest.TestCase):
         self.assertNotIn("fixture-service-key", output)
         self.assertNotIn("fixture-password", output)
 
-    def test_container_smoke_uses_its_existing_login_token_for_camera_inventory(self):
+    def test_container_smoke_uses_anonymous_camera_inventory(self):
         source = (ROOT / "tests/smoke_container.py").read_text(encoding="utf-8")
-        self.assertIn('request("/api/camera_config", token=token)', source)
+        self.assertIn('request("/api/camera_config")', source)
+        self.assertNotIn('request("/api/login"', source)
 
 
 if __name__ == "__main__":

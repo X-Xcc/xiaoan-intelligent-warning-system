@@ -16,7 +16,7 @@ from app.services.models import PlatformSetting, ServiceAccessKey, SystemAuditLo
 
 PLATFORM_SETTINGS_KEY = "platform-governance"
 DEFAULT_PLATFORM_SETTINGS: dict[str, Any] = {
-    "adminAuthEnabled": True,
+    "adminAuthEnabled": False,
     "sourceAuthEnabled": False,
     "publicWriteRateLimitPerMinute": 20,
     "evidenceUploadLimitMb": 20,
@@ -46,14 +46,7 @@ def _env_flag(name: str) -> bool | None:
 
 
 def _admin_auth_enabled(config: dict[str, Any] | None = None) -> bool:
-    environment = _environment_name()
-    override = _env_flag("CICSIC_ADMIN_AUTH_ENABLED")
-    if environment not in NON_PRODUCTION_ENVIRONMENTS:
-        return True
-    if override is not None:
-        return override
-    values = {**DEFAULT_PLATFORM_SETTINGS, **(config or {})}
-    return bool(values["adminAuthEnabled"])
+    return False
 
 
 def _environment_admin_token() -> str | None:
@@ -73,7 +66,7 @@ def _settings_payload(config: dict[str, Any] | None) -> dict[str, Any]:
     values = {**DEFAULT_PLATFORM_SETTINGS, **(config or {})}
     return {
         "adminAuthEnabled": _admin_auth_enabled(values),
-        "sourceAuthEnabled": bool(values["sourceAuthEnabled"]),
+        "sourceAuthEnabled": False,
         "publicWriteRateLimitPerMinute": max(1, min(120, int(values["publicWriteRateLimitPerMinute"]))),
         "evidenceUploadLimitMb": max(1, min(100, int(values["evidenceUploadLimitMb"]))),
     }
@@ -149,16 +142,7 @@ def admin_auth_status() -> dict[str, bool]:
 
 
 def verify_admin_token(token: str | None) -> bool:
-    settings = get_platform_settings()
-    if not settings["adminAuthEnabled"]:
-        return True
-    if not token:
-        return False
-    env_token = _environment_admin_token()
-    if env_token and hmac.compare_digest(token, env_token):
-        return True
-    stored_hash = str(_raw_platform_settings().get("adminTokenHash") or "")
-    return bool(stored_hash) and hmac.compare_digest(_admin_token_hash(token), stored_hash)
+    return True
 
 
 def _hash_access_key(secret: str) -> str:

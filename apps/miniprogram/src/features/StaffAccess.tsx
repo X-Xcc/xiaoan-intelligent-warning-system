@@ -1,23 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
-import { Button, Text, View } from '@tarojs/components'
-import Taro from '@tarojs/taro'
-import { EmptyState, Icon, PageHeader } from '@/components/ui'
-import { getAuthToken, requestApi, type WechatLoginSession } from '@/utils/api'
+import { Button, Picker, Text, View } from '@tarojs/components'
+import { Icon, PageHeader } from '@/components/ui'
+import { requestApi } from '@/utils/api'
 import { errorText } from './citizen/media'
 
 type StaffIdentity = { id: string; name: string; role?: string }
-type AuthUser = { openid: string; displayName?: string; role?: string; permissions?: string[] }
-const AUTH_TOKEN_KEY = 'yanhuo-shaobing-auth-token'
 export type StaffAccessProps = { onEnter: (name: string) => void; onBack: () => void }
 
-// Conditional require keeps development credentials out of native release bundles.
-export const StaffAccess: typeof VerifiedStaffAccess = process.env.NODE_ENV === 'development'
-  && process.env.TARO_APP_ENABLE_DEV_LOGIN === 'true'
-  ? require('./DevStaffAccess').DevStaffAccess : VerifiedStaffAccess
-
-function VerifiedStaffAccess({ onEnter, onBack }: StaffAccessProps) {
+export function StaffAccess({ onEnter, onBack }: StaffAccessProps) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [staff, setStaff] = useState<StaffIdentity[]>([])
+  const [selected, setSelected] = useState(-1)
   const mounted = useRef(true)
   const generation = useRef(0)
   const entryLock = useRef(false)
@@ -29,58 +23,59 @@ function VerifiedStaffAccess({ onEnter, onBack }: StaffAccessProps) {
   }
   useEffect(() => {
     mounted.current = true
+    void loadStaff()
     return () => {
       mounted.current = false
       generation.current += 1
     }
   }, [])
-  const enter = async () => {
-    if (!mounted.current || entryLock.current) return
-    entryLock.current = true
+  const loadStaff = async () => {
+    if (!mounted.current) return
     const attempt = ++generation.current
-    let expectedToken = getAuthToken()
-    const canContinue = () => {
-      if (!isCurrent(attempt)) return false
-      if (getAuthToken() !== expectedToken) throw new Error('登录会话已变更，请重新验证工作身份。')
-      return true
-    }
     setBusy(true)
     setError('')
+    setStaff([])
+    setSelected(-1)
     try {
-      const login = await Taro.login({ timeout: 8000 })
-      if (!canContinue()) return
-      if (!login.code) throw new Error('微信登录没有返回 code，请重试。')
-      const session = await requestApi<WechatLoginSession>('/auth/wechat-login', {
-        method: 'POST',
-        data: { code: login.code },
-      })
-      if (!canContinue()) return
-      if (typeof session?.token !== 'string' || !session.token.trim()) throw new Error('微信登录未返回有效会话，请重试。')
-      // Unlike the shared login helper, defer credential storage until cancellation and token checks pass.
-      Taro.setStorageSync(AUTH_TOKEN_KEY, session.token)
-      expectedToken = session.token
-      const { user } = await requestApi<{ user: AuthUser }>('/auth/me')
-      if (!canContinue()) return
-      if (!user.permissions?.includes('dispatch') || !['巡防', '指挥员', '管理员'].includes(user.role || '')) throw new Error('当前微信身份未开通工作人员权限，请联系平台管理员。')
       const result = await requestApi<{ items: StaffIdentity[] }>('/events/staff')
-      if (!canContinue()) return
-      const identity = result.items.find((item) => item.name === user.displayName)
-      if (!identity) throw new Error('当前微信身份尚未绑定巡防人员，请联系平台管理员完成绑定。')
-      onEnter(identity.name)
-    } catch (err) {
-      if (isCurrent(attempt)) setError(errorText(err, '身份验证未完成，请重试'))
-    } finally {
-      if (isCurrent(attempt)) {
-        entryLock.current = false
-        setBusy(false)
+      if (!isCurrent(attempt)) return
+      if (!Array.isArray(result?.items) || !result.items.length) throw new Error('工作人员目录为空，请核对人员目录后重试。')
+      const ids = new Set<string>()
+      const names = new Set<string>()
+      // Task endpoints identify workers by name, so ambiguous names cannot be selected safely.
+      for (const item of result.items) {
+        if (typeof item?.id !== 'string' || !item.id.trim() || typeof item.name !== 'string' || !item.name.trim()
+          || ids.has(item.id) || names.has(item.name.trim())) {
+          throw new Error('工作人员目录存在缺失或重复身份，请核对后重试。')
+        }
+        ids.add(item.id)
+        names.add(item.name.trim())
       }
+      setStaff(result.items)
+    } catch (err) {
+      if (isCurrent(attempt)) setError(errorText(err, '工作人员目录暂不可用，请重试。'))
+    } finally {
+      if (isCurrent(attempt)) setBusy(false)
     }
   }
-  return <View className='mini-app'><PageHeader title='工作人员登录' subtitle='小安智能预警系统 · 工作身份' brand onBack={goBack} />
+  const enter = () => {
+    if (!mounted.current || entryLock.current || busy || !staff[selected]) return
+    entryLock.current = true
+    onEnter(staff[selected].name)
+  }
+  return <View className='mini-app'><PageHeader title='工作人员入口' subtitle='小安智能预警系统 · 工作身份' brand onBack={goBack} />
     <View className='mini-surface'>
-      <EmptyState title='验证工作身份' description='使用已获授权并绑定巡防人员的微信账号' />
+      <Text className='mini-label'>工作人员</Text>
+      <Picker mode='selector' range={staff} rangeKey='name' value={selected < 0 ? 0 : selected}
+        disabled={busy || !staff.length} onChange={(event) => {
+          const index = Number(event.detail.value)
+          setSelected(Number.isInteger(index) && staff[index] ? index : -1)
+        }}>
+        <View className='mini-input'><Text>{busy ? '正在加载人员目录' : staff[selected]?.name || '请选择工作人员'}</Text></View>
+      </Picker>
       {!!error && <Text className='mini-error'>{error}</Text>}
-      <Button className='mini-primary mini-block' loading={busy} disabled={busy || undefined} onClick={enter}><Icon name='briefcase' tone='white' size={36} /><Text>验证并进入工作台</Text></Button>
+      {!!error && <Button className='mini-secondary' onClick={loadStaff}>重试</Button>}
+      <Button className='mini-primary mini-block' loading={busy} disabled={busy || !staff[selected] || undefined} onClick={enter}><Icon name='briefcase' tone='white' size={36} /><Text>进入工作台</Text></Button>
       <Button className='mini-secondary mini-block' onClick={goBack}>返回群众端</Button>
     </View></View>
 }

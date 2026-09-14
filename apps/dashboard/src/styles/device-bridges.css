@@ -49,11 +49,12 @@
 .bridge-row-selected > td { background: #eef6f8 !important; }
 .bridge-device-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
 .bridge-preview { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; background: #191c1f; color: #c7cdd2; }
-.bridge-preview > img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.bridge-preview > img, .bridge-preview > video { display: block; width: 100%; height: 100%; object-fit: contain; }
 .bridge-preview-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; padding: 16px; text-align: center; font-size: 13px; overflow-wrap: anywhere; background: #191c1f; }
 .bridge-preview-live { position: absolute; bottom: 8px; left: 8px; padding: 3px 7px; color: #99dec2; background: #20282de8; border-radius: 3px; font-size: 11px; }
 .bridge-preview-placeholder { position: absolute; inset: 0; pointer-events: none; background: #191c1f; }
 .bridge-preview-placeholder img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.bridge-preview-placeholder span { position: absolute; left: 8px; bottom: 8px; padding: 3px 7px; color: #f5df9b; background: #20282de8; border-radius: 3px; font-size: 11px; }
 .bridge-preview:has(.bridge-preview-placeholder) .bridge-preview-empty > button { z-index: 1; }
 .bridge-preview.compact .bridge-preview-empty { gap: 8px; padding: 26px 10px 10px; font-size: 12px; }
 .bridge-measurements { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 0; padding: 18px 0; }
@@ -81,6 +82,8 @@
 .bridge-editor .ant-modal-title { padding-right: 28px; }
 .bridge-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 20px; padding-top: 12px; }
 .bridge-form-grid .ant-input-number { width: 100%; }
+.bridge-form-grid .ant-select { width: 100%; min-width: 0; }
+.bridge-editor .ant-alert { overflow-wrap: anywhere; }
 .bridge-path-field { grid-column: 1 / -1; }
 .bridge-path-field > .ant-segmented { margin-bottom: 14px; }
 

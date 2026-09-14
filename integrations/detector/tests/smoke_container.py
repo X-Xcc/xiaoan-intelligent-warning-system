@@ -5,7 +5,6 @@ Boots only Java. Does not start inference, scan cameras, call AI, or load weight
 import json
 import os
 from pathlib import Path
-import secrets
 import subprocess
 import tempfile
 import time
@@ -16,9 +15,7 @@ import urllib.request
 def main():
     with tempfile.TemporaryDirectory() as temporary:
         root = Path(temporary)
-        env = dict(os.environ, ADMIN_USERNAME="deployment-test",
-                   ADMIN_PASSWORD=secrets.token_hex(24), API_KEY=secrets.token_hex(32),
-                   JWT_SECRET=secrets.token_hex(32), DATA_DIR=str(root / "data"),
+        env = dict(os.environ, DATA_DIR=str(root / "data"),
                    CAMERAS_CONFIG_PATH=str(root / "runtime" / "cameras.json"),
                    RESULT_DIR=str(root / "results"), XDG_CACHE_HOME=str(root / "cache"),
                    TRAINING_RUNS_DIR=str(root / "runs"), DETECTOR_AUTOSTART="false",
@@ -31,12 +28,10 @@ def main():
             try:
                 base = "http://127.0.0.1:5000"
 
-                def request(path, data=None, token=None):
+                def request(path, data=None):
                     headers = {}
                     if data is not None:
                         headers["Content-Type"] = "application/json"
-                    if token:
-                        headers["Authorization"] = f"Bearer {token}"
                     req = urllib.request.Request(base + path, headers=headers,
                                                  data=json.dumps(data).encode() if data is not None else None)
                     with urllib.request.urlopen(req, timeout=5) as response:
@@ -57,18 +52,12 @@ def main():
                 for path in ("/", "/login", "/monitor", "/model-training", "/training"):
                     status, body = request(path)
                     assert status == 200 and b"<html" in body.lower(), path
-                status, body = request("/api/login", {
-                    "username": env["ADMIN_USERNAME"], "password": env["ADMIN_PASSWORD"]
-                })
-                payload = json.loads(body)
-                token = payload.get("token") or payload.get("data", {}).get("token")
-                assert status == 200 and token, "Environment credentials must authenticate"
-                status, body = request("/api/detection/stop", {}, token)
+                status, body = request("/api/detection/stop", {})
                 assert status == 200
-                status, body = request("/api/camera_config", token=token)
+                status, body = request("/api/camera_config")
                 assert status == 200 and json.loads(body)["data"] == []
                 assert (root / "data" / "db" / "cameras.mv.db").is_file()
-                print("PASS: Java readiness, SPA routes, environment login, stop API, empty camera inventory, H2 creation")
+                print("PASS: Java readiness, SPA routes, anonymous stop API, empty camera inventory, H2 creation")
             finally:
                 process.terminate()
                 try:

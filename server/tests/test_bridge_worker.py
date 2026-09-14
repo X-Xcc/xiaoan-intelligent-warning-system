@@ -203,7 +203,7 @@ class WorkerTests(unittest.TestCase):
             self.assertEqual(platform.system(), "Windows")
         self.assertIs(platform.system, original)
         connection, modes = worker.load_go2()
-        self.assertEqual(connection.__module__, "go2_webrtc_driver.webrtc_driver")
+        self.assertEqual(connection.__module__, "unitree_webrtc_connect.webrtc_driver")
         self.assertTrue(hasattr(modes, "LocalSTA"))
         self.assertTrue(hasattr(modes, "LocalAP"))
 
@@ -358,6 +358,40 @@ class Go2LifecycleTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn(("video", False), calls)
         self.assertIn(("disconnect",), calls)
         self.assertEqual(before, dict(os.environ))
+
+
+class B2ProtocolTests(unittest.TestCase):
+    def test_local_ap_uses_b2_validation_prefix(self):
+        config = {"go2Mode": "LocalAP", "host": "192.168.12.1"}
+
+        self.assertEqual(worker.go2_validation_prefix(config), "UnitreeB2_")
+        self.assertEqual(
+            worker.go2_validation_key("challenge", worker.go2_validation_prefix(config)),
+            "SV8b/fc6PvPGlhHKinOavg==",
+        )
+
+    def test_local_sta_keeps_go2_validation_prefix(self):
+        config = {"go2Mode": "LocalSTA", "host": "192.168.12.1"}
+
+        self.assertEqual(worker.go2_validation_prefix(config), "UnitreeGo2_")
+
+    def test_b2_offer_keeps_only_sha256_fingerprints(self):
+        offer = "\r\n".join([
+            "v=0",
+            "o=- 0 0 IN IP4 127.0.0.1",
+            "s=-",
+            "t=0 0",
+            "m=application 9 UDP/DTLS/SCTP webrtc-datachannel",
+            "a=setup:actpass",
+            "a=fingerprint:sha-1 " + ":".join(["AA"] * 20),
+            "a=fingerprint:sha-256 " + ":".join(["11"] * 32),
+            "",
+        ])
+
+        filtered = worker.filter_go2_offer_sdp(offer)
+
+        self.assertIn("a=fingerprint:sha-256 " + ":".join(["11"] * 32), filtered)
+        self.assertNotIn("a=fingerprint:sha-1 " + ":".join(["AA"] * 20), filtered)
 
 
 if __name__ == "__main__":

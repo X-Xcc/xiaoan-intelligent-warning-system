@@ -9,4 +9,4 @@ passlib[bcrypt]==1.7.4
 PyJWT==2.8.0
 typing_extensions==4.15.0
 cryptography==46.0.5
-go2-webrtc-connect[video]==0.2.1
+unitree-webrtc-connect==2.2.0

@@ -11,7 +11,6 @@ import com.yolov8.security.service.CameraConfigService;
 import com.yolov8.security.service.CameraConfigService.Camera;
 import com.yolov8.security.service.DetectionService;
 import com.yolov8.security.service.FrameService;
-import com.yolov8.security.service.JwtService;
 import com.yolov8.security.service.KanbanEventBus;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,7 +43,6 @@ class SsePrivacyTest {
     private final ObjectMapper mapper = new ObjectMapper();
     private SseController controller;
     private MockMvc mvc;
-    private JwtService jwt;
     private Camera camera;
     private Set<BiConsumer<String, Object>> previousSubscribers;
 
@@ -70,12 +68,7 @@ class SsePrivacyTest {
         controller = new SseController(mapper, cameras, alerts, audit,
                 null, new FrameService(config, null), config);
         ((ScheduledExecutorService) ReflectionTestUtils.getField(controller, "scheduler")).shutdownNow();
-        jwt = new JwtService();
-        ReflectionTestUtils.setField(jwt, "jwtSecret", "fixture-only-jwt-key-at-least-32-characters");
-        ReflectionTestUtils.setField(jwt, "jwtExpiration", 60000L);
-        jwt.init();
-        AuthFilter filter = new AuthFilter(jwt);
-        ReflectionTestUtils.setField(filter, "apiKey", "fixture-api-key");
+        AuthFilter filter = new AuthFilter();
         mvc = MockMvcBuilders.standaloneSetup(controller).addFilters(filter).build();
     }
 
@@ -88,9 +81,9 @@ class SsePrivacyTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"", "Bearer invalid-fixture-token"})
-    void rejectsMissingOrInvalidAuthentication(String authorization) throws Exception {
+    void acceptsMissingOrInvalidLegacyAuthentication(String authorization) throws Exception {
         mvc.perform(get("/api/sse/stream").header("Authorization", authorization))
-                .andExpect(status().isUnauthorized()).andExpect(request().asyncNotStarted());
+                .andExpect(status().isOk()).andExpect(request().asyncStarted());
     }
 
     @Test
@@ -101,7 +94,7 @@ class SsePrivacyTest {
     }
 
     @Test
-    void validJwtReceivesSanitizedInitialSnapshotWithoutChangingPersistence() throws Exception {
+    void anonymousClientReceivesSanitizedInitialSnapshotWithoutChangingPersistence() throws Exception {
         MvcResult result = connect();
         assertSafe(cameraEvents(result).get(0));
         JsonNode persisted = mapper.valueToTree(camera);
@@ -157,8 +150,7 @@ class SsePrivacyTest {
     }
 
     private MvcResult connect() throws Exception {
-        return mvc.perform(get("/api/sse/stream")
-                        .header("Authorization", "Bearer " + jwt.generateToken("fixture-user")))
+        return mvc.perform(get("/api/sse/stream"))
                 .andExpect(status().isOk()).andExpect(request().asyncStarted()).andReturn();
     }
 

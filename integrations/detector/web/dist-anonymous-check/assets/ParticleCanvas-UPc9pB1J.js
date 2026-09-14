@@ -1,0 +1,20 @@
+import{j as c,r as l}from"./index-U7yJpHxH.js";import{C as V,V as W,a as q,A as F}from"./react-three-fiber.esm-DVMz0Pbi.js";function D({particleCount:n=3e3,showLines:M=!1}){const a=l.useRef(null),y=l.useRef(null),E=l.useRef({x:0,y:0}),b=l.useRef(new W),p=l.useRef({x:0,y:0}),m=l.useRef({x:0,y:0}),j=l.useRef(0),S=`
+    attribute float size;
+    attribute vec3 customColor;
+    varying vec3 vColor;
+    void main() {
+      vColor = customColor;
+      vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+      gl_PointSize = size * (200.0 / -mvPosition.z);
+      gl_Position = projectionMatrix * mvPosition;
+    }
+  `,B=`
+    varying vec3 vColor;
+    void main() {
+      vec2 center = gl_PointCoord - vec2(0.5);
+      float dist = length(center);
+      if (dist > 0.5) discard;
+      float alpha = 1.0 - smoothstep(0.2, 0.5, dist);
+      gl_FragColor = vec4(vColor, alpha);
+    }
+  `,G=l.useMemo(()=>{const o=new Float32Array(n);for(let s=0;s<n;s++)o[s]=1.5+Math.random()*3.5;return o},[n]),U=l.useMemo(()=>{const o=new Float32Array(n*3),s=[[.7,.85,1],[.75,.8,.95],[.8,.75,.9],[.75,.85,.9],[.85,.8,.9]];for(let t=0;t<n;t++){const r=s[Math.floor(Math.random()*s.length)],u=.7+Math.random()*.3;o[t*3]=r[0]*u,o[t*3+1]=r[1]*u,o[t*3+2]=r[2]*u}return o},[n]);return l.useEffect(()=>{const o=new Float32Array(n*3),s=new Float32Array(n*3);for(let r=0;r<n;r++){const u=r*3,d=Math.random()*Math.PI*2,e=Math.acos(2*Math.random()-1),i=35+Math.random()*65;o[u]=i*Math.sin(e)*Math.cos(d),o[u+1]=i*Math.sin(e)*Math.sin(d),o[u+2]=i*Math.cos(e),s[u]=(Math.random()-.5)*.008,s[u+1]=(Math.random()-.5)*.008,s[u+2]=(Math.random()-.5)*.008}a.current._positions=o,a.current._velocities=s;const t=a.current.geometry;t.attributes.position.array.set(o),t.attributes.position.needsUpdate=!0},[n]),l.useEffect(()=>{const o=s=>{const t=s.clientX/window.innerWidth*2-1,r=-(s.clientY/window.innerHeight)*2+1;E.current={x:t,y:r},b.current.set(t*60,r*50,0),p.current={x:r*.3,y:t*.3}};return window.addEventListener("mousemove",o),()=>window.removeEventListener("mousemove",o)},[]),q((o,s)=>{if(!a.current||!a.current._positions||!a.current._velocities)return;j.current+=s;const t=a.current._positions,r=a.current._velocities;m.current.x+=(p.current.x-m.current.x)*.01,m.current.y+=(p.current.y-m.current.y)*.01,a.current.rotation.x=m.current.x+j.current*.015,a.current.rotation.y=m.current.y+j.current*.01;for(let d=0;d<n;d++){const e=d*3;t[e]+=r[e],t[e+1]+=r[e+1],t[e+2]+=r[e+2];const i=t[e]-b.current.x,g=t[e+1]-b.current.y,h=t[e+2]-b.current.z,f=Math.sqrt(i*i+g*g+h*h);if(f<20&&f>0){const x=(20-f)/20*.4;t[e]+=i/f*x,t[e+1]+=g/f*x,t[e+2]+=h/f*x}Math.abs(t[e])>100&&(r[e]*=-1),Math.abs(t[e+1])>80&&(r[e+1]*=-1),Math.abs(t[e+2])>80&&(r[e+2]*=-1)}const u=a.current.geometry;if(u.attributes.position.array.set(t),u.attributes.position.needsUpdate=!0,M&&y.current){y.current.rotation.x=a.current.rotation.x,y.current.rotation.y=a.current.rotation.y;const d=y.current.geometry,e=d.attributes.position.array;let i=0;const g=9;for(let h=0;h<n;h++){const f=h*3,x=t[f],w=t[f+1],A=t[f+2];for(let R=h+1;R<n&&i<2e3;R++){const v=R*3,z=x-t[v],P=w-t[v+1],_=A-t[v+2];Math.sqrt(z*z+P*P+_*_)<g&&(e[i++]=x,e[i++]=w,e[i++]=A,e[i++]=t[v],e[i++]=t[v+1],e[i++]=t[v+2])}}d.setDrawRange(0,i),d.attributes.position.needsUpdate=!0}}),c.jsxs(c.Fragment,{children:[c.jsxs("points",{ref:a,children:[c.jsxs("bufferGeometry",{children:[c.jsx("bufferAttribute",{attach:"attributes-position",args:[new Float32Array(n*3),3]}),c.jsx("bufferAttribute",{attach:"attributes-size",args:[G,1]}),c.jsx("bufferAttribute",{attach:"attributes-customColor",args:[U,3]})]}),c.jsx("shaderMaterial",{vertexShader:S,fragmentShader:B,transparent:!0,depthWrite:!1,blending:F})]}),M&&c.jsxs("lineSegments",{ref:y,children:[c.jsx("bufferGeometry",{children:c.jsx("bufferAttribute",{attach:"attributes-position",args:[new Float32Array(12e3),3]})}),c.jsx("lineBasicMaterial",{color:"#8090a0",transparent:!0,opacity:.08,blending:F})]})]})}function L({particleCount:n=3e3,showLines:M=!1}){return c.jsx(V,{camera:{position:[0,0,50],fov:75},dpr:[1,2],gl:{antialias:!0},children:c.jsx(D,{particleCount:n,showLines:M})})}export{L as default};

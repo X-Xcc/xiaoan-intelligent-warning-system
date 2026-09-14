@@ -16,6 +16,7 @@ import sys
 import sysconfig
 import threading
 import time
+from urllib.request import ProxyHandler, Request, build_opener
 from uuid import uuid4
 
 from .bridge_config import (DEFAULTS, FAILURE_CODES, FIELDS, MAX_CONFIG_BYTES, MAX_DEVICES, MAX_FPS, MAX_HEIGHT,
@@ -54,6 +55,8 @@ class _Runtime:
     testers: int = 0
     checks: dict = field(default_factory=dict)
     failure: dict | None = None
+    media: tuple[int, str] | None = None
+    source_fps: float | None = None
 
 
 class BridgeManager:
@@ -70,6 +73,8 @@ class BridgeManager:
                 raise ValueError("invalid device registry")
             for row in rows:
                 identifier = row["id"]
+                if row.get("kind") == "usb":
+                    continue
                 if (not isinstance(identifier, str) or len(identifier) != 32
                         or any(c not in "0123456789abcdef" for c in identifier)
                         or identifier in self._devices):
@@ -122,7 +127,9 @@ class BridgeManager:
         fps = min(MAX_FPS, (len(state.times) - 1) / span) if online and span > 0 else 0
         return {**{key: value for key, value in config.items() if key != "password"},
                 "hasPassword": bool(config["password"]), "status": state.status, "online": online,
-                "fps": round(fps, 2), "width": state.width, "height": state.height,
+                "fps": round(state.source_fps if online and state.source_fps is not None else fps, 2),
+                "webrtc": online and state.media is not None,
+                "width": state.width, "height": state.height,
                 "frameCount": state.frame_count, "lastFrameAt": state.last_frame_at,
                 "lastError": state.error, "stage": state.stage,
                 "logs": [dict(item) for item in state.logs],
@@ -234,7 +241,7 @@ class BridgeManager:
                     state.test_owned = False
                 return state
             info = self.runtime_info()
-            if (not info["opencv"] or (config["kind"] != "usb" and not info["av"])
+            if (not info["opencv"] or not info["av"]
                     or (config["kind"] == "go2" and not info["go2"])):
                 raise RuntimeError(MESSAGES["runtime"])
             if sum(self._active(item) for item in self._runtimes.values()) >= MAX_DEVICES:
@@ -318,6 +325,12 @@ class BridgeManager:
     def _accept_event(self, state, event):
         if not isinstance(event, dict):
             raise ValueError("invalid event")
+        if event.get("type") == "media":
+            port, key = event.get("port"), event.get("key")
+            if type(port) is not int or not 1024 <= port <= 65535 or not isinstance(key, str) or not 32 <= len(key) <= 128:
+                raise ValueError("invalid media endpoint")
+            state.media = (port, key)
+            return False
         if event.get("type") == "status":
             status, stage = event.get("status"), event.get("stage")
             if status not in STATUSES - {"online"} or stage not in STAGES:
@@ -356,8 +369,11 @@ class BridgeManager:
         if self._jpeg_dimensions(jpeg) != (width, height):
             raise ValueError("invalid jpeg dimensions")
         now = time.monotonic()
-        if state.frame_count and now - state.last_frame < 1 / MAX_FPS:
-            return False
+        source_fps = event.get("sourceFps")
+        if source_fps is not None:
+            if type(source_fps) not in (float, int) or not math.isfinite(source_fps) or not 0 <= source_fps <= MAX_FPS:
+                raise ValueError("invalid source rate")
+            state.source_fps = source_fps
         if state.status != "online":
             self._log(state, "online")
         state.status, state.stage, state.error = "online", "decode", ""
@@ -452,6 +468,7 @@ class BridgeManager:
                     process.stdout.close()
                 with self._condition:
                     state.process = None
+                    state.media = None
                     self._clear(state)
             if state.stopped.is_set():
                 break
@@ -511,6 +528,57 @@ class BridgeManager:
         with self._condition:
             return list(self._bindings)
 
+    def readiness_snapshot(self) -> dict:
+        """Return the real-camera gate used by operators and native startup."""
+        with self._condition:
+            bindings = list(self._bindings)
+            required = []
+            reasons = []
+            devices = []
+            for index, identifier in enumerate(bindings):
+                if identifier is None:
+                    continue
+                slot = index + 1
+                required.append({"slot": slot, "id": identifier})
+                if identifier not in self._devices:
+                    reasons.append({"code": "binding_missing", "slot": slot,
+                                    "deviceId": identifier, "message": "视频槽位绑定的设备不存在"})
+                    continue
+                state = self._runtimes[identifier]
+                stale = not state.last_frame or time.monotonic() - state.last_frame > STALE_SECONDS
+                device = self._view(identifier)
+                item = {
+                    "slot": slot,
+                    "id": identifier,
+                    "name": device["name"],
+                    "kind": device["kind"],
+                    "online": device["online"],
+                    "status": device["status"],
+                    "frameCount": device["frameCount"],
+                    "lastFrameAt": device["lastFrameAt"],
+                    "stale": stale,
+                }
+                devices.append(item)
+                if stale:
+                    reasons.append({"code": "frame_stale", "slot": slot,
+                                    "deviceId": identifier, "message": "绑定设备最近帧已过期"})
+                elif not device["online"] or device["status"] != "online":
+                    reasons.append({"code": "device_not_online", "slot": slot,
+                                    "deviceId": identifier, "message": "绑定设备未收到实时画面"})
+                elif device["frameCount"] < 1:
+                    reasons.append({"code": "frame_stale", "slot": slot,
+                                    "deviceId": identifier, "message": "绑定设备最近帧已过期"})
+            if not required:
+                reasons.append({"code": "no_bindings", "message": "没有绑定到视频墙槽位的真实摄像头"})
+            return {
+                "ready": not reasons,
+                "reasons": reasons,
+                "requiredBindings": required,
+                "devices": devices,
+                "runtime": self.runtime_info(),
+                "staleAfterSeconds": STALE_SECONDS,
+            }
+
     def set_bindings(self, bindings: list) -> list:
         with self._operations, self._condition:
             if (not isinstance(bindings, list) or len(bindings) != MAX_DEVICES
@@ -529,7 +597,7 @@ class BridgeManager:
                 return False
         with self._condition:
             return {"av": available("av"), "opencv": available("cv2"),
-                    "go2": available("go2_webrtc_driver"),
+                    "go2": available("unitree_webrtc_connect"),
                     "running": sum(state.process is not None and state.process.poll() is None
                                    for state in self._runtimes.values()),
                     "maxDevices": MAX_DEVICES}
@@ -537,6 +605,25 @@ class BridgeManager:
     def snapshot(self, identifier) -> bytes | None:
         with self._condition:
             return self._runtimes[identifier].jpeg if self._view(identifier)["online"] else None
+
+    def media_endpoint(self, identifier):
+        with self._condition:
+            self._require(identifier)
+            state = self._runtimes[identifier]
+            if state.media is None or state.stopped.is_set() or not self._view(identifier)["online"]:
+                raise RuntimeError("Media source unavailable")
+            return state.media
+
+    @staticmethod
+    def media_request(endpoint, action, payload):
+        if action not in ("offer", "renew", "close"):
+            raise ValueError("Unknown media operation")
+        port, key = endpoint
+        request = Request(f"http://127.0.0.1:{port}/{action}",
+                          data=json.dumps(payload).encode(),
+                          headers={"Authorization": "Bearer " + key, "Content-Type": "application/json"})
+        with build_opener(ProxyHandler({})).open(request, timeout=9 if action == "offer" else 2) as response:
+            return json.loads(response.read(110_000))
 
     def frames(self, identifier):
         with self._condition:

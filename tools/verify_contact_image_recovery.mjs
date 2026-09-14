@@ -19,7 +19,7 @@ page.on('request', request => {
 let blockImages = false;
 let blockThumbnails = false;
 let failedRequests = 0;
-const isScene = pathname => /\/(?:contact-review-assets\/zijing-(?:basemap\.webp|demo-cam-\d+\.thumb\.webp)|night-market-cam-\d+\.png)$/.test(pathname);
+const isScene = pathname => /\/(?:contact-review-assets\/(?:night-market-case-basemap\.webp|zijing-demo-cam-\d+\.thumb\.webp)|night-market-cam-\d+\.png)$/.test(pathname);
 await page.route('**/*', async route => {
   const pathname = new URL(route.request().url()).pathname;
   if (isScene(pathname) && (blockImages || (blockThumbnails && pathname.endsWith('.thumb.webp')))) {
@@ -30,10 +30,12 @@ await page.route('**/*', async route => {
 });
 
 async function openRoute() {
+  const search = page.getByRole('button', { name: '筛选记录', exact: true });
+  if (await search.isVisible()) await search.click();
   await page.getByRole('button', { name: '查看 CR-001', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: '记录详情 · CR-001', exact: true });
-  await dialog.getByRole('button', { name: '查看未知人物 02', exact: true }).click();
-  await dialog.getByRole('button', { name: '查看步态记录', exact: true }).click();
+  await dialog.getByRole('button', { name: '查看嫌疑人 02 脱敏信息', exact: true }).click();
+  await dialog.getByRole('button', { name: '查看关联点位', exact: true }).click();
   return dialog;
 }
 
@@ -48,12 +50,15 @@ async function assertDecoded(dialog) {
   assert.equal(new Set(images.map(image => image.src)).size, 5);
   for (const image of images) assert.equal(image.width / image.height, 16 / 9);
   assert.equal(await dialog.locator('.cr-nightmarket-anchor').count(), 5);
+  assert.deepEqual(await dialog.locator('.cr-nightmarket-place-label').allTextContents(),
+    ['第一次接触地点', '案发地点']);
+  assert.equal(await dialog.getByRole('list', { name: '关联时间线', exact: true }).count(), 1);
   assert.equal(await dialog.locator('.cr-inspection-sidebar').count(), 0);
   assert.equal(await dialog.locator('.cr-gait-photo-error').count(), 0);
 }
 
 try {
-  for (const asset of ['zijing-basemap.webp', ...['02', '03', '04', '05', '08'].map(id => `zijing-demo-cam-${id}.thumb.webp`)]) {
+  for (const asset of ['night-market-case-basemap.webp', ...['02', '03', '04', '05', '08'].map(id => `zijing-demo-cam-${id}.thumb.webp`)]) {
     const response = await page.request.get(new URL(`/contact-review-assets/${asset}`, url).href);
     assert.equal(response.status(), 200, asset);
     assert.match(response.headers()['content-type'], /^image\/webp/);
@@ -121,7 +126,8 @@ try {
   await page.keyboard.press('Escape');
   await preview.waitFor({ state: 'hidden' });
   await dialog.getByRole('button', { name: '返回原始图片', exact: true }).click();
-  await dialog.getByText('无法识别人物信息', { exact: true }).waitFor();
+  await dialog.getByRole('heading', { name: '角色与身份', exact: true }).waitFor();
+  assert.equal(await dialog.getByText('人工角色标注', { exact: true }).count(), 0);
   assert.deepEqual(errors, []);
   assert.deepEqual(mutations, []);
   console.log(JSON.stringify({ status: 'PASS', assetResponses: 6, recoveredMapAndPhotos: true,
