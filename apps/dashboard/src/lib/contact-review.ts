@@ -22,7 +22,6 @@ export type ContactReviewRecord = {
 export type ContactBehavior = '可疑接触' | '可疑观察' | '可疑跟随';
 export const contactBehaviors: ContactBehavior[] = ['可疑接触', '可疑观察', '可疑跟随'];
 export const CONTACT_SEARCH_CORPUS_SIZE = 3248;
-export const IDENTITY_SEARCH_RECORD_ID = 'CR-020';
 
 export type ContactSearchStage = {
   scanned: number;
@@ -139,6 +138,50 @@ export const contactReviewRecords: ContactReviewRecord[] = locations.map(([locat
 }));
 
 export const CONTACT_REDACTED_VALUE = '已脱敏';
+
+// Reviewed person-photo sources only. Maps, reference uploads and duplicate
+// copies (cr-019-point-3 / cr-020-incident = night-market-sequence-03) stay out.
+const identityPersonPhotoFiles = [
+  'contact-01-self-portrait.png',
+  'contact-02-self-portrait.png',
+  ...Array.from({ length: 12 }, (_, index) => `night-market-cam-${String(index + 1).padStart(2, '0')}.jpg`),
+  ...Array.from({ length: 4 }, (_, index) => `night-market-sequence-${String(index + 1).padStart(2, '0')}.jpg`),
+  'cr-019-point-1.png',
+  'cr-019-point-2.png',
+  'cr-019-point-5.png',
+];
+
+export const identitySearchRecords: ContactReviewRecord[] = [
+  ...contactReviewRecords.map((record, index) => ({
+    ...record,
+    id: `AI-CONTACT-${String(index + 1).padStart(2, '0')}`,
+    assetPath: `/contact-review-assets/contact-${String(index + 1).padStart(2, '0')}.png`,
+  })),
+  ...identityPersonPhotoFiles.map((filename): ContactReviewRecord => {
+    const assetPath = `/contact-review-assets/${filename}`;
+    const existing = contactReviewRecords.find(record => record.assetPath === assetPath);
+    if (existing) return { ...existing };
+    const id = `AI-${filename.replace(/\.[^.]+$/, '').toUpperCase()}`;
+    return {
+      id,
+      assetPath,
+      occurredAt: `${CONTACT_DEMO_DATE} 00:00:00`,
+      location: '合成人物素材',
+      camera: 'AI-DEMO',
+      behavior: '可疑接触',
+      companion: {
+        id,
+        label: CONTACT_REDACTED_VALUE,
+        name: CONTACT_REDACTED_VALUE,
+        source: 'AI 合成演示素材',
+        note: '未关联人物身份；时间为演示预设',
+      },
+      status: '待复核',
+    };
+  }),
+];
+const identityPersonPhotoPaths = new Set(identitySearchRecords.map(record => record.assetPath));
+
 const companionDisplayLabels = new Map(
   [...new Set(contactReviewRecords.map((record) => record.companion.id))]
     .map((id, index) => [id, `脱敏对象 ${String(index + 1).padStart(2, '0')}`] as const),
@@ -216,7 +259,7 @@ export function selectIdentitySearchRecords(
   filters: ContactFilters,
 ): ContactReviewRecord[] {
   return selectContactRecords(records, filters).filter(
-    (record) => record.camera.toLocaleLowerCase() === 'cam-11' && record.id === IDENTITY_SEARCH_RECORD_ID,
+    (record) => identityPersonPhotoPaths.has(record.assetPath),
   );
 }
 

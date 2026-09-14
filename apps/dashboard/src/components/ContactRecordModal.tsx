@@ -3,7 +3,7 @@ import { Activity, ArrowLeft, Camera, ChevronLeft, ChevronRight, Columns2, Image
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { appBasePath } from '../lib/presentation';
 import {
-  contactAnnotations, contactComparisonRecords, contactGaitRoute, contactRoleLabels, referenceIdentity, referenceResidence,
+  contactAnnotations, contactComparisonRecords, contactGaitRoute, contactRoleIdentity, contactRoleLabels, referenceIdentity, referenceResidence,
   type ContactPerson, type IdentityField,
 } from '../lib/contact-inspection';
 import { CONTACT_REDACTED_VALUE, type ContactReviewRecord } from '../lib/contact-review';
@@ -95,10 +95,7 @@ function InspectionContent({ record, index, count, onPrevious, onNext, onIdentit
   const unknownId = CONTACT_REDACTED_VALUE;
   const identityLabel = selectedAnnotation ? redactedAnnotationLabel(selectedAnnotation) : CONTACT_REDACTED_VALUE;
   const gaitDisplayId = CONTACT_REDACTED_VALUE;
-  const roleIdentity: readonly IdentityField[] = selectedRole ? [
-    ['演示角色', contactRoleLabels[selectedRole]], ['人员编号', unknownId],
-    ['姓名', CONTACT_REDACTED_VALUE], ['身份资料', CONTACT_REDACTED_VALUE], ['标注来源', '人工指定 · 演示预设', true],
-  ] : [];
+  const roleIdentity = contactRoleIdentity(record.id, selectedAnnotation);
   const eventFields: IdentityField[] = [
     ['记录编号', record.id], ['当前机位', record.camera],
     ['出现时间', `${record.occurredAt} · UTC+8`, true], ['出现地点', record.location, true],
@@ -198,7 +195,7 @@ function InspectionContent({ record, index, count, onPrevious, onNext, onIdentit
             <IdentitySection title="本次出现记录" fields={eventFields} />
             <p className="cr-inspection-notice">{selectedRole ? '角色由人工指定，仅用于合成场景演示，不构成身份识别或事实认定；未提供的身份资料不作推断。' : '资料来源：演示预设资料。性别、出生日期、国籍和地址为虚构填充值，与参考照片本人无关；未提供字段不作推断。'}</p>
           </> : <>
-            <section className="cr-inspection-unknown"><h4>{selectedRole ? '人工角色标注' : '身份占位信息'}</h4><p>{selectedRole ? '角色由人工指定，仅用于合成场景演示，不构成身份识别或事实认定。' : '当前人物已标记，身份资料先使用占位内容。'}</p></section>
+            {!selectedRole && <section className="cr-inspection-unknown"><h4>身份占位信息</h4><p>当前人物已标记，身份资料先使用占位内容。</p></section>}
             <IdentitySection title={selectedRole ? '角色与身份' : '占位身份'} fields={selectedRole ? roleIdentity : referenceIdentity} />
             <div className="cr-inspection-actions" role="group" aria-label="步态与点位操作">
               <button type="button" className="ui-button primary cr-inspection-action" onClick={() => setView('gait')}><Activity size={15} />打开步态分析</button>

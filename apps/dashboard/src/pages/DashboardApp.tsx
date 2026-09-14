@@ -334,9 +334,9 @@ export function DashboardApp() {
       onTraining={(taskId) => navigatePath(trainingEntryPath(taskId))} />
     : null;
   const page = view === 'contact-review'
-    ? <ContactReviewPage onBack={() => navigate('platform')} onNext={() => navigate('identity-search')} />
+    ? <ContactReviewPage key="contact-review" onBack={() => navigate('platform')} onNext={() => navigate('identity-search')} />
     : view === 'identity-search'
-      ? <ContactReviewPage onBack={() => navigate('platform')} onNext={() => navigate('identity-search')} showGait />
+      ? <ContactReviewPage key="identity-search" onBack={() => navigate('platform')} onNext={() => navigate('identity-search')} showGait />
     : view === 'platform'
     ? <PublicSecurityPlatformPage overview={overview} refreshing={refreshing} refresh={loadOverview} navigate={navigate} />
     : view === 'command-workbench'

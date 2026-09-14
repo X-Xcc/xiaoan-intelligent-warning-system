@@ -20,28 +20,47 @@ test('shared record details retain analysis and route actions without a recognit
   assert.match(modal, /<button\b[^>]*onClick=\{\(\) => setView\('route'\)\}[^>]*>[\s\S]*?查看关联点位<\/button>/);
 });
 
-test('record gait analysis retains next-step navigation and closes the modal', () => {
+test('record gait analysis labels navigation as search and closes the modal', () => {
   const page = read('../pages/ContactReviewPage.tsx');
   const app = read('../pages/DashboardApp.tsx');
   const modal = read('../components/ContactRecordModal.tsx');
   const gait = read('../components/GaitAnalysisPanel.tsx');
 
   assert.match(page, /function handleNext\(\) \{[\s\S]*setExpanded\(false\);[\s\S]*onNext\?\.\(\);[\s\S]*\}/);
-  assert.match(app, /<ContactReviewPage onBack=\{\(\) => navigate\('platform'\)\} onNext=\{\(\) => navigate\('identity-search'\)\} \/>/);
-  assert.match(app, /<ContactReviewPage onBack=\{\(\) => navigate\('platform'\)\} onNext=\{\(\) => navigate\('identity-search'\)\} showGait \/>/);
+  assert.match(app, /<ContactReviewPage\b[^\n]*onBack=\{\(\) => navigate\('platform'\)\} onNext=\{\(\) => navigate\('identity-search'\)\} \/>/);
+  assert.match(app, /<ContactReviewPage\b[^\n]*onBack=\{\(\) => navigate\('platform'\)\} onNext=\{\(\) => navigate\('identity-search'\)\} showGait \/>/);
   assert.match(gait, /onNext\?: \(\) => void/);
-  assert.match(gait, /下一步/);
+  assert.match(gait, /onClick=\{onNext\}><span>检索<\/span>/);
+  assert.equal(gait.includes('下一步'), false);
   assert.match(modal, /<GaitAnalysisPanel recordId=\{CONTACT_REDACTED_VALUE\} onNext=\{onIdentityNext\} \/>/);
   assert.match(page, /<ContactRecordModal[\s\S]*onIdentityNext=\{handleNext\}/);
 });
 
-test('身份检索使用 CAM-11 结果集进行扫描和展示', () => {
+test('identity search cannot inherit completed search state from video screening', () => {
+  const app = read('../pages/DashboardApp.tsx');
+  const page = read('../pages/ContactReviewPage.tsx');
+
+  assert.match(app, /<ContactReviewPage key="contact-review"/);
+  assert.match(app, /<ContactReviewPage key="identity-search"/);
+  assert.match(page, /const \[searchPhase, setSearchPhase\] = useState<[^>]+>\('idle'\)/);
+  assert.match(page, /searchPhase === 'complete' && workspace === 'records' \? <div/);
+});
+
+test('identity search keeps its re-search action and hides the result total until searching', () => {
+  const page = read('../pages/ContactReviewPage.tsx');
+
+  assert.match(page, /searchPhase === 'complete' \|\| showGait \? '重新检索'/);
+  assert.match(page, /共 \{showGait \? visibleResultCount : filtered\.length\} 条/);
+});
+
+test('身份检索使用完整 AI 人物素材集进行扫描和展示', () => {
   const page = read('../pages/ContactReviewPage.tsx');
 
   assert.ok(page.includes('selectIdentitySearchRecords'));
   assert.match(page, /const filtered = useMemo\(\(\) => selectResults/);
   assert.match(page, /selectIdentitySearchRecords\(source/);
   assert.match(page, /const nextFiltered = selectResults/);
+  assert.match(page, /showGait \? identitySearchRecords : contactReviewRecords/);
 });
 
 test('身份检索隐藏视频筛查专用控件', () => {

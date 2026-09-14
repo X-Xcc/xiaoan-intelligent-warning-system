@@ -52,7 +52,7 @@ export function ContactGaitMap({ sourceRecordId = '', records, selectedId, onSel
     window.addEventListener('online', reloadImages);
     return () => window.removeEventListener('online', reloadImages);
   }, [reloadImages]);
-  const points = getCaseMapPoints(records);
+  const points = getCaseMapPoints(records, sourceRecordId);
   const activeId = points.find(point => point.record.id === selectedId)?.record.id ?? points[0]?.record.id;
   const preview = points.find(point => point.record.id === previewId);
   const variant = getCaseMapVariant(sourceRecordId, points.length);
@@ -134,7 +134,7 @@ export function ContactGaitMap({ sourceRecordId = '', records, selectedId, onSel
                 style={{ left: `${point.anchor[0] / caseBasemap.width * 100}%`, top: `${point.anchor[1] / caseBasemap.height * 100}%` }}
                 aria-label={`选择演示点位 ${index + 1} ${point.scene.camera} ${point.label}`} aria-pressed={activeId === point.record.id}
                 onClick={() => onSelect(point.record.id)}>{index + 1}
-                {(point.role === 'contact' || point.role === 'incident') && <span className="cr-nightmarket-place-label">{point.label}</span>}
+                {(point.role === 'incident' || (point.role === 'contact' && sourceRecordId !== 'CR-020')) && <span className="cr-nightmarket-place-label">{point.label}</span>}
               </button>)}
               <span className="cr-nightmarket-north" aria-label="图示北向"><ArrowUp size={22} />N</span>
               <span className="cr-nightmarket-map-key">仿真街区 · 非实测比例</span>

@@ -27,17 +27,39 @@ test('快速检索阶段从扫描图片逐步收敛到全部结果', () => {
   assert.equal(stages.at(-1).phase, 'complete');
 });
 
-test('身份检索结果固定只保留 CAM-11', () => {
-  const { contactReviewRecords, contactDateWindow, selectContactRecords, selectIdentitySearchRecords } = loadContactReview();
+test('identity search includes every curated AI person photo instead of one camera', () => {
+  const { identitySearchRecords = [], contactDateWindow, selectIdentitySearchRecords } = loadContactReview();
   const filters = { ...contactDateWindow(30), behaviors: ['可疑接触', '可疑观察', '可疑跟随'] };
-  const result = selectIdentitySearchRecords(contactReviewRecords, filters);
+  const result = selectIdentitySearchRecords(identitySearchRecords, filters);
 
-  assert.equal(result.length, 1);
-  assert.ok(result.every(record => record.camera.toLowerCase() === 'cam-11'));
-  assert.equal(result[0].id, 'CR-020');
-  assert.equal(result[0].occurredAt, '2026-08-08 20:13:50');
-  assert.ok(selectContactRecords(contactReviewRecords, filters).some(record => record.id === 'CR-003'));
+  assert.ok(result.length >= 41, 'All unique synthetic person photos must be included');
+  assert.equal(result.length, identitySearchRecords.length);
+  assert.ok(new Set(result.map(record => record.camera)).size > 1);
+  assert.ok(result.some(record => record.id === 'CR-020'));
+});
 
-  const narrowed = selectIdentitySearchRecords(contactReviewRecords, { ...filters, from: '2026-09-04' });
-  assert.equal(narrowed.length, 0);
+test('identity photo filters still respect dates, query and status', () => {
+  const { identitySearchRecords = [], selectIdentitySearchRecords } = loadContactReview();
+  assert.ok(identitySearchRecords.length > 0);
+  const selected = identitySearchRecords[0];
+  const date = selected.occurredAt.slice(0, 10);
+  const result = selectIdentitySearchRecords(identitySearchRecords, { from: date, to: date, query: selected.camera });
+  assert.ok(result.some(record => record.id === selected.id));
+  assert.ok(result.every(record => record.occurredAt.startsWith(date)));
+  assert.equal(selectIdentitySearchRecords(identitySearchRecords, { from: '2099-01-01' }).length, 0);
+  assert.equal(selectIdentitySearchRecords(identitySearchRecords, { query: 'not-a-photo-location' }).length, 0);
+  assert.equal(selectIdentitySearchRecords(identitySearchRecords, { status: '已排除' }).length, 0);
+});
+
+test('identity search rejects unrelated assets even when passed alongside approved records', () => {
+  const { identitySearchRecords = [], selectIdentitySearchRecords } = loadContactReview();
+  assert.ok(identitySearchRecords.length > 0);
+  const unrelated = [
+    '/contact-review-assets/query-subject.jpg',
+    '/contact-review-assets/night-market-case-basemap.webp',
+    '/command/phone.png',
+    '/xiaoan-assistant/reference-cutout.webp',
+  ].map((assetPath, index) => ({ ...identitySearchRecords[0], id: `OTHER-${index}`, assetPath }));
+
+  assert.equal(selectIdentitySearchRecords([...identitySearchRecords, ...unrelated], {}).length, identitySearchRecords.length);
 });

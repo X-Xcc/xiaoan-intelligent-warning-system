@@ -51,7 +51,7 @@ async function assertDecoded(dialog) {
   for (const image of images) assert.equal(image.width / image.height, 16 / 9);
   assert.equal(await dialog.locator('.cr-nightmarket-anchor').count(), 5);
   assert.deepEqual(await dialog.locator('.cr-nightmarket-place-label').allTextContents(),
-    ['第一次接触地点', '案发地点', '销赃点']);
+    ['第一次接触地点', '案发地点']);
   assert.equal(await dialog.getByRole('list', { name: '关联时间线', exact: true }).count(), 1);
   assert.equal(await dialog.locator('.cr-inspection-sidebar').count(), 0);
   assert.equal(await dialog.locator('.cr-gait-photo-error').count(), 0);
@@ -126,7 +126,8 @@ try {
   await page.keyboard.press('Escape');
   await preview.waitFor({ state: 'hidden' });
   await dialog.getByRole('button', { name: '返回原始图片', exact: true }).click();
-  await dialog.getByText('人工角色标注', { exact: true }).waitFor();
+  await dialog.getByRole('heading', { name: '角色与身份', exact: true }).waitFor();
+  assert.equal(await dialog.getByText('人工角色标注', { exact: true }).count(), 0);
   assert.deepEqual(errors, []);
   assert.deepEqual(mutations, []);
   console.log(JSON.stringify({ status: 'PASS', assetResponses: 6, recoveredMapAndPhotos: true,

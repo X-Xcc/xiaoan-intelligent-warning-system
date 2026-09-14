@@ -113,6 +113,22 @@ export const contactAnnotations: Readonly<Record<string, readonly ContactAnnotat
 );
 
 export type IdentityField = readonly [label: string, value: string, wide?: boolean];
+const reviewedDemoNames: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+  'CR-020': { '01': '小王', '04': '赵六' },
+  'CR-019': { '04': '张三', '03': '李四' },
+};
+
+export function contactRoleIdentity(recordId: string, annotation?: ContactAnnotation): readonly IdentityField[] {
+  if (!annotation?.role) return [];
+  const fields: IdentityField[] = [
+    ['演示角色', reviewedDemoNames[recordId]?.[annotation.id] ?? contactRoleLabels[annotation.role]],
+    ['人员编号', CONTACT_REDACTED_VALUE],
+  ];
+  if (annotation.role !== 'suspect') fields.push(['姓名', CONTACT_REDACTED_VALUE]);
+  fields.push(['身份资料', CONTACT_REDACTED_VALUE], ['标注来源', '人工指定 · 演示预设', true]);
+  return fields;
+}
+
 export const referenceIdentity: readonly IdentityField[] = [
   ['姓名', CONTACT_REDACTED_VALUE], ['人员编号', CONTACT_REDACTED_VALUE], ['性别', CONTACT_REDACTED_VALUE],
   ['出生日期', CONTACT_REDACTED_VALUE], ['民族', CONTACT_REDACTED_VALUE],

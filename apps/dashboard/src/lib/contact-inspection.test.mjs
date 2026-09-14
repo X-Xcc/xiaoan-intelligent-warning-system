@@ -14,6 +14,33 @@ function loadModule(name) {
 const inspection = await loadModule('contact-inspection');
 const { contactReviewRecords } = await loadModule('contact-review');
 
+test('reviewed demo names belong to the selected record and annotation', () => {
+  assert.equal(typeof inspection.contactRoleIdentity, 'function');
+  for (const [recordId, annotationId, name] of [
+    ['CR-020', '01', '小王'], ['CR-020', '04', '赵六'],
+    ['CR-019', '04', '张三'], ['CR-019', '03', '李四'],
+  ]) {
+    const annotation = inspection.contactAnnotations[recordId].find(item => item.id === annotationId);
+    const fields = inspection.contactRoleIdentity(recordId, annotation);
+    assert.deepEqual(fields[0], ['演示角色', name]);
+    assert.deepEqual(fields.find(([label]) => label === '身份资料'), ['身份资料', '已脱敏']);
+  }
+  const unedited = inspection.contactAnnotations['CR-018'].find(item => item.id === '04');
+  assert.deepEqual(inspection.contactRoleIdentity('CR-018', unedited)[0], ['演示角色', '嫌疑人']);
+  assert.deepEqual(inspection.contactRoleIdentity('CR-020'), []);
+});
+
+test('suspect identity fields omit the redundant redacted name row', () => {
+  assert.equal(typeof inspection.contactRoleIdentity, 'function');
+  for (const recordId of ['CR-019', 'CR-020']) {
+    for (const annotation of inspection.contactAnnotations[recordId].filter(item => item.role === 'suspect')) {
+      const fields = inspection.contactRoleIdentity(recordId, annotation);
+      assert.equal(fields.some(([label]) => label === '姓名'), false);
+      assert.deepEqual(fields.find(([label]) => label === '人员编号'), ['人员编号', '已脱敏']);
+    }
+  }
+});
+
 test('the first scene has the four manually assigned demo roles', () => {
   const annotations = inspection.contactAnnotations['CR-020'];
   assert.deepEqual(annotations.map(item => [item.id, item.role]), [

@@ -136,8 +136,8 @@ test('training reply provides one paragraph and the three requested course links
   assert.equal(reply.lines[0], '按勤务态势的推荐，今天先练下面三项。具体要求听教官安排。');
   assert.deepEqual(plain(reply.trainingLinks), [
     { label: '单警装备快速取用', taskId: 'TRAIN-READINESS-001' },
-    { label: '弱光队形转换', taskId: 'TRAIN-READINESS-002' },
-    { label: '现场警戒与人员疏散', taskId: 'TRAIN-READINESS-003' },
+    { label: '弱光执法场景战术协同', taskId: 'TRAIN-READINESS-002' },
+    { label: '防爆先期处置', taskId: 'TRAIN-READINESS-003' },
   ]);
 });
 

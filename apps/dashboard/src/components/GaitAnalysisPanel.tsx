@@ -293,7 +293,7 @@ export function GaitAnalysisPanel({ recordId, onNext }: Props) {
       <div className="gait-analysis-controls-right">
         <label>速度 <input type="range" min="0.2" max="3" step="0.1" value={speed} onChange={event => setSpeed(Number(event.target.value))} /><span>{speed.toFixed(1)}x</span></label>
         <span className="gait-analysis-fps">FPS: {fps}</span>
-        {onNext && <button type="button" className="ui-button primary gait-analysis-next" onClick={onNext}><span>下一步</span><ArrowRight size={15} /></button>}
+        {onNext && <button type="button" className="ui-button primary gait-analysis-next" onClick={onNext}><span>检索</span><ArrowRight size={15} /></button>}
       </div>
     </div>
     <p className="gait-analysis-note">演示规则输出，不作为身份认定或真实人员追踪依据。</p>

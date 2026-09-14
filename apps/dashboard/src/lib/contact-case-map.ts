@@ -74,8 +74,28 @@ const cr020ComparisonRoute: readonly CaseMapCoordinate[] = [
   [615, 165], [625, 260], [640, 365], [630, 440], [620, 530], [570, 565], [450, 590],
 ];
 
-export function getCaseMapPoints(records: readonly ContactReviewRecord[]) {
-  return records.slice(0, caseStops.length).map((record, index) => ({ record, ...caseStops[index] }));
+const cr019Photos = [
+  { assetPath: '/contact-review-assets/cr-019-point-1.png',
+    thumbnailPath: '/contact-review-assets/cr-019-point-1.thumb.webp' },
+  { assetPath: '/contact-review-assets/cr-019-point-2.png',
+    thumbnailPath: '/contact-review-assets/cr-019-point-2.thumb.webp' },
+  { assetPath: '/contact-review-assets/cr-019-point-3.jpg',
+    thumbnailPath: '/contact-review-assets/cr-019-point-3.thumb.webp' },
+  undefined,
+  { assetPath: '/contact-review-assets/cr-019-point-5.png',
+    thumbnailPath: '/contact-review-assets/cr-019-point-5.thumb.webp' },
+] as const;
+
+export function getCaseMapPoints(records: readonly ContactReviewRecord[], sourceRecordId = '') {
+  return records.slice(0, caseStops.length).map((record, index) => {
+    const stop = caseStops[index];
+    const photo = sourceRecordId === 'CR-019' ? cr019Photos[index] : undefined;
+    const scene = sourceRecordId === 'CR-020' && stop.role === 'incident'
+      ? { ...stop.scene, assetPath: '/contact-review-assets/cr-020-incident.jpg',
+        thumbnailPath: '/contact-review-assets/cr-020-incident.jpg' }
+      : photo ? { ...stop.scene, ...photo } : stop.scene;
+    return { record, ...stop, scene };
+  });
 }
 
 export function getCaseMapRoute(pointCount: number): readonly CaseMapCoordinate[] {

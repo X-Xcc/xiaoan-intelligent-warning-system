@@ -11,7 +11,7 @@ import { ContactCollisionMap } from '../components/ContactCollisionMap';
 import { ContactRecordModal } from '../components/ContactRecordModal';
 import {
   CONTACT_DEMO_DATE, CONTACT_REDACTED_VALUE, CONTACT_STORAGE_KEY, contactCompanionDisplayLabel, contactDateWindow, contactReviewCsv,
-  CONTACT_SEARCH_CORPUS_SIZE, contactBehaviors, contactReviewRecords, createContactSearchStages,
+  CONTACT_SEARCH_CORPUS_SIZE, contactBehaviors, contactReviewRecords, createContactSearchStages, identitySearchRecords,
   parseContactDraft, selectContactRecords, selectIdentitySearchRecords,
   type ContactBehavior, type ContactFilters, type ContactReviewDraft, type ContactReviewRecord, type ReviewStatus,
 } from '../lib/contact-review';
@@ -107,7 +107,8 @@ export function ContactReviewPage({ onBack, onNext, showGait = false }: { onBack
     return () => window.clearTimeout(timer);
   }, [feedback]);
 
-  const records = useMemo(() => contactReviewRecords.map((record) => ({ ...record, status: draft[record.id]?.status ?? record.status })), [draft]);
+  const records = useMemo(() => (showGait ? identitySearchRecords : contactReviewRecords)
+    .map((record) => ({ ...record, status: draft[record.id]?.status ?? record.status })), [draft, showGait]);
   const selectResults = (source: typeof records, nextFilters: ContactFilters) => showGait
     ? selectIdentitySearchRecords(source, nextFilters)
     : selectContactRecords(source, nextFilters);
@@ -194,7 +195,7 @@ export function ContactReviewPage({ onBack, onNext, showGait = false }: { onBack
   const visiblePlaceCount = searchPhase === 'complete'
     ? new Set(filtered.map(record => record.location)).size
     : searchPhase === 'scanning' ? Math.min(searchMatched, filtered.length) : 0;
-  const searchButtonLabel = searchPhase === 'scanning' ? '快速检索中' : searchPhase === 'complete' ? '重新检索' : showGait ? '开始检索' : '筛选记录';
+  const searchButtonLabel = searchPhase === 'scanning' ? '快速检索中' : searchPhase === 'complete' || showGait ? '重新检索' : '筛选记录';
 
   return <section className="contact-review-page" aria-label={showGait ? '身份检索工作台' : '视频筛查工作台'}>
     <header className="contact-review-heading">
@@ -280,7 +281,7 @@ export function ContactReviewPage({ onBack, onNext, showGait = false }: { onBack
         </div>
         <div className="cr-range-caption"><CalendarDays size={13} /><span>{filters.from} 至 {filters.to} · UTC+8</span>{!showGait && filters.companion && <button type="button" className="ui-text-button" onClick={() => setFilters((current) => ({ ...current, companion: '' }))}>{contactCompanionDisplayLabel({ id: filters.companion })}<X size={12} /></button>}</div>
         <div id="cr-workspace-panel" role="tabpanel" aria-labelledby={workspace === 'records' ? 'cr-records-tab' : workspace === 'map' ? 'cr-map-tab' : 'cr-collision-tab'}>
-        {workspace === 'collision' ? <ContactCollisionMap /> : searchPhase === 'idle' && <div className="cr-search-empty" role="status"><Search size={25} /><strong>等待快速检索</strong><span>点击“筛选记录”，从影像样例集中快速筛出匹配画面。</span></div>}
+        {workspace === 'collision' ? <ContactCollisionMap /> : searchPhase === 'idle' && <div className="cr-search-empty" role="status"><Search size={25} /><strong>等待快速检索</strong>{!showGait && <span>点击“筛选记录”，从影像样例集中快速筛出匹配画面。</span>}</div>}
         {workspace !== 'collision' && searchPhase === 'scanning' && <SearchScanPreview records={filtered} scanned={searchScanned} matched={searchMatched} />}
         {workspace !== 'collision' && searchPhase === 'complete' && workspace === 'records' ? <div className={`cr-record-list ${view} revealed`} role="list" aria-label="接触记录列表">
           {filtered.map((record) => <article role="listitem" className={`cr-record-card ${selected?.id === record.id ? 'selected' : ''}`} key={record.id}>
@@ -301,7 +302,7 @@ export function ContactReviewPage({ onBack, onNext, showGait = false }: { onBack
         </div> : null}
         {searchPhase === 'complete' && !filtered.length && <div className="cr-empty"><Search size={25} /><strong>没有符合条件的记录</strong><button className="ui-text-button" type="button" onClick={reset}>重置筛选</button></div>}
         </div>
-        <div className="cr-list-footer"><span>共 {filtered.length} 条 / 样例集 {records.length} 条</span><span>离散出现记录 · 非连续轨迹</span></div>
+        <div className="cr-list-footer"><span>共 {showGait ? visibleResultCount : filtered.length} 条 / 样例集 {records.length} 条</span><span>离散出现记录 · 非连续轨迹</span></div>
       </section>
     </div>
     {selected && <ContactRecordModal record={selected} open={expanded} onClose={() => setExpanded(false)}

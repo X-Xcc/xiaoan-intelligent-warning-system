@@ -113,8 +113,8 @@ export function demoReply(prompt: string, previous?: AssistantReply): AssistantR
     ],
     trainingLinks: [
       { label: '单警装备快速取用', taskId: 'TRAIN-READINESS-001' },
-      { label: '弱光队形转换', taskId: 'TRAIN-READINESS-002' },
-      { label: '现场警戒与人员疏散', taskId: 'TRAIN-READINESS-003' },
+      { label: '弱光执法场景战术协同', taskId: 'TRAIN-READINESS-002' },
+      { label: '防爆先期处置', taskId: 'TRAIN-READINESS-003' },
     ],
   };
   if (/勤务预案|勤务安排/.test(text)) return {
