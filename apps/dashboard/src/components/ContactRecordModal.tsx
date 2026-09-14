@@ -6,7 +6,6 @@ import {
   contactAnnotations, contactComparisonRecords, contactGaitRoute, contactRoleLabels, referenceIdentity, referenceResidence,
   type ContactPerson, type IdentityField,
 } from '../lib/contact-inspection';
-import { getContactGaitRecognition } from '../lib/contact-gait';
 import { CONTACT_REDACTED_VALUE, type ContactReviewRecord } from '../lib/contact-review';
 import { ContactGaitMap } from './ContactGaitMap';
 import { GaitAnalysisPanel } from './GaitAnalysisPanel';
@@ -100,7 +99,6 @@ function InspectionContent({ record, index, count, onPrevious, onNext, onIdentit
     ['演示角色', contactRoleLabels[selectedRole]], ['人员编号', unknownId],
     ['姓名', CONTACT_REDACTED_VALUE], ['身份资料', CONTACT_REDACTED_VALUE], ['标注来源', '人工指定 · 演示预设', true],
   ] : [];
-  const gaitResult = useMemo(() => getContactGaitRecognition(record, route.length), [record, route.length]);
   const eventFields: IdentityField[] = [
     ['记录编号', record.id], ['当前机位', record.camera],
     ['出现时间', `${record.occurredAt} · UTC+8`, true], ['出现地点', record.location, true],
@@ -202,15 +200,10 @@ function InspectionContent({ record, index, count, onPrevious, onNext, onIdentit
           </> : <>
             <section className="cr-inspection-unknown"><h4>{selectedRole ? '人工角色标注' : '身份占位信息'}</h4><p>{selectedRole ? '角色由人工指定，仅用于合成场景演示，不构成身份识别或事实认定。' : '当前人物已标记，身份资料先使用占位内容。'}</p></section>
             <IdentitySection title={selectedRole ? '角色与身份' : '占位身份'} fields={selectedRole ? roleIdentity : referenceIdentity} />
-            <section className="cr-gait-result" aria-label="步态识别结果">
-              <div className="cr-gait-result-heading"><div><Activity size={15} /><h4>步态识别结果</h4></div><span className="cr-inspection-tag green">{gaitResult.status}</span></div>
-              <div className="cr-gait-result-summary"><div><strong>{gaitResult.confidence}%</strong><span>匹配置信度</span></div><div><strong>{gaitResult.evidenceCount}</strong><span>关联点位</span></div></div>
-              <p className="cr-gait-result-conclusion">{gaitResult.conclusion}</p>
-              <div className="cr-gait-feature-list">{gaitResult.features.map(feature => <div key={feature.label}><span>{feature.label}</span><strong>{feature.value}</strong></div>)}</div>
+            <div className="cr-inspection-actions" role="group" aria-label="步态与点位操作">
               <button type="button" className="ui-button primary cr-inspection-action" onClick={() => setView('gait')}><Activity size={15} />打开步态分析</button>
               <button type="button" className="ui-button cr-inspection-action-secondary" onClick={() => setView('route')}><MapPin size={15} />查看关联点位</button>
-              <p className="cr-inspection-notice">{gaitResult.disclaimer}</p>
-            </section>
+            </div>
             <IdentitySection title="演示记录" fields={[
               ['记录编号', gaitDisplayId, true], ['关联点位', `${route.length} 个摄像头`], ['资料来源', '脚本预设'],
               ['样例时间范围', `${route[0].occurredAt} 至 ${route[route.length - 1].occurredAt}`, true],

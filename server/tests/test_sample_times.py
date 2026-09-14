@@ -30,6 +30,16 @@ RECEIVED_AT = "2026-09-11T20:14:50"
 
 
 class SampleTimesTest(unittest.TestCase):
+    def test_generated_ids_remain_unique_when_wall_clock_does_not_advance(self):
+        frozen = datetime(2026, 9, 14, 20, 0, 0, 123456)
+        with patch.object(event_store, "datetime") as clock:
+            clock.now.return_value = frozen
+            for prefix in ("JT", "PUSH", "HELP", "RPT", "LOST"):
+                identifiers = [event_store._new_id(prefix) for _ in range(100)]
+                self.assertEqual(len(set(identifiers)), len(identifiers))
+                self.assertTrue(all(value.startswith(f"{prefix}-260914-200000-") for value in identifiers))
+                self.assertTrue(all(len(value) <= 64 for value in identifiers))
+
     def test_command_fixture_preserves_dates_ids_and_durations(self):
         path = Path(__file__).resolve().parents[1] / "app/data/command/night_market_b1_b4_v1.json"
         fixture = json.loads(path.read_text(encoding="utf-8"))

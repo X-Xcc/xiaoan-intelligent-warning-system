@@ -10,6 +10,16 @@ test('identity search does not render a duplicate gait analysis panel in the wor
   assert.equal(page.includes('GaitAnalysisPanel'), false, 'The workspace must not import or render the gait panel');
 });
 
+test('shared record details retain analysis and route actions without a recognition summary', () => {
+  const modal = read('../components/ContactRecordModal.tsx');
+
+  for (const removed of ['步态识别结果', '匹配置信度', 'cr-gait-result', 'cr-gait-feature-list', 'getContactGaitRecognition']) {
+    assert.equal(modal.includes(removed), false, `Record details still include ${removed}`);
+  }
+  assert.match(modal, /<button\b[^>]*onClick=\{\(\) => setView\('gait'\)\}[^>]*>[\s\S]*?打开步态分析<\/button>/);
+  assert.match(modal, /<button\b[^>]*onClick=\{\(\) => setView\('route'\)\}[^>]*>[\s\S]*?查看关联点位<\/button>/);
+});
+
 test('record gait analysis retains next-step navigation and closes the modal', () => {
   const page = read('../pages/ContactReviewPage.tsx');
   const app = read('../pages/DashboardApp.tsx');

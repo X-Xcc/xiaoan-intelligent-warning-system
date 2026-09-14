@@ -151,7 +151,7 @@ test('route overlap badge highlights ninety percent in red', () => {
   assert.match(rule, /background:\s*#fff1f0\s*;/);
 });
 
-test('map markers use three red intensities with point three strongest', () => {
+test('map points one two four and five are green while the incident stays red', () => {
   const { parse } = require('postcss');
   const css = parse(fs.readFileSync(new URL('../styles/contact-case-map.css', import.meta.url), 'utf8'));
   const declarations = (selector) => {
@@ -163,10 +163,10 @@ test('map markers use three red intensities with point three strongest', () => {
   };
   const markers = model.caseStops.map(stop => declarations(`.cr-nightmarket-anchor.cr-case-${stop.role}`));
   assert.deepEqual(markers.map(marker => marker['--cr-marker']), [
-    '#ffccc7', '#ff7875', '#cf1322', '#ff7875', '#ffccc7',
+    '#21856d', '#21856d', '#cf1322', '#21856d', '#21856d',
   ]);
   assert.deepEqual(markers.map(marker => marker['--cr-marker-text']), [
-    '#7a171f', '#7a171f', 'white', '#7a171f', '#7a171f',
+    'white', 'white', 'white', 'white', 'white',
   ]);
   const anchor = declarations('.cr-nightmarket-anchor');
   assert.equal(anchor.background, 'var(--cr-marker)');

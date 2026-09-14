@@ -79,6 +79,9 @@ test('bridge hook establishes an anonymous compatible preview session and loads 
       assert.equal(new Headers(init.headers).has('X-Admin-Token'), false);
       assert.equal(init.credentials, 'include');
       if (url.endsWith('/session')) return Response.json({ authorized: true, expiresIn: 3600 });
+      if (url.endsWith('/readiness')) return Response.json({
+        ready: false, reasons: ['No camera is bound'], requiredBindings: [], devices: [],
+      });
       assert.ok(url.endsWith('/device-bridges/'));
       return Response.json({ items: [], bindings: Array(16).fill(null),
         runtime: { running: 0, av: true, opencv: true, go2: false, maxDevices: 16 } });
@@ -100,7 +103,8 @@ test('bridge hook establishes an anonymous compatible preview session and loads 
     assert.equal(bridge.previewReady, true);
     assert.equal(bridge.available, true);
     assert.equal(bridge.inventory.bindings.length, 16);
-    assert.deepEqual(calls, ['/api/device-bridges/session', '/api/device-bridges/']);
+    assert.equal(bridge.readiness.ready, false, 'Camera readiness must not mark a reachable API as offline');
+    assert.deepEqual(calls, ['/api/device-bridges/session', '/api/device-bridges/', '/api/device-bridges/readiness']);
     assert.equal('login' in bridge, false);
     assert.equal('lock' in bridge, false);
   } finally {

@@ -4,6 +4,7 @@ from datetime import datetime
 import json
 from math import atan2, cos, isfinite, radians, sin, sqrt
 from typing import Any
+from uuid import uuid4
 
 from sqlalchemy import delete, func, or_, select
 from sqlalchemy.orm import Session
@@ -352,7 +353,7 @@ def _now_label() -> str:
 
 
 def _new_id(prefix: str = "JT") -> str:
-    return f"{prefix}-{datetime.now().strftime('%y%m%d-%H%M%S-%f')[:20]}"
+    return f"{prefix}-{datetime.now().strftime('%y%m%d-%H%M%S-%f')}-{uuid4().hex}"
 
 
 def _staff_key(staff: str | None) -> str | None:
