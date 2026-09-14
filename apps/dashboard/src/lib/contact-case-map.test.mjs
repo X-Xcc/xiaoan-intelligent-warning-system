@@ -90,6 +90,27 @@ test('CR-20 defines the comparison route contract', () => {
   }
 });
 
+test('defines outward route branches from points one and three', () => {
+  assert.equal(model.routeOverlapPercent, 90);
+  assert.equal(model.caseRouteBranches.length, 3);
+  assert.deepEqual(model.caseRouteBranches.map(branch => branch.points[0]), [
+    [440, 230], [440, 230], [640, 365],
+  ]);
+  for (const branch of model.caseRouteBranches) {
+    assert.notDeepEqual(branch.points.at(-1), branch.points[0]);
+    assert.ok(branch.points.length >= 2);
+  }
+  assert.deepEqual(model.caseRouteBranches[2].points.at(-1), [900, 470]);
+});
+
+test('defines two explicitly colored paths for the map renderer', () => {
+  assert.deepEqual(model.caseRoutes.map(route => [route.id, route.color]), [
+    ['primary-route', 'blue'], ['comparison-route', 'violet'],
+  ]);
+  assert.equal(model.caseRoutes[0].points.at(-1)[0], 890);
+  assert.ok(model.caseRoutes[1].points.some(point => point[0] === 640 && point[1] === 365));
+});
+
 test('the rendered map presents a selected timeline and photo strip with explicit simulation provenance', () => {
   const selected = records[2].id;
   const html = renderToStaticMarkup(React.createElement(ContactGaitMap, { records, selectedId: selected, onSelect() {} }));
@@ -105,8 +126,51 @@ test('the rendered map presents a selected timeline and photo strip with explici
   assert.match(html, /放大 CAM-04 夜市场景图/);
 });
 
+test('the rendered map exposes the route overlap and draws three branch lines in the SVG route layer', () => {
+  const html = renderToStaticMarkup(React.createElement(ContactGaitMap, { records, selectedId: records[0].id, onSelect() {} }));
+  assert.match(html, /aria-label="路线重合率 90%"/);
+  assert.match(html, /路线重合率 90%/);
+  assert.equal(model.caseRouteBranches.length, 3);
+  assert.deepEqual(model.caseRouteBranches.map(branch => branch.points[0]), [
+    [440, 230], [440, 230], [640, 365],
+  ]);
+});
+
 test('missing records render an empty state without a misleading route or photo controls', () => {
   const html = renderToStaticMarkup(React.createElement(ContactGaitMap, { records: [], selectedId: '', onSelect() {} }));
   assert.match(html, /暂无关联点位/);
   assert.doesNotMatch(html, /cr-nightmarket-anchor|放大 CAM-/);
+});
+
+test('route overlap badge highlights ninety percent in red', () => {
+  const css = fs.readFileSync(new URL('../styles/contact-case-map.css', import.meta.url), 'utf8');
+  const rule = css.match(/^\.cr-nightmarket-route-overlap \{([^}]+)\}/m)?.[1];
+  assert.ok(rule, 'The overlap badge must have a dedicated style');
+  assert.match(rule, /(?:^|;)\s*color:\s*#cf1322\s*;/);
+  assert.match(rule, /border:\s*1px solid #ffa39e\s*;/);
+  assert.match(rule, /background:\s*#fff1f0\s*;/);
+});
+
+test('map markers use three red intensities with point three strongest', () => {
+  const { parse } = require('postcss');
+  const css = parse(fs.readFileSync(new URL('../styles/contact-case-map.css', import.meta.url), 'utf8'));
+  const declarations = (selector) => {
+    const values = {};
+    css.walkRules(rule => {
+      if (rule.selectors.includes(selector)) rule.walkDecls(decl => { values[decl.prop] = decl.value; });
+    });
+    return values;
+  };
+  const markers = model.caseStops.map(stop => declarations(`.cr-nightmarket-anchor.cr-case-${stop.role}`));
+  assert.deepEqual(markers.map(marker => marker['--cr-marker']), [
+    '#ffccc7', '#ff7875', '#cf1322', '#ff7875', '#ffccc7',
+  ]);
+  assert.deepEqual(markers.map(marker => marker['--cr-marker-text']), [
+    '#7a171f', '#7a171f', 'white', '#7a171f', '#7a171f',
+  ]);
+  const anchor = declarations('.cr-nightmarket-anchor');
+  assert.equal(anchor.background, 'var(--cr-marker)');
+  assert.equal(anchor.color, 'var(--cr-marker-text)');
+  assert.match(declarations('.cr-nightmarket-anchor[aria-pressed=true]')['box-shadow'], /var\(--cr-marker\)/);
+  assert.match(declarations('.cr-nightmarket-anchor:hover').outline, /var\(--cr-marker\)/);
 });

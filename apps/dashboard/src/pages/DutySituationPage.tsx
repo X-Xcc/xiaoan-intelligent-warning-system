@@ -12,7 +12,7 @@ import { DutyCompositionChart } from '../components/DutyCompositionChart';
 type Situation = NonNullable<TrainingReadiness['dutySituation']>;
 type Source = 'sample' | 'api' | 'stale';
 
-const HOURS = ['18:00', '19:00', '20:00', '21:00', '22:00', '23:00', '00:00', '01:00'];
+const SAMPLE_SLOTS = ['20:13:50', '20:43:50', '21:13:50', '21:43:50', '22:13:50', '22:43:50', '23:13:50', '23:43:50'];
 const TASK_IDS = ['TRAIN-READINESS-001', 'TRAIN-READINESS-002', 'TRAIN-READINESS-003'];
 const COLORS = ['#2f817a', '#86b0ce', '#d1dce3', '#eca69f'];
 const CATEGORY_COLORS: Record<string, string> = {
@@ -21,14 +21,14 @@ const CATEGORY_COLORS: Record<string, string> = {
 const SAMPLE: Situation = {
   title: 'A1 勤务态势大屏',
   location: '南昌 · 绳金塔夜市',
-  period: '18:00 - 次日 01:00',
+  period: '20:13:50 - 23:43:50',
   composition: [
     { label: '滋事纠纷', value: 41, color: COLORS[0] },
     { label: '手机扒窃', value: 28, color: COLORS[1] },
     { label: '其他', value: 27, color: COLORS[2] },
     { label: '可疑物品', value: 4, color: COLORS[3] },
   ],
-  timeTrend: HOURS.map((time, index) => ({ time, value: [8, 15, 33, 42, 38, 31, 16, 7][index] })),
+  timeTrend: SAMPLE_SLOTS.map((time, index) => ({ time, value: [8, 15, 33, 42, 38, 31, 16, 7][index] })),
   zones: [
     { id: 'A', name: 'A 入口区', level: '中风险', share: 23, x: 29, y: 78, description: '入口及主街交汇，人流导入集中，关注通道秩序。' },
     { id: 'B', name: 'B 烧烤区', level: '高风险', share: 56, x: 56, y: 61, description: 'B区烧烤摊聚集区，餐饮摊位密集，滋事纠纷重点关注区域。' },
@@ -36,19 +36,23 @@ const SAMPLE: Situation = {
   ],
   recommendations: [
     { taskId: TASK_IDS[0], subject: '单警装备训练', basis: '滋事纠纷 41% · 先期控制与装备熟练度', standard: '单警装备30秒取用完毕' },
-    { taskId: TASK_IDS[1], subject: '弱光执法战术训练', basis: '20:00-23:00 高发时段 · 弱光队形转换', standard: '弱光队形转换不超过10秒' },
+    { taskId: TASK_IDS[1], subject: '弱光执法战术训练', basis: '21:13:50-22:43:50 高发时段 · 弱光队形转换', standard: '弱光队形转换不超过10秒' },
     { taskId: TASK_IDS[2], subject: '防爆先期处置', basis: '可疑物品 4% · 低频高风险', standard: '30米警戒圈60秒内设定' },
   ],
 };
 
 function validSituation(value: Situation | undefined): value is Situation {
   const finite = (number: unknown): number is number => typeof number === 'number' && Number.isFinite(number) && number >= 0;
+  const validTime = (value: unknown): value is string => typeof value === 'string'
+    && /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value);
+  const times = Array.isArray(value?.timeTrend) ? value.timeTrend.map((item) => item?.time) : [];
   return Boolean(value && typeof value.location === 'string' && typeof value.period === 'string'
     && Array.isArray(value.composition) && value.composition.length > 0
     && value.composition.every((item) => item && typeof item.label === 'string' && finite(item.value) && item.value <= 100)
     && Math.abs(value.composition.reduce((sum, item) => sum + item.value, 0) - 100) < 0.1
-    && Array.isArray(value.timeTrend) && value.timeTrend.every((item) => item && finite(item.value))
-    && HOURS.every((hour) => value.timeTrend.some((item) => item.time === hour))
+    && Array.isArray(value.timeTrend) && value.timeTrend.length > 0
+    && value.timeTrend.every((item) => item && validTime(item.time) && finite(item.value))
+    && new Set(times).size === times.length
     && Array.isArray(value.zones) && value.zones.length > 0
     && value.zones.every((zone) => zone && typeof zone.id === 'string' && typeof zone.name === 'string'
       && typeof zone.level === 'string' && typeof zone.description === 'string'
@@ -183,10 +187,10 @@ export function DutySituationPage({ onBack }: { onBack: () => void; onTraining: 
   }, [phase, paused, run, reducedMotion]);
 
   const situation = snapshot?.dutySituation ?? SAMPLE;
-  const hourly = HOURS.map((hour) => situation.timeTrend.find((item) => item.time === hour)!);
+  const hourly = situation.timeTrend;
   const maxHourly = Math.max(1, ...hourly.map((item) => item.value));
   const totalHourly = hourly.reduce((total, item) => total + item.value, 0);
-  const peakHourly = hourly.filter((item) => /^(20|21|22|23):/.test(item.time)).reduce((total, item) => total + item.value, 0);
+  const peakHourly = hourly.slice(2, 6).reduce((total, item) => total + item.value, 0);
   const peakShare = totalHourly ? Math.round(peakHourly / totalHourly * 100) : 0;
   const sourceNotice = source === 'sample'
     ? `${loadNotice} · 截图规格样例，非实时警情`
@@ -289,15 +293,15 @@ export function DutySituationPage({ onBack }: { onBack: () => void; onTraining: 
         <section className="duty-trend-panel" aria-labelledby="duty-trend-heading">
           <div className="duty-section-heading"><span className="duty-section-index">02</span><h2 id="duty-trend-heading">警情时段分布</h2><span>强度</span></div>
           <div className="duty-trend-metrics">
-            <div className="duty-peak-heading"><Clock3 size={18} aria-hidden="true" /><div><span>高发时段</span><strong>20:00-23:00</strong></div></div>
+            <div className="duty-peak-heading"><Clock3 size={18} aria-hidden="true" /><div><span>高发时段</span><strong>{hourly[2]?.time}-{hourly[5]?.time}</strong></div></div>
             <div className="duty-trend-summary"><ChartNoAxesColumnIncreasing size={18} aria-hidden="true" />
               <div><span>高发时段强度占比</span><strong>{peakShare}<small>%</small></strong></div>
             </div>
           </div>
-          <div className="duty-hour-chart" role="group" aria-label="18:00至次日01:00逐小时警情分布">
+          <div className="duty-hour-chart" role="group" aria-label={`${hourly[0]?.time}至${hourly[hourly.length - 1]?.time}分时警情分布`}>
             <div className="duty-chart-grid" aria-hidden="true"><span /><span /><span /><span /></div>
             {hourly.map((hour) => {
-              const peak = /^(20|21|22|23):/.test(hour.time);
+              const peak = hourly.indexOf(hour) >= 2 && hourly.indexOf(hour) <= 5;
               return <div key={hour.time} className={`duty-hour-column${peak ? ' is-peak' : ''}`} data-hour={hour.time} data-value={hour.value}
                 data-peak={peak} title={`${hour.time} · 强度 ${hour.value}${peak ? ' · 高发时段' : ''}`}
                 aria-label={`${hour.time}，强度 ${hour.value}${peak ? '，高发时段' : ''}`}>
@@ -306,7 +310,7 @@ export function DutySituationPage({ onBack }: { onBack: () => void; onTraining: 
               </div>;
             })}
           </div>
-          <div className="duty-chart-legend"><i /><span>20:00-23:00 高发时段</span><span>次日 00:00 起</span></div>
+          <div className="duty-chart-legend"><i /><span>{hourly[2]?.time}-{hourly[5]?.time} 高发时段</span><span>样例分时点</span></div>
         </section>
       </div>
 

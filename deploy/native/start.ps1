@@ -3,9 +3,16 @@
 Starts the complete Windows-native XiaoAn deployment on loopback ports.
 #>
 [CmdletBinding()]
-param([switch]$SkipBuild, [switch]$EnableCameras, [switch]$OpenBrowser)
+param(
+    [switch]$SkipBuild,
+    [switch]$EnableCameras,
+    [switch]$Force,
+    [switch]$OpenBrowser,
+    [switch]$NoWatchdog
+)
 
 . (Join-Path $PSScriptRoot 'common.ps1')
+# services.ps1 owns the uvicorn, pg_ctl, go2rtc.exe, detector WAR, and static_server.py processes.
 
 function Ensure-NativeConfiguration {
     param([string]$Python, [string]$Native)
@@ -78,7 +85,7 @@ function Ensure-NativeBuild {
             # Never reuse a workstation-wide Maven cache. It may be incomplete or use a private mirror.
             $env:MAVEN_USER_HOME = Join-Path $runtime 'maven'
             New-Item -ItemType Directory -Force -Path $env:MAVEN_USER_HOME | Out-Null
-            & .\mvnw.cmd -q -DskipTests package
+            & .\mvnw.cmd -q -DskipTests clean package spring-boot:repackage
             if ($LASTEXITCODE -ne 0) { throw 'Detector Java build failed.' }
         } finally { Pop-Location }
     }
@@ -95,85 +102,104 @@ function Ensure-NativeBuild {
     }
 }
 
+$lock = $null
+$exitCode = 0
+$cleanupNames = @()
+$preExistingOwned = @{}
+
+function Test-NativeOwnedChild {
+    param([Parameter(Mandatory)][string]$Name)
+    try {
+        return [bool](Test-NativeChildOwnership $Name)
+    } catch {
+        return $false
+    }
+}
+
+function Stop-NativeOwnedChild {
+    param([Parameter(Mandatory)][string]$Name)
+    if (-not (Test-NativeOwnedChild $Name)) { return }
+    try {
+        if ($Name -eq 'watchdog') {
+            Stop-NativeWatchdogProcess
+        } else {
+            Stop-NativeChild $Name
+        }
+    } catch {
+        Write-Host "Cleanup could not stop the owned $Name process. Check native logs."
+    }
+}
+
 try {
     $root = Get-NativeProjectRoot
     $native = Get-NativeDirectory
+    $lock = Enter-NativeProjectLock
+
+    foreach ($name in @('watchdog', 'api', 'detector', 'web')) {
+        $preExistingOwned[$name] = Test-NativeOwnedChild $name
+    }
+
+    if ($Force) {
+        foreach ($name in @('watchdog', 'web', 'detector', 'api')) {
+            if ($preExistingOwned[$name]) {
+                Stop-NativeOwnedChild $name
+                $cleanupNames += $name
+            }
+        }
+    } else {
+        foreach ($name in @('api', 'detector', 'web')) {
+            if (-not $preExistingOwned[$name]) { $cleanupNames += $name }
+        }
+    }
+
     Write-Host '[1/5] Checking prerequisites...'
     & (Join-Path $PSScriptRoot 'bootstrap.ps1') -InstallMissing
     if ($LASTEXITCODE -ne 0) { throw 'Prerequisite check did not pass.' }
     $python = Get-NativePython -RequirePrivateAcl
     Ensure-NativeConfiguration $python $native
+
     Write-Host '[2/5] Checking application dependencies and builds (first launch may take longer)...'
     if (-not $SkipBuild) { Ensure-NativeBuild $python $root $native }
-    $settings = Read-NativeEnv (Join-Path $native '.env')
-    if ($EnableCameras) {
-        foreach ($name in @('CICSIC_BRIDGE_AUTOSTART', 'DETECTOR_AUTOSTART', 'GO2RTC_AUTOSTART')) {
-            Set-NativeSettingValue (Join-Path $native '.env') $name 'true'
-        }
-        $settings = Read-NativeEnv (Join-Path $native '.env')
-    }
-    Write-Host '[3/5] Starting database and API...'
-    Initialize-NativeDatabase $settings
-    Set-NativeEnvironment $settings
-    Set-NativeEnvironment (Read-NativeEnv (Join-Path $native 'runtime.env'))
-    $env:APP_ENV = 'production'
-    $env:CICSIC_ADMIN_AUTH_ENABLED = 'true'
-    $env:DATABASE_URL = "postgresql://xiaoan:$($settings['POSTGRES_PASSWORD'])@127.0.0.1:$($settings['POSTGRES_PORT'])/xiaoan"
-    $env:CICSIC_BRIDGE_DATA_DIR = Join-Path $root 'server/.secrets/device-bridges'
-    $env:CICSIC_EVIDENCE_DIR = Join-Path $root 'server/data/event-evidence'
-    $env:SECURITY_MODEL_PATH = Join-Path $root 'server/models/yolov8n-pose.pt'
-    $env:SECURITY_VIDEO_BASE_URL = "http://127.0.0.1:$($settings['DETECTOR_PORT'])"
-    $apiPython = Join-Path $native '.runtime/api-venv/Scripts/python.exe'
-    Start-NativeChild 'api' $apiPython @('-m', 'uvicorn', 'app.main:app', '--app-dir', 'server', '--host', '127.0.0.1', '--port', $settings['API_PORT']) $root | Out-Null
-    Wait-NativeHttp "http://127.0.0.1:$($settings['API_PORT'])/api/health/ready"
 
-    Write-Host '[4/5] Starting detector service...'
-    Set-NativeEnvironment (Read-NativeEnv (Join-Path $native 'detector.env'))
-    $detector = Join-Path $root 'integrations/detector'
-    $runtimeDir = Join-Path $detector 'runtime'
-    $env:DATA_DIR = Join-Path $detector 'server/data'
-    $env:RESULT_DIR = Join-Path $detector 'results'
-    $env:CAMERAS_CONFIG_PATH = Join-Path $runtimeDir 'cameras.json'
-    $env:YOLOV8_MODEL_PATH = Join-Path $detector 'models/yolov8n-pose.pt'
-    $env:DETECTOR_PYTHON = Join-Path $native '.runtime/detector-venv/Scripts/python.exe'
-    $env:DETECTOR_SCRIPT_PATH = Join-Path $detector 'detection/yolov8_security.py'
-    $env:GO2RTC_BINARY = Join-Path $runtimeDir 'go2rtc.exe'
-    $env:GO2RTC_API = 'http://127.0.0.1:1984'
-    $env:GO2RTC_RTSP_HOST = 'rtsp://127.0.0.1:8554'
-    $env:WEB_SERVER_URL = "http://127.0.0.1:$($settings['DETECTOR_PORT'])"
-    $env:CICSIC_REVIEW_URL = "http://127.0.0.1:$($settings['API_PORT'])/api/security-ai/yolo-reviews"
-    $env:DETECTOR_AUTOSTART = $settings['DETECTOR_AUTOSTART']
-    $env:GO2RTC_AUTOSTART = $settings['GO2RTC_AUTOSTART']
-    $env:DETECTOR_RETENTION_DAYS = $settings['DETECTOR_RETENTION_DAYS']
-    $javaArgs = @('-Xmx512m')
-    foreach ($name in @('API_KEY', 'CAM_PASSWORD', 'DATA_DIR', 'RESULT_DIR', 'CAMERAS_CONFIG_PATH', 'YOLOV8_MODEL_PATH', 'DETECTOR_PYTHON', 'DETECTOR_SCRIPT_PATH', 'GO2RTC_BINARY', 'GO2RTC_API', 'GO2RTC_RTSP_HOST', 'WEB_SERVER_URL', 'CICSIC_REVIEW_URL', 'CICSIC_REVIEW_API_KEY', 'CICSIC_REVIEW_ENABLED', 'DETECTOR_AUTOSTART', 'GO2RTC_AUTOSTART', 'DETECTOR_RETENTION_DAYS', 'JWT_SECRET', 'ADMIN_USERNAME', 'ADMIN_PASSWORD')) {
-        if (Test-Path "Env:$name") { $javaArgs += "-D$name=$((Get-Item "Env:$name").Value)" }
+    # Native startup is intentionally real-camera-only. The switch remains for
+    # compatibility with existing launchers and is forwarded to the watchdog.
+    foreach ($name in @('CICSIC_BRIDGE_AUTOSTART', 'DETECTOR_AUTOSTART', 'GO2RTC_AUTOSTART')) {
+        Set-NativeSettingValue (Join-Path $native '.env') $name 'true'
     }
-    $javaArgs += @('-jar', (Join-Path $detector 'server/target/yolov8-security.war'), "--server.port=$($settings['DETECTOR_PORT'])")
-    Start-NativeChild 'detector' (Get-NativeJava) $javaArgs (Join-Path $detector 'server') | Out-Null
-    Wait-NativeHttp "http://127.0.0.1:$($settings['DETECTOR_PORT'])/api/detection/status"
-    if ($EnableCameras) {
-        Write-Host 'Checking real camera frames and detector receipt...'
-        Wait-NativeRealCameraReadiness `
-            "http://127.0.0.1:$($settings['API_PORT'])" `
-            "http://127.0.0.1:$($settings['DETECTOR_PORT'])"
+
+    . (Join-Path $PSScriptRoot 'services.ps1')
+    $context = Get-NativeServiceContext -RequireRealCamera
+    Write-Host '[3/5] Starting database, API, detector, and dashboard...'
+    Start-NativeServiceStack -Context $context -RequireRealCamera
+    Wait-NativeHttp $context.WebUrl
+    Wait-NativeRealCameraReadiness $context.ApiBase $context.DetectorBase
+
+    if (-not $NoWatchdog) {
+        if (-not $preExistingOwned['watchdog'] -or $Force) {
+            $cleanupNames += 'watchdog'
+        }
+        Write-Host '[4/5] Starting native watchdog...'
+        Start-NativeWatchdogProcess -EnableCameras | Out-Null
+        if (-not (Test-NativeOwnedChild 'watchdog')) {
+            throw 'Native watchdog could not be confirmed as project-owned.'
+        }
+    } elseif ($OpenBrowser) {
+        throw 'OpenBrowser requires the native watchdog unless NoWatchdog is removed.'
     }
-    Write-Host '[5/5] Starting dashboard...'
-    Start-NativeChild 'web' $apiPython @((Join-Path $PSScriptRoot 'static_server.py'), '--directory', (Join-Path $root 'apps/dashboard/dist'), '--port', $settings['WEB_PORT']) $root | Out-Null
-    Wait-NativeHttp "http://127.0.0.1:$($settings['WEB_PORT'])/"
-    if ($EnableCameras) {
-        Write-Host "READY: real camera demo http://127.0.0.1:$($settings['WEB_PORT'])"
-    } else {
-        Write-Host "SERVICES_READY_ONLY: real cameras are not connected; demo is blocked."
-    }
-    Write-Host "Detector: http://127.0.0.1:$($settings['DETECTOR_PORT'])"
-    if (-not $EnableCameras) { Write-Host 'Cameras are restored but not connected. Double-click enable-cameras.cmd after checking the target computer network.' }
-    if ($OpenBrowser) { Open-NativeDashboard "http://127.0.0.1:$($settings['WEB_PORT'])" }
+
+    Write-Host '[5/5] Real camera readiness confirmed.'
+    Write-Host "READY: native real camera stack http://127.0.0.1:$($context.Settings['WEB_PORT'])"
+    Write-Host "Detector: $($context.DetectorBase)"
+    if ($OpenBrowser) { Open-NativeDashboard $context.WebUrl }
 } catch {
-    Write-Host "Startup stopped: $($_.Exception.Message)"
-    Write-Host "Logs: $(Join-Path (Get-NativeDirectory) 'logs')"
-    if ($_.InvocationInfo.ScriptLineNumber) {
-        Write-Host "Location: $($_.InvocationInfo.ScriptName):$($_.InvocationInfo.ScriptLineNumber)"
+    $exitCode = 1
+    foreach ($name in ($cleanupNames | Select-Object -Unique)) {
+        Stop-NativeOwnedChild $name
     }
-    exit 1
+    Write-Host 'Startup stopped before the native real-camera stack became ready.'
+    Write-Host "Logs: $(Join-Path (Get-NativeDirectory) 'logs')"
+} finally {
+    Exit-NativeProjectLock $lock
 }
+
+exit $exitCode

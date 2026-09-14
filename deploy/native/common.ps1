@@ -505,8 +505,11 @@ function Test-NativeChildOwnership {
     if ([string]::IsNullOrWhiteSpace($processPath) -or
         [IO.Path]::GetFullPath($processPath) -ine $record.FilePath) { return $false }
     $actualWorkingDirectory = Get-NativeProcessWorkingDirectory $record.Pid
-    if ([string]::IsNullOrWhiteSpace($actualWorkingDirectory) -or
-        [IO.Path]::GetFullPath($actualWorkingDirectory).TrimEnd('\') -ine $record.WorkingDirectory.TrimEnd('\')) { return $false }
+    if ([string]::IsNullOrWhiteSpace($actualWorkingDirectory)) {
+        if (-not $commandLine.Contains($record.WorkingDirectory.TrimEnd('\'))) { return $false }
+    } elseif ([IO.Path]::GetFullPath($actualWorkingDirectory).TrimEnd('\') -ine $record.WorkingDirectory.TrimEnd('\')) {
+        return $false
+    }
     if (-not $commandLine.Contains($record.WorkingDirectory.TrimEnd('\'))) { return $false }
     foreach ($argument in $record.Arguments) {
         if (-not $commandLine.Contains($argument)) { return $false }

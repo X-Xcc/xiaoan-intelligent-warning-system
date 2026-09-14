@@ -1,10 +1,10 @@
 # 小安检测服务
 
-本目录是小安智能预警系统的原生检测子系统，包含 Java 检测服务、Python YOLO 检测入口、检测管理网页、模型与 go2rtc 程序。完整安装请从仓库根目录执行 `install-prerequisites.cmd`，然后使用 `restore.cmd` 或 `start.cmd`；不需要单独安装 Docker Desktop。
+本目录是小安智能预警系统的原生检测子系统，包含 Java 检测服务、Python YOLO 检测入口、检测管理网页、模型与 go2rtc 程序。完整安装请从仓库根目录执行 `install-prerequisites.cmd`，然后使用 `restore.cmd` 或 `一键启动稳定版.cmd`；不需要单独安装 Docker Desktop。
 
 ## 本机运行方式
 
-- `start.cmd` 启动 PostgreSQL、API、检测服务和主网页。
+- `一键启动稳定版.cmd` 启动 PostgreSQL、API、检测服务和主网页，并启动 watchdog。
 - `enable-cameras.cmd` 在确认设备网络后启用桥接、Python 检测和 go2rtc。
 - 检测服务地址为 `http://127.0.0.1:5000`。
 - 私有配置保存在 `deploy/native/detector.env`，绝不能提交或分享。

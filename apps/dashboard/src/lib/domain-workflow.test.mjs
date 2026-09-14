@@ -6,11 +6,10 @@ import vm from 'node:vm';
 
 const source = fs.readFileSync(new URL('../pages/PoliceDomainPages.tsx', import.meta.url), 'utf8');
 const section = (start, end) => source.slice(source.indexOf(start), end ? source.indexOf(end, source.indexOf(start)) : undefined);
-const casePage = section('export function CaseHandlingPage', 'export function CommunityPolicingPage');
 const communityPage = section('export function CommunityPolicingPage', 'function LegacyTrainingOperationsPage');
 const chain = section('function DomainEventChain', 'function ObjectWorkbench');
 const aiPage = section('export function AICenterPage');
-const commandPage = section('export function CommandOperationsPage', 'export function CaseHandlingPage');
+const commandPage = section('export function CommandOperationsPage', 'export function CommunityPolicingPage');
 
 test('intake keeps its current view and exposes the separate business workbench', () => {
   assert.match(commandPage, /业务办理/);
@@ -110,33 +109,6 @@ test('community plan and report are local, validated, repeat-safe and editable',
   assert.equal(render().visitNote, 'Revised');
 });
 
-test('case action buttons have handlers and never imply unperformed filing or verified citations', () => {
-  for (const button of casePage.matchAll(/<button\b([^>]*)>/g)) assert.match(button[1], /onClick=|type="submit"/);
-  assert.doesNotMatch(casePage, /已入卷|已关联到当前案件卷宗|最高人民法院相关指导案例|审批与签发留痕/);
-  assert.match(casePage, /本页演示/);
-  assert.match(casePage, /onSelect=\{selectTool\}/);
-});
-
-test('case search is explicit and local, and checklist changes invalidate its local confirmation', async () => {
-  const render = await handlers(casePage, '  const renderCaseTool', ['setQuery', 'searchCase', 'searchedQuery', 'confirmEvidence', 'toggleCheck', 'checksConfirmed', 'checks', 'selectTool', 'activeProcess', 'activeTool']);
-  render().setQuery('New sample');
-  assert.notEqual(render().searchedQuery, 'New sample');
-  render().searchCase();
-  assert.equal(render().searchedQuery, 'New sample');
-  render().confirmEvidence();
-  assert.equal(render().checksConfirmed, false);
-  render().checks.forEach((checked, index) => { if (!checked) render().toggleCheck(index); });
-  render().confirmEvidence();
-  assert.equal(render().checksConfirmed, true);
-  render().toggleCheck(0);
-  assert.equal(render().checksConfirmed, false);
-  for (const [tool, index] of [['transfer', 3], ['linkage', 2], ['rule-check', 1]]) {
-    render().selectTool(tool);
-    assert.equal(render().activeProcess, index);
-    assert.equal(render().activeTool, tool);
-  }
-});
-
 test('AI provides anonymous review and its own refresh without parent refresh', () => {
   assert.doesNotMatch(aiPage, /localStorage|sessionStorage/);
   assert.doesNotMatch(aiPage, /authenticateAiReviewer|type="password"|logout|tokenRef|permissions\.includes/);
@@ -207,7 +179,6 @@ test('AI review is anonymous, repeat-safe and keeps the reason after server ackn
 });
 
 test('demo process navigation does not mark skipped work as completed', () => {
-  assert.match(casePage, /<ProcessSteps\b[^>]*navigationOnly/);
   assert.match(communityPage, /<ProcessSteps\b[^>]*navigationOnly/);
   const steps = section('function ProcessSteps', 'function AiAssistMenu');
   assert.match(steps, /!navigationOnly/);

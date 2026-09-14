@@ -7,7 +7,7 @@ import { Skeleton, Spin, Tooltip } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { TrainingCameraPreview } from '../components/TrainingCameraPreview';
 import type { TrainingSnapshot, TrainingTask } from '../lib/training-api';
-import { demoTrainingSelection, trainingDemo } from '../lib/training-demo';
+import { demoTrainingSelection, formatTrainingDemoTime, trainingDemo } from '../lib/training-demo';
 import {
   buildGroupSubjects, buildGroupSummaries, GROUP_PARTICIPANTS, GROUP_SUBJECT_NAMES,
   type GroupTrainingPhase, type GroupTrainingSummary, type GroupTrainingSubject,
@@ -185,7 +185,7 @@ export function OfficerTrainingPage({ onSituation }: { onSituation: () => void }
     </section>
     <div className="ot-subnav">
       <div><span className="ot-group-subnav-label"><ListChecks size={16} />三人协同训练流程</span></div>
-      <span className={`ot-sync ${online ? 'online' : ''}`}><i />{online ? '本地演示 · 不写入业务数据' : loading ? '正在加载虚拟数据' : '虚拟数据待加载'}{lastSync ? ` · ${lastSync.toLocaleTimeString('zh-CN', { hour12: false })}` : ''}</span>
+      <span className={`ot-sync ${online ? 'online' : ''}`}><i />{online ? '本地演示 · 不写入业务数据' : loading ? '正在加载虚拟数据' : '虚拟数据待加载'}{lastSync ? ` · ${formatTrainingDemoTime(lastSync, 'time')}` : ''}</span>
     </div>
     {(error || feedback) && <div className={`ot-feedback ${error ? 'error' : 'success'}`} role={error ? 'alert' : 'status'}>
       {error ? <AlertCircle size={16} /> : <CheckCircle2 size={16} />}<span>{error || feedback}</span>
@@ -217,7 +217,7 @@ export function OfficerTrainingPage({ onSituation }: { onSituation: () => void }
                 <p className="ot-recommendation-safety"><ShieldCheck size={16} /><span>{recommendations.safety}</span></p>
               </section>
             </section> : phase === 'run' && currentTask ? <section className="ot-execution">
-              <div className="ot-recording-layout"><TrainingCameraPreview key={currentTask.taskId} taskId={currentTask.taskId} officer="三人协同训练小组" teamName="演示训练组" /></div>
+              <div className="ot-recording-layout"><TrainingCameraPreview key={currentTask.taskId} taskId={currentTask.taskId} subject={currentSubject?.subject} officer="三人协同训练小组" teamName="演示训练组" /></div>
               <div className="ot-group-recording-note"><Timer size={18} /><div><strong>训练记录进行中</strong><p>本阶段完成后点击“下一步”，直接进入下一项科目。三项完成后统一生成三人总分。</p></div></div>
             </section> : <div className="ot-empty"><ClipboardCheck size={30} /><h2>演示数据暂不可用</h2><p>请重新同步虚拟训练数据后继续。</p><button className="ot-button" onClick={() => void load()} disabled={loading}><RefreshCw size={16} />重新同步</button></div>}
           </div>}
@@ -227,7 +227,7 @@ export function OfficerTrainingPage({ onSituation }: { onSituation: () => void }
           <div className="ot-next-actions">
             {phase !== 'summary' && <button className="ot-button" onClick={previousStep} disabled={loading || (phase === 'prepare' && subjectIndex === 0)}><ArrowLeft size={16} />上一步</button>}
             {phase === 'summary'
-              ? <button className="ot-button primary" onClick={resetFlow}><CheckCircle2 size={16} />完成演示</button>
+              ? <button type="button" className="ot-button primary" onClick={(event) => { event.preventDefault(); event.stopPropagation(); resetFlow(); }}><CheckCircle2 size={16} />完成演示</button>
               : <button className="ot-button primary" onClick={nextStep} disabled={loading || !online}>{loading ? <LoaderCircle size={16} className="spin" /> : <ArrowRight size={16} />}{phase === 'prepare' ? '下一步' : subjectIndex === GROUP_SUBJECT_NAMES.length - 1 ? '生成总结评分' : '下一项'}</button>}
           </div>
         </footer>

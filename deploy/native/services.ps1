@@ -47,7 +47,7 @@ function Start-NativeApiService {
 }
 
 function Start-NativeDetectorService {
-    param([hashtable]$Context)
+    param([hashtable]$Context, [int]$WaitSeconds = 90)
     Set-NativeEnvironment $Context.DetectorEnv
     $env:DATA_DIR = Join-Path $Context.Detector 'server/data'
     $env:RESULT_DIR = Join-Path $Context.Detector 'results'
@@ -69,7 +69,7 @@ function Start-NativeDetectorService {
     }
     $javaArgs += @('-jar', (Join-Path $Context.Detector 'server/target/yolov8-security.war'), "--server.port=$($Context.Settings['DETECTOR_PORT'])")
     Start-NativeChild 'detector' (Get-NativeJava) $javaArgs (Join-Path $Context.Detector 'server') | Out-Null
-    Wait-NativeHttp "$($Context.DetectorBase)/api/detection/status"
+    Wait-NativeHttp "$($Context.DetectorBase)/api/detection/status" $WaitSeconds
     if ($Context.RequireRealCamera) {
         Wait-NativeRealCameraReadiness $Context.ApiBase $Context.DetectorBase
     }

@@ -8,20 +8,26 @@ NATIVE = ROOT / "deploy" / "native"
 
 
 class NativeDeploymentTests(unittest.TestCase):
-    def test_one_click_entries_forward_arguments_and_preserve_exit_code(self):
-        for name, target in (
-            ("\u4e00\u952e\u542f\u52a8.cmd", "start.cmd"),
-            ("\u4e00\u952e\u505c\u6b62.cmd", "stop.cmd"),
-        ):
-            path = ROOT / name
-            self.assertTrue(path.is_file(), f"Missing one-click entry: {name}")
-            text = path.read_text(encoding="utf-8-sig")
-            self.assertIn(f'call "%~dp0{target}" %*', text)
-            self.assertIn("exit /b %errorlevel%", text)
-        start = (ROOT / "start.cmd").read_text(encoding="utf-8-sig")
-        self.assertIn("-Force -EnableCameras -OpenBrowser %*", start)
-        self.assertIn('set "result=%errorlevel%"', start)
-        self.assertIn("exit /b %result%", start)
+    def test_one_click_start_is_the_only_start_entry_and_forwards_arguments(self):
+        stable_start = ROOT / "\u4e00\u952e\u542f\u52a8\u7a33\u5b9a\u7248.cmd"
+        self.assertTrue(stable_start.is_file(), f"Missing one-click entry: {stable_start.name}")
+        text = stable_start.read_text(encoding="utf-8-sig")
+        self.assertIn(
+            r'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0deploy\native\start.ps1"',
+            text,
+        )
+        self.assertIn("-Force -EnableCameras -OpenBrowser %*", text)
+        self.assertIn('set "result=%errorlevel%"', text)
+        self.assertIn("exit /b %result%", text)
+        for legacy in (ROOT / "start.cmd", ROOT / "\u4e00\u952e\u542f\u52a8.cmd"):
+            self.assertFalse(legacy.exists(), f"Legacy start entry must be removed: {legacy.name}")
+
+    def test_one_click_stop_forwards_arguments_and_preserves_exit_code(self):
+        path = ROOT / "\u4e00\u952e\u505c\u6b62.cmd"
+        self.assertTrue(path.is_file(), f"Missing one-click entry: {path.name}")
+        text = path.read_text(encoding="utf-8-sig")
+        self.assertIn('call "%~dp0stop.cmd" %*', text)
+        self.assertIn("exit /b %errorlevel%", text)
 
     def test_stop_handles_watchdog_before_application_services(self):
         text = (NATIVE / "stop.ps1").read_text(encoding="utf-8-sig")
@@ -147,6 +153,13 @@ Write-Output ('POSTGRES_LOOKUPS:' + $global:NativePostgresBinLookups)
             "PowerShell $PID is read-only; use a differently named local variable.",
         )
 
+    def test_process_ownership_falls_back_to_command_line_when_working_directory_is_unavailable(self):
+        text = (NATIVE / "common.ps1").read_text(encoding="utf-8-sig")
+        self.assertIn(
+            "if ([string]::IsNullOrWhiteSpace($actualWorkingDirectory))",
+            text,
+        )
+
     def test_force_start_and_watchdog_entry_points_exist(self):
         for path in (
             NATIVE / "services.ps1",
@@ -223,6 +236,21 @@ Write-Output ('POSTGRES_LOOKUPS:' + $global:NativePostgresBinLookups)
         ):
             self.assertIn(required, text)
 
+    def test_watchdog_does_not_start_with_an_empty_windows_powershell_pipeline(self):
+        text = (NATIVE / "watchdog.ps1").read_text(encoding="utf-8-sig")
+        self.assertNotIn("\n            | Where-Object", text)
+
+    def test_watchdog_supplies_database_password_before_psql_health_check(self):
+        text = (NATIVE / "watchdog.ps1").read_text(encoding="utf-8-sig")
+        self.assertIn("$env:PGPASSWORD = $context.Settings['POSTGRES_PASSWORD']", text)
+
+    def test_watchdog_recovery_waits_are_bounded_and_web_is_independent_of_detector(self):
+        watchdog = (NATIVE / "watchdog.ps1").read_text(encoding="utf-8-sig")
+        services = (NATIVE / "services.ps1").read_text(encoding="utf-8-sig")
+        self.assertIn("[int]$WaitSeconds", services)
+        self.assertIn("-WaitSeconds 12", watchdog)
+        self.assertLess(watchdog.index("if (-not $Snapshot.web)"), watchdog.index("if (-not $Snapshot.detector)"))
+
     def test_browser_opens_only_after_all_services_are_ready(self):
         text = (NATIVE / "start.ps1").read_text(encoding="utf-8-sig")
         self.assertIn("[switch]$OpenBrowser", text)
@@ -235,7 +263,7 @@ Write-Output ('POSTGRES_LOOKUPS:' + $global:NativePostgresBinLookups)
             NATIVE / "start.ps1",
             NATIVE / "restore.ps1",
             NATIVE / "static_server.py",
-            ROOT / "start.cmd",
+            ROOT / "\u4e00\u952e\u542f\u52a8\u7a33\u5b9a\u7248.cmd",
             ROOT / "restore.cmd",
             ROOT / "install-prerequisites.cmd",
             ROOT / "stop.cmd",
@@ -255,6 +283,10 @@ Write-Output ('POSTGRES_LOOKUPS:' + $global:NativePostgresBinLookups)
             r"Eclipse Adoptium/*/bin/java.exe", r"JAVA_HOME", r".jdks/*/bin/java.exe",
         ):
             self.assertIn(required, text)
+
+    def test_detector_build_clears_stale_classes_before_packaging(self):
+        text = (NATIVE / "start.ps1").read_text(encoding="utf-8-sig")
+        self.assertIn("-DskipTests clean package spring-boot:repackage", text)
 
     def test_restore_contract_is_authenticated_and_non_destructive(self):
         text = (NATIVE / "restore.ps1").read_text(encoding="utf-8-sig")

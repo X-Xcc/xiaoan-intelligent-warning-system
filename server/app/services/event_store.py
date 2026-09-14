@@ -83,8 +83,10 @@ BAY_COORDS: dict[str, dict[str, float]] = {
 LEGACY_SAMPLE_EVENT_PREFIX = "YS-" + "260815-"
 SECURITY_DETECTION_EVENT_PREFIX = "VIDET-"
 LEGACY_SECURITY_DETECTION_EVENT_PREFIX = "A" "IDET-"
-DEMO_PLACEHOLDER_DETAILS = "该人员有暴力前科，属于重点人员且近期在本地多个夜市有五起相似的纠纷滋事类警情"
-DEMO_PLACEHOLDER_PERSON = "王五"
+DEMO_PLACEHOLDER_DETAILS = "报警人小明报警称，20:13:50时许，王五在其摊位前寻衅滋事。地点位于8号摊位前。"
+DEMO_PLACEHOLDER_PERSON = "小明"
+DEMO_PLACEHOLDER_OCCURRED_AT = "2026-09-11T20:13:50"
+DEMO_PLACEHOLDER_RECEIVED_AT = "2026-09-11T20:14:50"
 
 NIGHT_MARKET_BAYS = {
     "某某夜市",
@@ -585,6 +587,7 @@ def _event_to_dict(event: SafetyEvent) -> dict[str, Any]:
         "people": meta.get("people", ""),
         "person": meta.get("person", meta.get("people", "")),
         "occurredAt": meta.get("occurredAt", ""),
+        "receivedAt": meta.get("receivedAt", ""),
         "category": meta.get("category", ""),
         "result": event.result,
         "anonymous": bool(event.anonymous),
@@ -853,8 +856,11 @@ def _ensure_demo_placeholder_event(session: Session) -> None:
             "reporter": DEMO_PLACEHOLDER_PERSON,
             "people": DEMO_PLACEHOLDER_PERSON,
             "person": DEMO_PLACEHOLDER_PERSON,
+            "occurredAt": DEMO_PLACEHOLDER_OCCURRED_AT,
+            "receivedAt": DEMO_PLACEHOLDER_RECEIVED_AT,
             "category": "寻衅滋事",
         })
+        existing.time = "20:13:50"
         existing.description = DEMO_PLACEHOLDER_DETAILS
         existing.meta_json = meta
         return
@@ -870,8 +876,8 @@ def _ensure_demo_placeholder_event(session: Session) -> None:
             status="已提交",
             owner="待指派",
             distance="待测距",
-            time=datetime.now().strftime("%H:%M"),
-            updatedAt=datetime.now().strftime("%H:%M"),
+            time="20:13:50",
+            updatedAt="20:13:50",
             description=DEMO_PLACEHOLDER_DETAILS,
             result=None,
             anonymous=True,
@@ -884,6 +890,8 @@ def _ensure_demo_placeholder_event(session: Session) -> None:
                 "reporter": DEMO_PLACEHOLDER_PERSON,
                 "people": DEMO_PLACEHOLDER_PERSON,
                 "person": DEMO_PLACEHOLDER_PERSON,
+                "occurredAt": DEMO_PLACEHOLDER_OCCURRED_AT,
+                "receivedAt": DEMO_PLACEHOLDER_RECEIVED_AT,
                 "category": "寻衅滋事",
             },
             createdAt=created_at,

@@ -6,7 +6,7 @@ robot movement commands.
 
 ## Run on Windows
 
-For a new installation, follow the root `README.md` and double-click `start.cmd`.
+For a new installation, follow the root `README.md` and double-click `一键启动稳定版.cmd`.
 The complete Windows-native deployment includes this console at `/admin/bridges`.
 The launcher below is for developers who already configured Python, Node.js and
 PostgreSQL; it is not a second required installation step.

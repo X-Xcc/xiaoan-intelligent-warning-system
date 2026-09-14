@@ -5,16 +5,21 @@ import vm from 'node:vm';
 import { transformSync } from 'esbuild';
 
 const jsx = (type, props) => typeof type === 'function' ? type(props) : { type, props };
-function load(relative) {
+function load(relative, { states = {}, expose = [] } = {}) {
   const module = { exports: {} };
-  const source = fs.readFileSync(new URL(relative, import.meta.url), 'utf8');
+  const source = fs.readFileSync(new URL(relative, import.meta.url), 'utf8')
+    + (expose.length ? `\nexport { ${expose.join(', ')} };` : '');
+  let stateIndex = 0;
   vm.runInNewContext(transformSync(source, { loader: 'tsx', format: 'cjs', jsx: 'automatic' }).code, {
     module, exports: module.exports,
     require(name) {
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx, Fragment: 'Fragment' };
       if (name === 'react') return {
         useEffect() {}, useLayoutEffect() {}, useRef: value => ({ current: value }),
-        useCallback: fn => fn, useState: value => [typeof value === 'function' ? value() : value, () => {}],
+        useCallback: fn => fn, useState: value => {
+          const index = stateIndex++;
+          return [Object.hasOwn(states, index) ? states[index] : typeof value === 'function' ? value() : value, () => {}];
+        },
       };
       if (name.endsWith('XiaoanVoice')) return { useXiaoanVoice: () => ({}) };
       if (name.endsWith('training-navigation')) return {
@@ -43,7 +48,66 @@ function textOf(node) {
   if (!node || typeof node !== 'object') return String(node ?? '');
   return textOf(node.props?.children);
 }
-const render = () => nodesOf(load('../pages/DutySituationPage.tsx').DutySituationPage({ onBack() {}, onTraining() {} }));
+const render = snapshot => nodesOf(load('../pages/DutySituationPage.tsx', {
+  states: snapshot ? { 4: snapshot, 8: 'api' } : {},
+}).DutySituationPage({ onBack() {}, onTraining() {} }));
+const SAMPLE_SLOTS = ['20:13:50', '20:43:50', '21:13:50', '21:43:50', '22:13:50', '22:43:50', '23:13:50', '23:43:50'];
+
+function snapshotFor(times, dataMode = 'live') {
+  const { SAMPLE } = load('../pages/DutySituationPage.tsx', { expose: ['SAMPLE'] });
+  return {
+    dataMode, updatedAt: '2026-09-13T03:04:05+08:00', ruleVersion: 'test',
+    dutySituation: {
+      ...SAMPLE, period: `${times[0]} - ${times.at(-1)}`,
+      timeTrend: times.map((time, index) => ({ time, value: index + 1 })),
+    },
+  };
+}
+
+test('duty sample uses second-precision evening slots and retains the same peak buckets', () => {
+  const nodes = render();
+  const columns = nodes.filter(n => n.props?.className?.includes('duty-hour-column'));
+  assert.deepEqual(columns.map(n => n.props['data-hour']), SAMPLE_SLOTS);
+  assert.deepEqual(columns.map(n => n.props['data-value']), [8, 15, 33, 42, 38, 31, 16, 7]);
+  assert.deepEqual(columns.filter(n => n.props['data-peak']).map(n => n.props['data-hour']), SAMPLE_SLOTS.slice(2, 6));
+  assert.ok(textOf(nodes.find(n => n.props?.className === 'duty-peak-heading')).includes('21:13:50-22:43:50'));
+  assert.match(textOf(nodes), /高发时段强度占比\d+%/);
+  assert.match(textOf(nodes), /20:13:50 - 23:43:50/);
+  assert.equal(textOf(nodes).includes('次日'), false);
+  assert.ok(nodes.find(n => n.props?.className === 'duty-hour-chart').props['aria-label'].includes('20:13:50'));
+});
+
+test('duty validation accepts new sample slots and preserves legacy and irregular real snapshots', () => {
+  const { validSituation } = load('../pages/DutySituationPage.tsx', { expose: ['validSituation'] });
+  for (const [times, dataMode] of [
+    [SAMPLE_SLOTS, 'desensitized_sample'],
+    [['18:00', '19:00', '20:00', '21:00', '22:00', '23:00', '00:00', '01:00'], 'live'],
+    [['09:05:07', '09:35:07', '10:05:07', '10:35:07'], 'live'],
+  ]) {
+    const snapshot = snapshotFor(times, dataMode);
+    assert.equal(validSituation(snapshot.dutySituation), true, times.join(', '));
+    assert.ok(times.every(time => snapshot.dutySituation.timeTrend.some(item => item.time === time)));
+  }
+});
+
+test('duty time-series validation rejects empty, malformed, duplicate and invalid-value entries', () => {
+  const { validSituation } = load('../pages/DutySituationPage.tsx', { expose: ['validSituation'] });
+  for (const timeTrend of [
+    [], [{ time: '24:00:00', value: 1 }], [{ time: '20:60:00', value: 1 }],
+    [{ time: '20:13:60', value: 1 }], [{ time: null, value: 1 }],
+    [{ time: '20:13:50', value: 1 }, { time: '20:13:50', value: 2 }],
+    [{ time: '20:13:50', value: NaN }], [{ time: '20:13:50', value: -1 }],
+  ]) {
+    assert.equal(validSituation({ ...snapshotFor(SAMPLE_SLOTS).dutySituation, timeTrend }), false);
+  }
+});
+
+test('training showcase time labels match the corresponding duty sample slots', () => {
+  const source = fs.readFileSync(new URL('../pages/PoliceDomainPages.tsx', import.meta.url), 'utf8');
+  for (const time of SAMPLE_SLOTS.slice(0, 6)) assert.ok(source.includes(time), time);
+  assert.ok(source.includes('21:13:50–22:43:50'));
+  assert.equal(source.includes("['18:00','19:00','20:00','21:00','22:00','23:00']"), false);
+});
 
 test('duty page removes recommendations, composition list and both training notes', () => {
   const nodes = render();

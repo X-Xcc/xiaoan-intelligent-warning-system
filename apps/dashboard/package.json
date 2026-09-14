@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "predev": "node scripts/prepare-pose-assets.mjs",
-    "dev": "vite --host 127.0.0.1",
+    "dev": "vite --host 0.0.0.0",
     "prebuild": "node scripts/prepare-pose-assets.mjs",
     "build": "tsc -b && vite build",
     "prebuild:native": "node scripts/prepare-pose-assets.mjs",

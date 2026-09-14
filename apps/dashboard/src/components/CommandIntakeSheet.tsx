@@ -5,6 +5,7 @@ import '../styles/intake-sheet.css';
 import placeholderAudio from '../assets/intake-hello.wav?url';
 import disorderCallAudio from '../assets/intake-disorder-call.wav?url';
 import phoneStolenAudio from '../assets/alarm-phone-stolen.mp3?url';
+import disorderAlarmAudio from '../assets/alarm-disorder-1000082752.mp3?url';
 import { CommandScene } from './CommandScene';
 import { DemoDispatchMap } from './DemoDispatchMap';
 import { demoDispatchData } from '../lib/demo-dispatch-data';
@@ -28,12 +29,14 @@ export function CommandIntakeSheet({ events, refresh }: {
   const event = events.find((item) => item.id === selectedId) ?? events[0];
   const id = event?.id ?? '';
   const audioSource = id === 'YS-DEMO-001'
-    ? phoneStolenAudio
-    : event?.sourceMode === 'live'
-      ? undefined
-      : id === 'alarm-demo-001'
-        ? disorderCallAudio
-        : placeholderAudio;
+    ? disorderAlarmAudio
+    : id === 'alarm-demo-006' && event?.sourceMode === 'desensitized_demo'
+      ? phoneStolenAudio
+      : event?.sourceMode === 'live'
+        ? undefined
+        : id === 'alarm-demo-001'
+          ? disorderCallAudio
+          : placeholderAudio;
   const draft = drafts[id] ?? buildIntakeDraft(event ?? {});
   const peopleSummary = draft.caller && draft.people.includes(draft.caller)
     ? draft.people
@@ -88,16 +91,21 @@ export function CommandIntakeSheet({ events, refresh }: {
     {refresh && <button type="button" className="ui-icon-button" aria-label="刷新警情" title="刷新警情" onClick={() => void refresh()}><RefreshCw size={16} /></button>}
   </section>;
   if (stage === 'scene') return <CommandScene event={event} draft={draft}
-    onNext={() => setStage('dispatch')} />;
+    onBack={() => setStage('dispatch')} />;
   if (stage === 'dispatch') return <section className="dispatch-view" aria-label="脱敏警力调度">
     <div className="dispatch-banner">
       <h2 ref={headingRef} tabIndex={-1}><ShieldAlert size={20} />警力配置</h2>
       <span>脱敏演示数据 · 未执行真实派警</span>
     </div>
     <DemoDispatchMap data={demoDispatchData} />
-    <button type="button" className="domain-secondary-button dispatch-back-button" onClick={() => setStage('scene')}>
-      <ArrowLeft size={16} />返回现场
-    </button>
+    <footer className="dispatch-actions">
+      <button type="button" className="domain-secondary-button" onClick={() => setStage('intake')}>
+        <ArrowLeft size={16} />返回接警单
+      </button>
+      <button type="button" className="domain-primary-button" onClick={() => setStage('scene')}>
+        下一步<ArrowRight size={16} />
+      </button>
+    </footer>
   </section>;
 
   return <div className="intake-layout">
@@ -116,7 +124,7 @@ export function CommandIntakeSheet({ events, refresh }: {
         <div><dt><Clock3 size={16} />时间</dt><dd>{displayIntakeTime(draft.occurredAt) || '待核实'}</dd></div>
         <div><dt><MapPin size={16} />地点</dt><dd>{draft.location || '待核实'}</dd></div>
         <div><dt><UsersRound size={16} />人物</dt><dd>{peopleSummary || '待核实'}</dd></div>
-        <div className="intake-attention"><dt><FileText size={16} />注意事项</dt><dd>{draft.attention || '待核实'}</dd></div>
+        <div className="intake-attention"><dt><FileText size={16} />注意事项</dt><dd>{draft.details || '待核实'}</dd></div>
       </dl>
       </section>
       {stage === 'intake' && <>
@@ -132,7 +140,7 @@ export function CommandIntakeSheet({ events, refresh }: {
           {audioError && <p role="alert" className="intake-error">{audioError}<button type="button" className="domain-text-button"
             onClick={() => { setAudioError(''); audioRef.current?.load(); }}><RefreshCw size={14} />重试</button></p>}
         </section>
-        <form id="intake-report" className="intake-paper" onSubmit={(e) => { e.preventDefault(); setStage('scene'); setFeedback(''); }}>
+        <form id="intake-report" className="intake-paper" onSubmit={(e) => { e.preventDefault(); setStage('dispatch'); setFeedback(''); }}>
           <div className="intake-document-heading"><h2><FileText size={18} />公安机关接警单</h2>
             <button type="button" className="domain-text-button" onClick={() => setEditing(!editing)}>
               {editing ? <Check size={15} /> : <Pencil size={15} />}{editing ? '完成修改' : '修改'}
@@ -144,8 +152,8 @@ export function CommandIntakeSheet({ events, refresh }: {
             {field('caller', '报警人')}{field('phone', '联系电话')}
             {field('receivedAt', '接警时间', 'datetime-local')}
             {field('category', '警情类型', 'text', ['寻衅滋事类', '刑事案件', '治安案件', '交通事故', '火灾事故', '求助类', '投诉类', '纠纷类', '其他'])}
-            {editing && <>{field('occurredAt', '警情发生时间', 'datetime-local')}{field('location', '警情发生地点')}{field('people', '涉事人物')}</>}
-            {field('details', '警情内容', 'textarea')}
+            {editing && <>{field('occurredAt', '警情发生时间', 'datetime-local')}{field('location', '警情发生地点')}{field('people', '涉事人物')}{field('details', '注意事项', 'textarea')}</>}
+            {field('attention', '警情内容', 'textarea')}
           </div>}
           {expanded && <>
           <div className="intake-fields">
@@ -164,7 +172,8 @@ export function CommandIntakeSheet({ events, refresh }: {
             {field('people', '涉事人物')}{field('callers', '报警人数', 'number')}{field('involved', '涉案 / 相关人数', 'number')}
           </div></fieldset>
           <fieldset><legend>三、警情详情</legend><div className="intake-fields">
-            {field('details', '报警内容、事件经过、现场情况、人员伤亡 / 财产损失、嫌疑人特征', 'textarea')}
+            {field('attention', '报警内容、事件经过、现场情况、人员伤亡 / 财产损失、嫌疑人特征', 'textarea')}
+            {field('details', '注意事项', 'textarea')}
           </div></fieldset>
           <fieldset><legend>四、处警处置信息</legend><div className="intake-fields">
             {field('officer', '处警民警')}{field('vehicle', '出警车辆 / 车牌号')}

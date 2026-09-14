@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { commandApiBase, commandRequest } from './command-api';
 import type { IntakeSource } from './intake-sheet';
+import { withIntakeDemoEvents } from './intake-demo-data';
 
 type AlarmEvent = IntakeSource & {
   id: string;
@@ -44,22 +45,33 @@ export function useAlarmIntake(enabled = true) {
         .then((response) => {
           if (!Array.isArray(response.items)) throw new Error('Invalid alarm queue');
           if (!active) return;
-          const incoming = response.items.filter((item) => item.id).map((item) => ({
+          const incoming = response.items.filter((item) => item.id).map((item) => {
+            const demoPlaceholder = item.id === 'YS-DEMO-001';
+            return {
             ...item,
             sourceMode: 'live' as const,
-            receivedAt: item.receivedAt || item.createdAt,
-            caller: item.caller || item.reporter || item.meta?.caller || item.meta?.reporter,
-            reporter: item.reporter || item.caller || item.meta?.reporter || item.meta?.caller,
-            people: item.people || item.person || item.meta?.people || item.meta?.person,
-            person: item.person || item.people || item.meta?.person || item.meta?.people,
+            time: demoPlaceholder ? '20:13:50' : item.time,
+            receivedAt: demoPlaceholder ? '2026-09-11T20:14:50' : item.receivedAt || item.createdAt,
+            occurredAt: demoPlaceholder ? '2026-09-11T20:13:50' : item.occurredAt,
+            description: demoPlaceholder
+              ? '报警人小明报警称，20:13:50时许，王五在其摊位前寻衅滋事。地点位于8号摊位前。'
+              : item.description,
+            attention: demoPlaceholder
+              ? '该人员在本地多个夜市，有的有类似6起寻衅滋事警情。且该人员有暴力前科，属重点人员，需要对其展开常规盘查'
+              : item.attention,
+            caller: demoPlaceholder ? '小明' : item.caller || item.reporter || item.meta?.caller || item.meta?.reporter,
+            reporter: demoPlaceholder ? '小明' : item.reporter || item.caller || item.meta?.reporter || item.meta?.caller,
+            people: demoPlaceholder ? '小明' : item.people || item.person || item.meta?.people || item.meta?.person,
+            person: demoPlaceholder ? '小明' : item.person || item.people || item.meta?.person || item.meta?.people,
             phone: item.phone || item.meta?.contact,
             category: item.category || item.meta?.category,
             method: item.method || (item.kind === 'help' ? '小程序报警' : ''),
-          }));
+            };
+          });
           const added = knownIds ? incoming.filter((item) => !knownIds!.has(item.id)).length : 0;
           knownIds = new Set(incoming.map((item) => item.id));
           if (added) setNotice(`收到 ${added} 条新警情`);
-          setEvents(incoming);
+          setEvents(withIntakeDemoEvents(incoming));
           setOnline(true);
           setError('');
         })

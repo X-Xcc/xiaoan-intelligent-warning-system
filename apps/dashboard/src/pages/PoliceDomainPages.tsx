@@ -12,7 +12,6 @@ import {
   ClipboardCheck,
   Database,
   Eye,
-  FileCheck2,
   FileText,
   Fingerprint,
   Gauge,
@@ -25,7 +24,6 @@ import {
   Radio,
   RefreshCw,
   Route,
-  ScanSearch,
   ShieldCheck,
   Sparkles,
   Target,
@@ -38,7 +36,7 @@ import { AiCenterApiError, getAiRuntime, submitAiReview, type AiRuntimeSnapshot 
 import { demoIntakeEvents } from '../lib/intake-demo-data';
 import { useAlarmIntake } from '../lib/use-alarm-intake';
 
-type DomainNavigate = (view: 'platform' | 'command' | 'command-workbench' | 'case' | 'community' | 'ai-center' | 'duty-plan' | 'admin') => void;
+type DomainNavigate = (view: 'platform' | 'command' | 'command-workbench' | 'community' | 'ai-center' | 'duty-plan' | 'admin') => void;
 type Tone = 'blue' | 'green' | 'orange' | 'purple' | 'red';
 
 export type DomainOverview = {
@@ -361,15 +359,6 @@ const operationFlows: Record<string, { label: string; steps: readonly FlowStep[]
       { title: '回传归档', detail: '待处置结果回传', state: 'pending' },
     ],
   },
-  '执法办案系统 / CASE INTELLIGENCE': {
-    label: '执法办案',
-    steps: [
-      { title: '案件受理', detail: '案件对象已建立', state: 'done' },
-      { title: '证据校验', detail: '待补齐关键材料', state: 'active' },
-      { title: '卷宗审核', detail: '待人工审核', state: 'pending' },
-      { title: '移送归档', detail: '待确认材料', state: 'pending' },
-    ],
-  },
   '社区警务系统 / COMMUNITY OPERATIONS': {
     label: '社区警务',
     steps: [
@@ -398,16 +387,6 @@ const commandModules: AssistantModule[] = [
   { id: 'portrait', title: 'AI 警情画像与风险推送', description: '警力未到，信息先到处警端', detail: '汇聚人员、地点、车辆和关联风险。', tone: 'red', icon: Fingerprint },
   { id: 'trend', title: 'AI 警情态势分析', description: '绘制警情热力图与治安气象图', detail: '按时空、类型和趋势生成研判摘要。', tone: 'blue', icon: BarChart3 },
   { id: 'repeat-risk', title: 'AI 重复报警与风险识别', description: '发现同人同址同类重复报警', detail: '进入人工核查队列并保留依据。', tone: 'orange', icon: AlertTriangle },
-];
-
-const caseModules: AssistantModule[] = [
-  { id: 'legal', title: 'AI 智能法律助手', description: '法律条文、罪责定性与量刑建议', detail: '定位法条、适用条件和出处。', tone: 'blue', icon: BookOpenCheck },
-  { id: 'evidence', title: 'AI 智能取证清单', description: '按案由规划取证清单与禁忌', detail: '把关键事实拆成可执行的取证任务。', tone: 'purple', icon: ClipboardCheck },
-  { id: 'rule-check', title: 'AI 证据规则校验', description: '实体、程序与证据链质量自检', detail: '标出缺项、矛盾和程序风险。', tone: 'orange', icon: ShieldCheck },
-  { id: 'similar', title: 'AI 类案推送与量刑辅助', description: '关联类案判例，给出区间建议', detail: '展示差异、依据和人工复核点。', tone: 'green', icon: BarChart3 },
-  { id: 'document', title: 'AI 智能文书生成与审核', description: '文书草稿、卷宗目录与程序审核', detail: '生成可编辑草稿，不替代签发。', tone: 'blue', icon: FileText },
-  { id: 'linkage', title: 'AI 案件特征比对与串并', description: '特征比对、线索图谱与侦查方向', detail: '从时空、人、物、行为中发现关联。', tone: 'red', icon: Network },
-  { id: 'transfer', title: 'AI 政法跨部门协同', description: '检察院、法院移送与文书共享', detail: '沿统一案件 ID 传递材料与回执。', tone: 'purple', icon: Route },
 ];
 
 const communityModules: AssistantModule[] = [
@@ -581,8 +560,7 @@ type EventChainItem = {
 
 const workbenchEventChains: Record<string, EventChainItem> = {
   'command-intake-workbench': { current: '分类分级记录', previous: '接警事件 ALARM-20260905-001', next: '派警指令 · 小程序签收', auditId: 'AUDIT-COMMAND-20260905-001' },
-  'case-dossier-workbench': { current: '案件/证据记录', previous: '移动签收与现场回传 MOBILE-ALARM-001', next: '社区风险与走访任务', nextView: 'community', auditId: 'AUDIT-CASE-20260905-001' },
-  'community-territory-workbench': { current: '社区风险与走访任务', previous: '案件/证据记录 CASE-2026-0428', next: '训练复盘与一人一档', nextView: 'duty-plan', auditId: 'AUDIT-COMMUNITY-20260905-001' },
+  'community-territory-workbench': { current: '社区风险与走访任务', previous: '移动签收与现场回传 MOBILE-ALARM-001', next: '训练复盘与一人一档', nextView: 'duty-plan', auditId: 'AUDIT-COMMUNITY-20260905-001' },
   'training-course-workbench': { current: '训练复盘与一人一档', previous: '社区风险与走访任务 COMMUNITY-VISIT-0001', next: '接警事件复盘', nextView: 'command', auditId: 'AUDIT-TRAINING-20260905-001' },
 };
 
@@ -643,80 +621,6 @@ export function CommandOperationsPage({ navigate }: DomainPageProps) {
       </div>}
       {!playback && intake.error && <p className="intake-error" role="alert">{intake.error}</p>}
       <CommandIntakeSheet events={events} refresh={playback ? undefined : intake.refresh} />
-    </section>
-  );
-}
-
-export function CaseHandlingPage({ overview, apiOnline, navigate }: DomainPageProps) {
-  const [activeTool, setActiveTool] = useState('legal');
-  const [activeProcess, setActiveProcess] = useState(0);
-  const [query, setQuery] = useState('盗窃案件 · 夜间 · 多次作案');
-  const [checks, setChecks] = useState([true, true, false, false]);
-  const [documentReady, setDocumentReady] = useState(false);
-  const [searchedQuery, setSearchedQuery] = useState('');
-  const [checksConfirmed, setChecksConfirmed] = useState(false);
-  const [transferReady, setTransferReady] = useState(false);
-  const [caseFeedback, setCaseFeedback] = useState('本页演示：未执行法律检索、入卷或移送。');
-  const activeModule = caseModules.find((module) => module.id === activeTool) ?? caseModules[0];
-  const caseCount = overview.stats?.open_cases ?? 0;
-  const eventCount = overview.stats?.today_events ?? 0;
-  const processSteps: ProcessStep[] = [
-    { label: '案件受理', detail: '建立案件卷宗与事实框架', tool: 'legal' },
-    { label: '证据链', detail: '取证清单、保管链与规则校验', tool: 'evidence' },
-    { label: '法条适用', detail: '法条与类案辅助比对', tool: 'legal' },
-    { label: '程序节点', detail: '文书审核与移送归档', tool: 'document' },
-  ];
-  const selectProcess = (index: number) => {
-    if (!processSteps[index]) return;
-    setActiveProcess(index);
-    setActiveTool(processSteps[index].tool ?? activeTool);
-  };
-  const selectTool = (tool: string) => {
-    if (!caseModules.some((module) => module.id === tool)) return;
-    setActiveTool(tool);
-    setActiveProcess(tool === 'document' || tool === 'transfer' ? 3 : tool === 'evidence' || tool === 'rule-check' ? 1 : 2);
-  };
-  const searchCase = () => {
-    if (!query.trim()) return;
-    setSearchedQuery(query.trim());
-    setCaseFeedback('已在本页整理检索词；未查询法律数据库，以下仅为演示核对项。');
-  };
-  const toggleCheck = (index: number) => {
-    setChecks((state) => state.map((value, cursor) => cursor === index ? !value : value));
-    setChecksConfirmed(false);
-    setTransferReady(false);
-    setCaseFeedback('本页清单已修改，需重新模拟确认；未写入卷宗。');
-  };
-  const confirmEvidence = () => {
-    if (!checks.every(Boolean)) return;
-    setChecksConfirmed(true);
-    setCaseFeedback('本页取证清单已模拟确认；未提交审核队列或写入卷宗。');
-  };
-
-  const renderCaseTool = () => {
-    if (activeTool === 'evidence' || activeTool === 'rule-check') {
-      return <><div className="domain-check-list">{['现场勘验记录与照片', '涉案物品来源及保管链', '关键人员询问笔录', '调取手续与审批回执'].map((item, index) => <label key={item}><input type="checkbox" checked={checks[index]} onChange={() => toggleCheck(index)} /><span>{item}</span><small>{checks[index] ? '演示勾选' : '未勾选'}</small></label>)}</div><div className="domain-warning"><AlertTriangle size={15} /><span>{checks.filter(Boolean).length < checks.length ? '还有 ' + (checks.length - checks.filter(Boolean).length) + ' 项演示材料未勾选。' : '演示清单已全部勾选，不代表证据质量审核通过。'}</span></div><button type="button" className="domain-primary-button" onClick={confirmEvidence} disabled={!checks.every(Boolean) || checksConfirmed}>{checksConfirmed ? '本页清单已确认' : '模拟确认取证清单'}</button><small className="domain-action-safety">仅本页记录，未提交业务队列。</small></>;
-    }
-    if (activeTool === 'document' || activeTool === 'transfer') {
-      return <><div className="domain-document-preview"><div className="domain-document-line long" /><div className="domain-document-line" /><div className="domain-document-line medium" /><div className="domain-document-line" /><span><FileText size={14} />{documentReady ? '本页文书样例已标记确认' : '文书结构示意，非正式文书'}</span></div><div className="domain-button-row"><button type="button" className="domain-primary-button" disabled={documentReady} onClick={() => { setDocumentReady(true); setCaseFeedback('本页文书样例已模拟确认；未生成正式文书或签发。'); }}>模拟确认文书</button><button type="button" className="domain-secondary-button" disabled={!documentReady || !checksConfirmed || transferReady} onClick={() => { selectTool('transfer'); setTransferReady(true); setCaseFeedback('本页移送材料已模拟核对；未向其他部门发送。'); }}>{transferReady ? '本页材料已核对' : '模拟核对移送材料'}</button></div><small className="domain-action-safety">移送演示须先确认清单与文书；未入卷、未签发、未发送材料。</small></>;
-    }
-    if (activeTool === 'similar' || activeTool === 'linkage') {
-      return <><div className="domain-similar-list"><div><span>样例 A</span><strong>示例关联：区域与时间</strong><b>未核实</b></div><div><span>样例 B</span><strong>示例差异：材料完整度</strong><b>待人工核对</b></div><div><span>样例 C</span><strong>示例关联：事件描述</strong><b>不构成串并结论</b></div></div>{activeTool === 'linkage' && <div className="ops-result-card"><strong>本页线索关联示意</strong><span>当前样例 → 区域 / 时间核对 → 样例 A、C</span><small>仅固定演示关联，未检索真实案件。</small></div>}<button className="domain-text-button" type="button" onClick={() => selectTool(activeTool === 'linkage' ? 'similar' : 'linkage')}>{activeTool === 'linkage' ? '返回类案样例' : '查看线索关联示意'} <ArrowRight size={14} /></button></>;
-    }
-    return <><form className="domain-search-row" onSubmit={(event) => { event.preventDefault(); searchCase(); }}><input value={query} onChange={(event) => setQuery(event.target.value)} aria-label="案件检索内容" /><button type="submit" disabled={!query.trim()}><ScanSearch size={15} />演示检索</button></form>{searchedQuery && <div className="domain-citation-list"><div><strong>本页检索词：{searchedQuery}</strong><small>未连接法律或类案数据库，无已核验引用。</small><b>演示</b></div><div><strong>待核对：事实与材料</strong><small>法条版本、适用条件、案例出处须另行核验。</small><b>未检索</b></div></div>}</>;
-  };
-
-  return (
-    <section className="domain-page case-domain-page">
-      <DomainHeader eyebrow="执法办案系统 / CASE INTELLIGENCE" title="执法办案工作台" description="本页演示 · 案件卷宗、证据校验与程序审核" icon={FileCheck2} apiOnline={apiOnline} navigate={navigate} showFlow={false} />
-      <ContractNote>本页演示操作仅在当前页面会话中保留，离开或刷新后清空；未检索真实案件，未入卷、签发、移送或写入审计。</ContractNote>
-      <div className="domain-metrics"><DomainMetric label="在办案件" value={caseCount} note="平台概览统计" icon={FileCheck2} tone="purple" /><DomainMetric label="未勾选材料" value={checks.filter((item) => !item).length} note="本页演示清单" icon={ClipboardCheck} tone="orange" /><DomainMetric label="今日警情" value={eventCount} note="平台概览统计" icon={Radio} tone="blue" /><DomainMetric label="操作模式" value="演示" note="未连接办理接口" icon={ShieldCheck} tone="green" /></div>
-      <ObjectWorkbench
-        className="case-dossier-workbench"
-        navigate={navigate}
-        objectPanel={<><CurrentObjectCard label="案件卷宗样例" title="盗窃案件 · 夜间多次作案" status="本页演示" details={[{ label: '示例编号', value: 'CASE-2026-0428' }, { label: '示例角色', value: '办案民警 07' }, { label: '示例阶段', value: '证据校验' }, { label: '业务关联', value: '未建立' }]} /><section className="domain-panel"><PanelHeading kicker="EVIDENCE CHAIN" title="演示清单状态" icon={ClipboardCheck} /><div className="domain-check-list">{['现场物证', '视频资料', '询问笔录', '调取手续'].map((item, index) => <label key={item}><span>{item}</span><small>{checks[index] ? '演示勾选' : '未勾选'}</small></label>)}</div></section><AiAssistMenu label="办案 AI 助手" modules={caseModules} activeId={activeTool} onSelect={selectTool} /></>}
-        processPanel={<><section className="domain-panel"><PanelHeading kicker="CASE PROCESS" title="案件卷宗—证据链台" icon={Workflow} description="本页演示步骤，不代表业务办理进度。"/><ProcessSteps label="案件" steps={processSteps} active={activeProcess} onSelect={selectProcess} navigationOnly /></section><section className="domain-panel domain-active-process"><PanelHeading kicker="CURRENT CASE ACTION" title={activeModule.title} icon={activeModule.icon} description={activeModule.detail} />{renderCaseTool()}<p className="domain-review-feedback" role="status">{caseFeedback}</p><ContractNote>仅演示辅助流程，所有材料与关联均未写入业务系统。</ContractNote></section></>}
-      />
     </section>
   );
 }
@@ -1558,7 +1462,7 @@ export function TrainingOperationsPage({ overview, apiOnline, navigate, refresh 
   };
 
   const renderTrainingShowcase = () => {
-    if (showcaseStage === 'a1') return <section className={`training-showcase training-showcase-a1 ${showcaseStarted ? 'is-generated' : ''}`} aria-label="A1 勤务态势大屏"><header><span>公安勤务态势 · A1</span><strong>今晚执勤画像</strong><small>{showcaseStarted ? '小安已完成态势生成' : '等待态势生成'}</small></header><div className="training-showcase-a1-grid"><article className="showcase-ring-panel"><span>警情类型占比</span><div className="showcase-ring"><i /><b>128<small>今日警情</small></b></div><dl><div><dt>滋事纠纷 41%</dt><dd>41%</dd></div><div><dt>手机扒窃 28%</dt><dd>28%</dd></div><div><dt>其他</dt><dd>27%</dd></div><div className="danger"><dt>可疑物品 4%</dt><dd>4%</dd></div></dl></article><article className="showcase-heat-panel"><span>夜市平面热力图</span><div className="showcase-night-map"><div className="showcase-map-grid" /><div className="showcase-hotspot"><b>B区烧烤摊聚集区</b></div><div className="showcase-flow-arrow arrow-one" /><div className="showcase-flow-arrow arrow-two" /><small>人流方向</small></div></article><article className="showcase-trend-panel"><span>分时段警量</span><div className="showcase-bars">{['18:00','19:00','20:00','21:00','22:00','23:00'].map((label, index) => <div key={label} className={index >= 2 ? 'peak' : ''}><i style={{ height: `${24 + index * 11}%` }} /><small>{label}</small></div>)}</div><strong>20:00–23:00 <em>高发时段</em></strong></article></div>{showcaseStarted && <button type="button" className="showcase-training-banner" onClick={() => setShowcaseStage('a2')}><span><b>今日靶向训练科目已推送</b><small>单警装备训练 · 弱光执法战术训练 · 防爆先期处置</small></span><ArrowRight size={18} /></button>}</section>;
+    if (showcaseStage === 'a1') return <section className={`training-showcase training-showcase-a1 ${showcaseStarted ? 'is-generated' : ''}`} aria-label="A1 勤务态势大屏"><header><span>公安勤务态势 · A1</span><strong>今晚执勤画像</strong><small>{showcaseStarted ? '小安已完成态势生成' : '等待态势生成'}</small></header><div className="training-showcase-a1-grid"><article className="showcase-ring-panel"><span>警情类型占比</span><div className="showcase-ring"><i /><b>128<small>今日警情</small></b></div><dl><div><dt>滋事纠纷 41%</dt><dd>41%</dd></div><div><dt>手机扒窃 28%</dt><dd>28%</dd></div><div><dt>其他</dt><dd>27%</dd></div><div className="danger"><dt>可疑物品 4%</dt><dd>4%</dd></div></dl></article><article className="showcase-heat-panel"><span>夜市平面热力图</span><div className="showcase-night-map"><div className="showcase-map-grid" /><div className="showcase-hotspot"><b>B区烧烤摊聚集区</b></div><div className="showcase-flow-arrow arrow-one" /><div className="showcase-flow-arrow arrow-two" /><small>人流方向</small></div></article><article className="showcase-trend-panel"><span>分时段警量</span><div className="showcase-bars">{['20:13:50','20:43:50','21:13:50','21:43:50','22:13:50','22:43:50'].map((label, index) => <div key={label} className={index >= 2 ? 'peak' : ''}><i style={{ height: `${24 + index * 11}%` }} /><small>{label}</small></div>)}</div><strong>21:13:50–22:43:50 <em>高发时段</em></strong></article></div>{showcaseStarted && <button type="button" className="showcase-training-banner" onClick={() => setShowcaseStage('a2')}><span><b>今日靶向训练科目已推送</b><small>单警装备训练 · 弱光执法战术训练 · 防爆先期处置</small></span><ArrowRight size={18} /></button>}</section>;
     if (showcaseStage === 'a2') return <section className="training-showcase training-showcase-a2" aria-label="A2 靶向训练清单"><header><span>靶向训练清单 · A2</span><strong>今晚三项备勤训练</strong><small>{showcaseCompletedSubjects.length} / 3 已完成</small></header><div className="showcase-training-cards">{SHOWCASE_SUBJECTS.map((item, index) => { const done = showcaseCompletedSubjects.includes(index); return <button type="button" key={item.subject} className={`showcase-training-card ${done ? 'is-complete' : ''}`} onClick={() => completeShowcaseSubject()}><span className="showcase-card-index">0{index + 1}</span><span className="showcase-card-check">{done ? <CheckCircle2 size={22} /> : <span>{index + 1}</span>}</span><strong>{item.subject}</strong><small>依据：{item.basis}</small><small>装备：{item.equipment.join(' · ')}</small><b>达标标准：{item.standard}</b></button>; })}</div><div className="showcase-progress-track"><i style={{ width: `${(showcaseCompletedSubjects.length / 3) * 100}%` }} /></div><small className="showcase-fallback-note">当前为脱敏演示状态；真实任务状态由训练服务同步。</small></section>;
     if (showcaseStage === 'a3') { const revealed = SHOWCASE_SCORES.slice(0, showcaseScoresRevealed); return <section className="training-showcase training-showcase-a3" aria-label="A3 AI 动捕考核"><header><span>AI 动捕考核 · A3</span><strong>全体科目动作复核</strong><small>{showcaseScoresRevealed} / 3 评分项已呈现</small></header><div className="showcase-assessment-grid"><div className="showcase-motion-panel"><div className="showcase-motion-stage"><div className="showcase-scanline" /><div className="showcase-motion-skeleton"><span className="showcase-motion-joint head" /><span className="showcase-motion-joint shoulder" /><span className="showcase-motion-joint elbow" /><span className="showcase-motion-joint hand" /><span className="showcase-motion-joint hip" /><span className="showcase-motion-joint knee" /><span className="showcase-motion-joint foot" /><i className="showcase-motion-link link-one" /><i className="showcase-motion-link link-two" /><i className="showcase-motion-link link-three" /><i className="showcase-motion-link link-four" /></div><b>骨骼动捕 · 本地脱敏画面</b></div></div><div className="showcase-score-panel">{revealed.map((score) => <div className="showcase-score-row" key={score.label}><span>{score.label}</span><i><b style={{ width: `${score.value}%` }} /></i><strong>{score.value}</strong><small>{score.note}</small></div>)}{showcaseScoresRevealed === 0 && <p>等待小安逐项呈现评分依据。</p>}</div></div>{showcaseScoresRevealed >= 3 && <div className="showcase-result-stamp"><span>合格</span><strong>{SHOWCASE_SCORES.every((score) => score.value >= 80) ? '全体科目达标' : '存在补训项'}</strong><small>评分建议已生成 · 等待教官复核</small></div>}</section>; }
     return <section className="training-showcase training-showcase-handoff" aria-label="教官复核交接"><div className="showcase-handoff-mark"><CheckCircle2 size={34} /></div><span>训练演示链路完成</span><strong>评分建议已准备好</strong><small>下一步由教官复核后写入训练档案。</small><button type="button" className="domain-primary-button" onClick={() => setFlowStep(3)}>进入教官复核 <ArrowRight size={15} /></button></section>;

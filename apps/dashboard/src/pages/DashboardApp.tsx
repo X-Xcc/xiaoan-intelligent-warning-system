@@ -1,6 +1,5 @@
 import {
   Activity,
-  AlertTriangle,
   BrainCircuit,
   Building2,
   Cable,
@@ -8,7 +7,7 @@ import {
   ChevronRight,
   Clock3,
   Database,
-  FileCheck2,
+  Fingerprint,
   LayoutDashboard,
   Menu,
   Monitor,
@@ -40,7 +39,6 @@ import { XiaoanVoiceControls, useXiaoanVoice } from '../components/XiaoanVoice';
 import { XiaoanAssistant } from '../components/XiaoanAssistant';
 import {
   AICenterPage,
-  CaseHandlingPage,
   CommunityPolicingPage,
   CommandOperationsPage,
 } from './PoliceDomainPages';
@@ -111,15 +109,15 @@ export type PlatformOverview = {
 const PRODUCT_NAME = '小安智能预警系统';
 const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.DEV ? 'http://127.0.0.1:8010/api' : `${window.location.origin}/api`)).replace(/\/$/, '');
 
-const systemNavItems: Array<{ view: PlatformView; label: string; shortLabel: string; icon: typeof Activity; section: '业务工作台' | '平台能力'; disabled?: boolean }> = [
+const systemNavItems: Array<{ view: PlatformView; label: string; shortLabel: string; icon: typeof Activity; section: '业务工作台' | '平台能力'; disabled?: boolean; subItem?: boolean }> = [
   { view: 'platform', label: '平台总览', shortLabel: '总览', icon: LayoutDashboard, section: '业务工作台' },
   { view: 'duty-situation', label: 'A1 勤务态势大屏', shortLabel: '勤务态势', icon: Monitor, section: '业务工作台' },
   { view: 'command', label: '接处警系统', shortLabel: '接处警', icon: Radio, section: '业务工作台' },
-  { view: 'case', label: '执法办案系统', shortLabel: '执法办案', icon: FileCheck2, section: '业务工作台' },
   { view: 'community', label: '社区警务系统', shortLabel: '社区警务', icon: Building2, section: '业务工作台', disabled: true },
   { view: 'contact-review', label: '视频筛查', shortLabel: '视频筛查', icon: Search, section: '业务工作台' },
   { view: 'video', label: '视频联动', shortLabel: '视频联动', icon: Video, section: '业务工作台' },
   { view: 'night-market-command', label: '夜市指挥', shortLabel: '夜市指挥', icon: MapPinned, section: '业务工作台', disabled: true },
+  { view: 'identity-search', label: '身份检索', shortLabel: '身份检索', icon: Fingerprint, section: '业务工作台', subItem: true },
   { view: 'ai-center', label: 'AI能力中心', shortLabel: 'AI 中心', icon: BrainCircuit, section: '平台能力', disabled: true },
   { view: 'admin', label: '平台治理中心', shortLabel: '平台治理', icon: ShieldCheck, section: '平台能力', disabled: true },
   { view: 'device-bridges', label: '设备桥接管理', shortLabel: '设备桥接', icon: Cable, section: '平台能力', disabled: true },
@@ -141,24 +139,22 @@ const demoOverview: PlatformOverview = {
     training_records: 318,
   },
   events: [
-    { id: 'demo-001', title: '纠纷警情：现场有人受伤', area: '东湖分局 · 站前网格', bay: '东湖分局 · 站前网格', time: '09:42', status: '待人工确认', level: '高风险', owner: '指挥席 02' },
-    { id: 'demo-002', title: '群众求助：家属失联', area: '西湖分局 · 朝阳洲网格', bay: '西湖分局 · 朝阳洲网格', time: '09:38', status: '已派警', level: '中风险', owner: '巡逻组 A' },
-    { id: 'demo-003', title: '反诈劝阻：疑似转账风险', area: '青山湖分局 · 湖坊派出所', bay: '青山湖分局 · 湖坊派出所', time: '09:31', status: '处理中', level: '中风险', owner: '社区民警 17' },
-    { id: 'demo-004', title: '邻里求助：噪声扰民', area: '红谷滩分局 · 凤凰洲网格', bay: '红谷滩分局 · 凤凰洲网格', time: '09:18', status: '已完成', level: '低风险', owner: '网格警务队' },
+    { id: 'demo-001', title: '纠纷警情：现场有人受伤', area: '东湖分局 · 站前网格', bay: '东湖分局 · 站前网格', time: '20:37:50', status: '待人工确认', level: '高风险', owner: '指挥席 02' },
+    { id: 'demo-002', title: '群众求助：家属失联', area: '西湖分局 · 朝阳洲网格', bay: '西湖分局 · 朝阳洲网格', time: '20:33:50', status: '已派警', level: '中风险', owner: '巡逻组 A' },
+    { id: 'demo-003', title: '反诈劝阻：疑似转账风险', area: '青山湖分局 · 湖坊派出所', bay: '青山湖分局 · 湖坊派出所', time: '20:26:50', status: '处理中', level: '中风险', owner: '社区民警 17' },
+    { id: 'demo-004', title: '邻里求助：噪声扰民', area: '红谷滩分局 · 凤凰洲网格', bay: '红谷滩分局 · 凤凰洲网格', time: '20:13:50', status: '已完成', level: '低风险', owner: '网格警务队' },
   ],
   businessSystems: [
     { key: 'command', name: '接处警系统', shortName: '接处警', description: '接警、询问、分类分级、派警和处置回传', capabilities: ['语音转写', '警单摘要', '分级派警', '警情画像'], status: '运行中', metric: 128 },
-    { key: 'case', name: '执法办案系统', shortName: '执法办案', description: '法律依据、取证清单、卷宗审核和类案辅助', capabilities: ['法律助手', '证据校验', '文书生成', '串并分析'], status: '运行中', metric: 37 },
     { key: 'duty-plan', name: '勤务训练系统', shortName: '勤务训练', description: '课程编辑、实战模拟、动作识别和一人一档', capabilities: ['AI课程编辑', 'AI教官', '训练评估', '体能识别'], status: '运行中', metric: 318 },
   ],
   dataCatalog: {
-    domainCount: 6,
-    objectCount: 21,
+    domainCount: 4,
+    objectCount: 12,
     syncStatus: '已同步',
     domains: [
       { key: 'org', label: '组织与警力', description: '机构、岗位、在岗状态', objects: ['机构', '民警', '岗位'], status: '健康' },
       { key: 'alarm', label: '警情与指令', description: '接报、分级、派警、处置回传', objects: ['警情', '指令', '处置结果'], status: '健康' },
-      { key: 'case', label: '案件与证据', description: '案件、卷宗、证据链', objects: ['案件', '证据', '文书'], status: '健康' },
       { key: 'person', label: '人员与车辆', description: '身份核验、车辆和轨迹', objects: ['人员', '车辆', '轨迹'], status: '健康' },
       { key: 'training', label: '训练与健康', description: '课程、成绩、训练档案', objects: ['课程', '成绩', '健康指标'], status: '健康' },
     ],
@@ -204,7 +200,7 @@ function pathView(): PlatformView {
   return viewForPath(window.location.pathname);
 }
 
-function ShellNav({ view, navigate, open, close, online }: { view: PlatformView; navigate: (next: PlatformView) => void; open: boolean; close: () => void; online: boolean }) {
+function ShellNav({ view, navigate, open, close }: { view: PlatformView; navigate: (next: PlatformView) => void; open: boolean; close: () => void }) {
   const sections = ['业务工作台', '平台能力'] as const;
   return <>
     <aside id="platform-control-sidebar" className={`platform-control-sidebar ${open ? 'open' : ''}`} aria-label="平台主导航">
@@ -216,24 +212,29 @@ function ShellNav({ view, navigate, open, close, online }: { view: PlatformView;
       <div className="platform-control-context"><span>当前组织</span><strong>市公安局</strong><small>指挥中心 · 综合值守</small></div>
       {sections.map((section) => <div className="platform-control-nav-group" key={section}>
         <span className="platform-control-nav-label">{section}</span>
-        <nav aria-label={section}>{systemNavItems.filter((item) => item.section === section).map((item) => { const Icon = item.icon; return <div className="platform-control-nav-entry" key={item.view}><button type="button" className={`platform-control-nav-item ${view === item.view ? 'active' : ''}`} aria-current={view === item.view ? 'page' : undefined} aria-disabled={item.disabled || undefined} onClick={() => { if (!item.disabled) navigate(item.view); }}><span className="platform-control-nav-icon"><Icon size={15} /></span><span>{item.label}</span>{view === item.view ? <span className="platform-control-nav-live" /> : <ChevronRight size={13} />}</button></div>; })}</nav>
+        <nav aria-label={section}>{systemNavItems.filter((item) => item.section === section).map((item) => { const Icon = item.icon; return <div className="platform-control-nav-entry" key={item.view}><button type="button" className={`platform-control-nav-item ${item.subItem ? 'sub-item' : ''} ${view === item.view ? 'active' : ''}`} aria-current={view === item.view ? 'page' : undefined} aria-disabled={item.disabled || undefined} onClick={() => { if (!item.disabled) navigate(item.view); }}><span className="platform-control-nav-icon"><Icon size={15} /></span><span>{item.label}</span>{view === item.view ? <span className="platform-control-nav-live" /> : <ChevronRight size={13} />}</button></div>; })}</nav>
       </div>)}
-      <div className={`platform-control-sidebar-foot ${online ? 'online' : 'offline'}`}><span className="platform-control-health-dot" /><span>{online ? '数据连接正常' : '数据连接未就绪'}</span><ShieldCheck size={14} /></div>
+      <div className="platform-control-sidebar-foot online"><span className="platform-control-health-dot" /><span>工作台已就绪</span><ShieldCheck size={14} /></div>
     </aside>
     {open && <button className="platform-control-scrim" type="button" aria-label="关闭导航" onClick={close} />}
   </>;
 }
 
 export function DashboardApp() {
-  const { stop: stopVoice } = useXiaoanVoice();
+  const { stop: stopVoice, speak, setEnabled: setVoiceEnabled } = useXiaoanVoice();
   const [view, setView] = useState<PlatformView>(pathView);
-  useEffect(() => { stopVoice(); }, [view, stopVoice]);
+  const navigationVoiceTarget = useRef<PlatformView | null>(null);
+  const navigationVoiceSequence = useRef(0);
+  useEffect(() => {
+    const preserveAnnouncement = navigationVoiceTarget.current === view;
+    navigationVoiceTarget.current = null;
+    if (!preserveAnnouncement) stopVoice();
+  }, [view, stopVoice]);
   const [overview, setOverview] = useState<PlatformOverview>(demoOverview);
   const [apiOnline, setApiOnline] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [assistantVisible, setAssistantVisible] = useState(true);
-  const [statusMessage, setStatusMessage] = useState('正在读取平台运行态');
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [clock, setClock] = useState(() => new Date());
   const menuRef = useRef<HTMLButtonElement>(null);
@@ -249,10 +250,8 @@ export function DashboardApp() {
       setApiOnline(true);
       hasLiveData.current = true;
       setLastSync(new Date());
-      setStatusMessage('平台运行态已更新，内网数据在线');
     } catch {
       setApiOnline(false);
-      setStatusMessage(hasLiveData.current ? '连接中断，当前显示上次同步数据' : '未连接业务服务，当前为演示数据');
     } finally {
       setRefreshing(false);
     }
@@ -311,6 +310,16 @@ export function DashboardApp() {
     navigatePath(next === 'duty-plan' ? trainingEntryPath() : routePath(next));
   }, [navigatePath]);
 
+  const navigateFromSidebar = useCallback((next: PlatformView) => {
+    if (next === 'command') {
+      // Keep this click-triggered announcement alive through its destination render.
+      navigationVoiceTarget.current = next === view ? null : next;
+      setVoiceEnabled(true);
+      void speak('incident-arrival', `sidebar:${++navigationVoiceSequence.current}`);
+    }
+    navigate(next);
+  }, [navigate, setVoiceEnabled, speak, view]);
+
   const navView = view === 'command-workbench' ? 'command' : view;
   const currentNav = useMemo(() => systemNavItems.find((item) => item.view === navView) ?? systemNavItems[0], [navView]);
   const formattedDate = new Intl.DateTimeFormat('zh-CN', { month: '2-digit', day: '2-digit', weekday: 'short' }).format(clock);
@@ -325,16 +334,16 @@ export function DashboardApp() {
       onTraining={(taskId) => navigatePath(trainingEntryPath(taskId))} />
     : null;
   const page = view === 'contact-review'
-    ? <ContactReviewPage onBack={() => navigate('platform')} />
+    ? <ContactReviewPage onBack={() => navigate('platform')} onNext={() => navigate('identity-search')} />
+    : view === 'identity-search'
+      ? <ContactReviewPage onBack={() => navigate('platform')} onNext={() => navigate('identity-search')} showGait />
     : view === 'platform'
-    ? <PublicSecurityPlatformPage overview={overview} apiOnline={apiOnline} refreshing={refreshing} refresh={loadOverview} navigate={navigate} />
+    ? <PublicSecurityPlatformPage overview={overview} refreshing={refreshing} refresh={loadOverview} navigate={navigate} />
     : view === 'command-workbench'
       ? <CommandWorkbench onBack={() => navigate('command')} />
     : view === 'command'
       ? <CommandOperationsPage overview={overview} apiOnline={apiOnline} navigate={navigate} refresh={loadOverview} />
-      : view === 'case'
-        ? <CaseHandlingPage overview={overview} apiOnline={apiOnline} navigate={navigate} />
-        : view === 'community'
+    : view === 'community'
           ? <CommunityPolicingPage overview={overview} apiOnline={apiOnline} navigate={navigate} />
           : view === 'device-bridges'
             ? <DeviceBridgesPage />
@@ -345,7 +354,7 @@ export function DashboardApp() {
   return <>
     {standalonePage ?? <main className="platform-control-shell">
     <a className="skip-link" href="#workspace-content">跳转到工作区</a>
-    <ShellNav view={navView} navigate={navigate} open={mobileNavOpen} close={() => { setMobileNavOpen(false); menuRef.current?.focus(); }} online={apiOnline} />
+    <ShellNav view={navView} navigate={navigateFromSidebar} open={mobileNavOpen} close={() => { setMobileNavOpen(false); menuRef.current?.focus(); }} />
     <div className="platform-control-main">
       <header className="platform-control-topbar">
         <div className="platform-control-topbar-left">
@@ -356,14 +365,13 @@ export function DashboardApp() {
           <Tooltip title={assistantVisible ? '隐藏小安助手' : '显示小安助手'}><button type="button" className="ui-icon-button xiaoan-shell-entry" aria-label={assistantVisible ? '隐藏小安助手' : '显示小安助手'} aria-pressed={assistantVisible} onClick={() => setAssistantVisible(value => !value)}><ShieldCheck size={17} /></button></Tooltip>
           <XiaoanVoiceControls />
           <span className="platform-control-clock"><Clock3 size={14} />{formattedDate} {formattedTime}</span>
-              {view !== 'device-bridges' && <span className={`platform-control-sync ${apiOnline ? 'online' : 'demo'}`} aria-live="polite"><span />{apiOnline ? '内网数据在线' : hasLiveData.current ? '离线快照' : '演示数据'}</span>}
+              {view !== 'device-bridges' && <span className="platform-control-sync online" aria-live="polite"><span />工作台已就绪</span>}
           <Tooltip title="刷新平台数据"><button className="platform-control-refresh ui-icon-button" type="button" onClick={() => void loadOverview()} disabled={refreshing} aria-label="刷新平台运行态"><RefreshCw size={16} className={refreshing ? 'spin' : undefined} /></button></Tooltip>
           <span className="platform-control-user" title="市公安局 · 指挥中心"><span>值</span><b>值班席</b></span>
         </div>
           </header>
-          {!apiOnline && view !== 'device-bridges' && <p className="platform-control-status-message" role="status"><AlertTriangle size={15} />{statusMessage}</p>}
       <div id="workspace-content" tabIndex={-1} className="platform-control-content">{page}</div>
-      <footer className="platform-control-footer"><span><ShieldCheck size={14} />高风险 AI 建议需人工确认</span><span><Database size={14} />操作留痕 · 开放访问</span><span>最近同步 {lastSync ? lastSync.toLocaleTimeString('zh-CN', { hour12: false }) : '尚未连接'}</span></footer>
+      <footer className="platform-control-footer"><span><ShieldCheck size={14} />高风险 AI 建议需人工确认</span><span><Database size={14} />操作留痕 · 开放访问</span><span>最近同步 {lastSync ? lastSync.toLocaleTimeString('zh-CN', { hour12: false }) : '准备中'}</span></footer>
     </div>
   </main>}
     <XiaoanAssistant visible={assistantVisible} onVisibilityChange={setAssistantVisible} onNavigate={navigatePath} />

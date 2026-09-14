@@ -6,6 +6,7 @@ import base64
 from collections import deque
 from contextlib import contextmanager
 import errno
+import hashlib
 import json
 import logging
 import os
@@ -108,6 +109,62 @@ def load_go2():
     with windows_platform_import_guard():
         from unitree_webrtc_connect import UnitreeWebRTCConnection, WebRTCConnectionMethod
     return UnitreeWebRTCConnection, WebRTCConnectionMethod
+
+
+def go2_validation_prefix(config):
+    if config.get("go2Mode") == "LocalAP" and config.get("host") == "192.168.12.1":
+        return "UnitreeB2_"
+    return "UnitreeGo2_"
+
+
+def go2_validation_key(challenge, prefix):
+    digest = hashlib.md5((prefix + challenge).encode("utf-8")).digest()
+    return base64.b64encode(digest).decode("ascii")
+
+
+def filter_go2_offer_sdp(sdp):
+    from aiortc.sdp import SessionDescription
+
+    offer = SessionDescription.parse(sdp)
+    for media in offer.media:
+        if media.dtls is not None:
+            media.dtls.fingerprints = [
+                fingerprint for fingerprint in media.dtls.fingerprints
+                if fingerprint.algorithm.lower() == "sha-256"
+            ]
+    return str(offer)
+
+
+def configure_go2_validation(config):
+    with windows_platform_import_guard():
+        from unitree_webrtc_connect.msgs.validation import WebRTCDataChannelValidaton
+
+    prefix = go2_validation_prefix(config)
+    WebRTCDataChannelValidaton.encrypt_key = staticmethod(
+        lambda challenge: go2_validation_key(challenge, prefix)
+    )
+
+
+def configure_go2_signaling(connection_class, config):
+    if go2_validation_prefix(config) != "UnitreeB2_":
+        return
+    if getattr(connection_class, "_cicsic_b2_offer_patch", False):
+        return
+
+    async def get_answer_from_local_peer(self, pc, ip):
+        from unitree_webrtc_connect.webrtc_driver import send_sdp_to_local_peer
+
+        offer = pc.localDescription
+        payload = {
+            "id": "STA_localNetwork" if self.connectionMethod.name == "LocalSTA" else "",
+            "sdp": filter_go2_offer_sdp(offer.sdp),
+            "type": offer.type,
+            "token": self.token,
+        }
+        return send_sdp_to_local_peer(ip, json.dumps(payload), aes_128_key=self.aes_128_key)
+
+    connection_class.get_answer_from_local_peer = get_answer_from_local_peer
+    connection_class._cicsic_b2_offer_patch = True
 
 
 class Emitter:
@@ -225,6 +282,8 @@ def decode_rtsp(config, emitter, stopped):
 
 async def decode_go2(config, emitter, stopped):
     connection_class, methods = load_go2()
+    configure_go2_validation(config)
+    configure_go2_signaling(connection_class, config)
     try:
         host = resolve_host(config["host"], config["port"])
     except Exception as error:

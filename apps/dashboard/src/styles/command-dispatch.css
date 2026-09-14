@@ -44,7 +44,7 @@
 .demo-map-congestion-key i { display: inline-block; width: 16px; border-top: 3px solid currentColor; }
 .demo-map-congestion-key { color: #c85a29; }
 .demo-map-disclaimer { margin-left: auto; color: #8b651e; }
-.dispatch-back-button { margin-top: 12px; }
+.dispatch-actions { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
 @keyframes dispatch-pulse { 0% { box-shadow: 0 0 0 0 #c63c4566; } 70% { box-shadow: 0 0 0 10px #c63c4500; } 100% { box-shadow: 0 0 0 0 #c63c4500; } }
 @media (max-width: 640px) {
   .dispatch-banner { align-items: flex-start; flex-direction: column; }

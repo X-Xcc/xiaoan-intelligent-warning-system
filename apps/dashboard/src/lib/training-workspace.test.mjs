@@ -169,3 +169,23 @@ test('officer training page no longer contains the removed review and archive wo
     assert.doesNotMatch(source, new RegExp(marker));
   }
 });
+
+test('officer training sync formats only the synthetic display and retains its actual sync timestamp', () => {
+  const source = fs.readFileSync(new URL('../pages/OfficerTrainingPage.tsx', import.meta.url), 'utf8');
+  assert.match(source, /import\s*\{[^}]*formatTrainingDemoTime[^}]*\}\s*from\s*'\.\.\/lib\/training-demo'/);
+  assert.match(source, /setLastSync\(new Date\(\)\)/);
+  assert.match(source, /formatTrainingDemoTime\(lastSync,\s*'time'\)/);
+  assert.doesNotMatch(source, /lastSync\.toLocaleTimeString/);
+});
+
+test('完成演示只重置训练流程，不提交表单或触发返回导航', () => {
+  const source = fs.readFileSync(new URL('../pages/OfficerTrainingPage.tsx', import.meta.url), 'utf8');
+  assert.match(source, /phase === 'summary'\s*\?\s*<button type="button" className="ot-button primary" onClick=\{\(event\) =>/);
+  assert.match(source, /const resetFlow = \(\) => \{\s*setPhase\('prepare'\)/s);
+  assert.doesNotMatch(source, /const resetFlow = \(\) => \{[\s\S]*onSituation\(/);
+});
+
+test('完成演示隔离默认提交和父级点击导航', () => {
+  const source = fs.readFileSync(new URL('../pages/OfficerTrainingPage.tsx', import.meta.url), 'utf8');
+  assert.match(source, /onClick=\{\(event\) => \{\s*event\.preventDefault\(\);\s*event\.stopPropagation\(\);\s*resetFlow\(\);\s*\}\}/s);
+});

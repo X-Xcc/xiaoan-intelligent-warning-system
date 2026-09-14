@@ -7,6 +7,11 @@ export type CaseMapRouteBranch = {
   readonly id: string;
   readonly points: readonly CaseMapCoordinate[];
 };
+export type CaseMapRoute = {
+  readonly id: string;
+  readonly color: 'blue' | 'violet' | 'brown';
+  readonly points: readonly CaseMapCoordinate[];
+};
 
 export const caseBasemap = {
   title: '夜市街区 · 案件路线',
@@ -47,10 +52,26 @@ export const caseComparisonRoute: readonly CaseMapCoordinate[] = [
   [585, 305], [640, 365], [675, 420], [760, 480], [835, 555],
 ];
 
+export const caseRoutes: readonly CaseMapRoute[] = [
+  { id: 'primary-route', color: 'blue', points: caseRoute },
+  { id: 'comparison-route', color: 'violet', points: caseComparisonRoute },
+];
+
 export const caseRouteBranches: readonly CaseMapRouteBranch[] = [
   { id: 'point-1-branch-left', points: [[440, 230], [390, 185], [335, 150]] },
   { id: 'point-1-branch-right', points: [[440, 230], [485, 170], [555, 135]] },
-  { id: 'point-3-branch-right', points: [[640, 365], [700, 395], [770, 420]] },
+  { id: 'point-3-branch-right', points: [[640, 365], [700, 395], [800, 435], [900, 470]] },
+];
+
+const cr019Branches: readonly CaseMapRouteBranch[] = [
+  caseRouteBranches[0],
+  caseRouteBranches[1],
+  { id: 'point-4-branch-left', points: [[720, 505], [690, 535], [510, 565], [330, 595]] },
+];
+
+// CR-020 has its own comparison, independent of the legacy violet route.
+const cr020ComparisonRoute: readonly CaseMapCoordinate[] = [
+  [615, 165], [625, 260], [640, 365], [630, 440], [620, 530], [570, 565], [450, 590],
 ];
 
 export function getCaseMapPoints(records: readonly ContactReviewRecord[]) {
@@ -64,5 +85,24 @@ export function getCaseMapRoute(pointCount: number): readonly CaseMapCoordinate[
 }
 
 export function getCaseComparisonRoute(pointCount: number): readonly CaseMapCoordinate[] {
-  return pointCount < 3 ? [] : caseComparisonRoute;
+  return !Number.isFinite(pointCount) || pointCount < 3 ? [] : cr020ComparisonRoute;
+}
+
+export function getCaseMapVariant(recordId: string, pointCount = caseStops.length) {
+  const count = Number.isFinite(pointCount) ? Math.max(0, Math.floor(pointCount)) : 0;
+  const isCr020 = recordId === 'CR-020';
+  const isCr019 = recordId === 'CR-019';
+  const branches = isCr020 ? [] : isCr019 ? cr019Branches : caseRouteBranches;
+  const availableStops = caseStops.slice(0, count);
+  const comparisonColor: CaseMapRoute['color'] = isCr020 ? 'brown' : 'violet';
+  return {
+    id: recordId,
+    title: recordId ? `${recordId} · ${caseBasemap.title}` : caseBasemap.title,
+    route: getCaseMapRoute(count),
+    comparisonRoute: count < 3 || isCr019 ? [] : isCr020 ? getCaseComparisonRoute(count) : caseComparisonRoute,
+    comparisonColor,
+    overlapRate: isCr020 ? caseRouteOverlapRate : routeOverlapPercent,
+    branches: branches.filter(branch => availableStops.some(stop =>
+      stop.anchor[0] === branch.points[0][0] && stop.anchor[1] === branch.points[0][1])),
+  };
 }

@@ -143,6 +143,14 @@ test('video wall never fabricates cameras or AI/evidence findings', () => {
   assert.match(page, /<Button disabled icon=\{<BrainCircuit/);
 });
 
+test('bridge inventory omits the demo readiness banner but retains actionable errors', () => {
+  const page = read('../pages/DeviceBridgesPage.tsx');
+  assert.doesNotMatch(page, /现场演示已阻断|只有绑定设备持续收到真实新鲜帧时|bridge\.readiness/);
+  assert.match(page, /bridge\.error/);
+  assert.match(page, /selected\.lastError/);
+  assert.match(page, /hasFreshFrame\(selected, bridge\.now\)/);
+});
+
 test('video wall never uses local placeholder media for empty slots', () => {
   const page = read('../pages/VideoLinkagePage.tsx');
   const preview = read('../components/BridgePreview.tsx');

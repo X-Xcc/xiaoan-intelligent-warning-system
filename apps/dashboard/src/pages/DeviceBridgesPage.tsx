@@ -291,9 +291,6 @@ export function DeviceBridgesPage() {
     </header>
     {<>
       {(bridge.error || (bridge.updatedAt > 0 && !bridge.available)) && <Alert type="warning" showIcon title={bridge.error || '状态已过期，等待重新同步'} description={bridge.inventory ? '当前清单为上次读取结果，视频预览已暂停。' : undefined} />}
-      {bridge.readiness && !bridge.readiness.ready && <Alert type="error" showIcon
-        title={`现场演示已阻断：${bridge.readiness.reasons.map((reason) => reason.message).join('；')}`}
-        description="只有绑定设备持续收到真实新鲜帧时，视频墙才会进入实时状态。" />}
       <div className="bridge-runtime" aria-label="桥接运行环境">
         <span><Activity size={15} />{bridge.available ? '管理服务已连接' : '管理服务未确认'}</span>
         <span>运行 <b>{bridge.available ? `${bridge.inventory?.runtime.running} / ${bridge.inventory?.runtime.maxDevices}` : '未读取'}</b></span>

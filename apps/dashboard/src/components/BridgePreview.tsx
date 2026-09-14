@@ -1,10 +1,11 @@
 import { Button } from 'antd';
 import { CameraOff, RefreshCw } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { bridgeErrorMessage, bridgeMediaUrl, bridgeSourceKey, bridgeStatusLabels, hasFreshFrame, requestBridgeSnapshot, type BridgeDevice } from '../lib/device-bridges-api';
+import { bridgeErrorMessage, bridgeMediaUrl, bridgeStatusLabels, hasFreshFrame, requestBridgeSnapshot, type BridgeDevice } from '../lib/device-bridges-api';
 import { subscribeBridgeVideo, type VideoPlayback } from '../lib/bridge-webrtc';
 
 type PreviewProps = { device?: BridgeDevice; available: boolean; authorized: boolean; epoch?: number; compact?: boolean };
+const WEBRTC_FALLBACK_DELAY_MS = 2500;
 
 function SnapshotSource({ device, available, authorized }: PreviewProps) {
   const latestDevice = useRef(device);
@@ -146,21 +147,32 @@ function ContinuousVideo(props: PreviewProps) {
   const video = useRef<HTMLVideoElement>(null);
   const [playback, setPlayback] = useState<VideoPlayback>({ stream: null, fps: null, bufferMs: null, dropped: 0, error: '' });
   const [playing, setPlaying] = useState(false);
-  const key = props.device ? `${bridgeSourceKey(props.device)}:${props.epoch ?? 0}` : '';
+  const [fallback, setFallback] = useState(false);
+  const key = props.device ? `${props.device.id}:${props.epoch ?? 0}` : '';
   const active = Boolean(props.device && props.available && props.authorized && props.device.online);
+  const activeWebrtc = active && !fallback;
+  useEffect(() => {
+    setFallback(false);
+    if (!active) return;
+    const timer = window.setTimeout(() => setFallback(true), WEBRTC_FALLBACK_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [active, key]);
   useEffect(() => {
     setPlaying(false);
-    if (!active || !props.device) return;
+    if (!activeWebrtc || !props.device) return;
     return subscribeBridgeVideo(props.device.id, key, setPlayback);
-  }, [active, key]);
+  }, [activeWebrtc, key]);
   useEffect(() => {
     const element = video.current;
     if (!element) return;
-    element.srcObject = playback.stream;
+    element.srcObject = fallback ? null : playback.stream;
     if (playback.stream) void element.play().catch(() => setPlaying(false));
     return () => { element.srcObject = null; };
-  }, [playback.stream]);
+  }, [fallback, playback.stream]);
   const live = active && playing && Boolean(playback.stream);
+  if (fallback) return props.compact
+    ? <SnapshotSource {...props} />
+    : <PreviewSource {...props} />;
   return <div className={`bridge-preview ${props.compact ? 'compact' : ''}`}
     data-device-id={props.device?.id} data-preview-mode="webrtc" data-preview-state={live ? 'live' : 'unavailable'}
     data-playback-fps={playback.fps?.toFixed(1)} data-buffer-ms={playback.bufferMs?.toFixed(1)}
@@ -176,7 +188,7 @@ function ContinuousVideo(props: PreviewProps) {
 }
 
 export function BridgePreview(props: PreviewProps) {
-  const key = `${props.device ? bridgeSourceKey(props.device) : 'unbound'}:${props.epoch ?? 0}`;
+  const key = `${props.device ? props.device.id : 'unbound'}:${props.epoch ?? 0}`;
   if (props.device?.webrtc && typeof RTCPeerConnection !== 'undefined') return <ContinuousVideo key={key} {...props} />;
   return props.compact ? <SnapshotSource key={key} {...props} /> : <PreviewSource key={key} {...props} />;
 }

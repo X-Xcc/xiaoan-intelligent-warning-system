@@ -12,6 +12,7 @@ function scene(overrides = {}, event = { id: 'real-event' }) {
   bindings[0] = dog.id;
   bindings[1] = camera.id;
   let refreshes = 0;
+  let backNavigations = 0;
   const bridge = {
     inventory: { items: [camera, dog], bindings },
     available: true, busy: false, refreshing: false, previewReady: true, previewEpoch: 4,
@@ -54,7 +55,7 @@ function scene(overrides = {}, event = { id: 'real-event' }) {
   const render = () => {
     cursor = 0;
     inventoryHooks = 0;
-    const tree = module.exports.CommandScene({ event, draft: {}, onNext() {} });
+    const tree = module.exports.CommandScene({ event, draft: {}, onBack() { backNavigations++; } });
     const nodes = [];
     const walk = (node) => {
       if (Array.isArray(node)) return node.forEach(walk);
@@ -65,11 +66,20 @@ function scene(overrides = {}, event = { id: 'real-event' }) {
     walk(tree);
     return nodes;
   };
-  return { render, bridge, get refreshes() { return refreshes; }, get inventoryHooks() { return inventoryHooks; } };
+  return { render, bridge, get refreshes() { return refreshes; }, get inventoryHooks() { return inventoryHooks; }, get backNavigations() { return backNavigations; } };
 }
 
 const feeds = (nodes) => nodes.filter((node) => node.type === 'BridgePreview');
 const button = (nodes, label) => nodes.find((node) => node.type === 'button' && node.props['aria-label'] === label);
+
+test('the scene returns to police configuration as the preceding step', () => {
+  const fixture = scene();
+  const back = fixture.render().find(node => node.type === 'button'
+    && Array.isArray(node.props.children) && node.props.children.includes('返回警力配置'));
+  assert.ok(back, 'Missing return-to-configuration button');
+  back.props.onClick();
+  assert.equal(fixture.backNavigations, 1);
+});
 
 test('barbecue demo shows a labeled fictional identity without inventing a record', () => {
   const nodes = scene({}, { id: 'alarm-demo-005', sourceMode: 'desensitized_demo' }).render();

@@ -40,7 +40,6 @@ export function VideoLinkagePage({ onBack }: { onBack: () => void }) {
   const selectedScene = wallScenes[selectedChannel];
   const onlineCount = bridge.available ? cameras.filter((device) => hasFreshFrame(device, bridge.now)).length : null;
   const previewAvailable = bridge.available && !bridge.busy;
-  const readiness = bridge.readiness;
 
   useEffect(() => {
     const previous = document.title;
@@ -93,8 +92,8 @@ export function VideoLinkagePage({ onBack }: { onBack: () => void }) {
           </div>
         </div>
         {<>
-          {(bridge.error || (bridge.updatedAt > 0 && !bridge.available) || (readiness && !readiness.ready)) && <Alert className="bridge-video-alert" type="warning" showIcon
-            title={bridge.error || (readiness && !readiness.ready ? `实时摄像头链路未就绪：${readiness.reasons.map((reason) => reason.message).join('；')}` : '设备状态已过期，视频预览已暂停')} />}
+          {(bridge.error || (bridge.updatedAt > 0 && !bridge.available)) && <Alert className="bridge-video-alert" type="warning" showIcon
+            title={bridge.error || '设备状态已过期，视频预览正在恢复'} />}
           <section className="monitoring-video-wall" aria-label="十六路监控视频墙">
             {bindings.map((id, index) => {
               const camera = cameras.find((device) => device.id === id);

@@ -20,7 +20,7 @@ const viewports = [
 ];
 // Keep in sync with presentation.ts; include the default and legacy training entry.
 const routes = [
-  '/', '/platform', '/command', '/command/workbench', '/case', '/community',
+  '/', '/platform', '/command', '/command/workbench', '/community',
   '/duty-situation', '/duty-situation/training', '/duty-plan', '/contact-review',
   '/ai-center', '/admin', '/admin/bridges', '/video', '/night-market/command',
   '/command/workbench?surface=display',
@@ -240,7 +240,6 @@ async function navigate(page, record, target, control) {
     '/duty-situation': '.duty-situation-page',
     '/duty-situation/training': '.officer-training-workspace',
     '/command/workbench?surface=display': '.command-display-shell',
-    '/case': '.case-domain-page',
   }[target];
   assert.ok(destination, `A rendered destination marker is required for ${target}`);
   await page.locator(destination).waitFor({ state: 'visible' });
@@ -467,7 +466,7 @@ try {
 
   await run('popstate continuity across standalone, display, and shell routes', async (page, record) => {
     const state = await seedConversation(page);
-    for (const target of ['/duty-situation', '/duty-situation/training', '/command/workbench?surface=display', '/case', '/platform']) {
+    for (const target of ['/duty-situation', '/duty-situation/training', '/command/workbench?surface=display', '/platform']) {
       await navigate(page, record, target);
       assert.equal(new URL(page.url()).search, new URL(`${base}${target}`).search, 'Display query survives routing');
       await continuity(page, state);

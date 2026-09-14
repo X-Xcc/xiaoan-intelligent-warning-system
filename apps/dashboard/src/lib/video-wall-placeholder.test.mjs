@@ -84,6 +84,19 @@ test('offline WebRTC cameras preserve their actual unavailable state', () => {
   assert.ok(!nodes.some((node) => node.type === 'img' && node.props.src === '/demo.png'));
 });
 
+test('telemetry polling does not make the preview playback key depend on updatedAt', () => {
+  const source = read('../components/BridgePreview.tsx');
+  assert.match(source, /const key = props\.device \? `\$\{props\.device\.id\}:\$\{props\.epoch \?\? 0\}`/);
+  assert.match(source, /const key = `\$\{props\.device \? props\.device\.id : 'unbound'\}:\$\{props\.epoch \?\? 0\}`/);
+});
+
+test('WebRTC preview has a bounded JPEG fallback when browser negotiation stalls', () => {
+  const source = read('../components/BridgePreview.tsx');
+  assert.match(source, /WEBRTC_FALLBACK_DELAY_MS = 2500/);
+  assert.match(source, /setFallback\(true\)/);
+  assert.match(source, /return props\.compact \? <SnapshotSource/);
+});
+
 test('failed placeholder assets expose the underlying empty-state message', () => {
   const nodes = renderPreview({ compact: true }, { failedImage: true });
   assert.ok(!nodes.some((node) => node.type === 'img' && node.props.src === '/demo.png'));
@@ -97,4 +110,9 @@ test('wall only supplies demo images for confirmed null bindings and preserves o
   assert.match(page, /monitoring-service/);
   assert.match(page, /bridge-video-alert/);
   assert.doesNotMatch(page, /BridgeLogin|bridge\.authRequired|bridge\.lock/);
+});
+
+test('video wall does not turn one stale camera into a global disconnected banner', () => {
+  const page = read('../pages/VideoLinkagePage.tsx');
+  assert.doesNotMatch(page, /\(readiness && !readiness\.ready\)/);
 });

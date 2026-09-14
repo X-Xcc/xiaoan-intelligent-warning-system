@@ -1,9 +1,17 @@
-import { Camera, ImageOff, MapPin, Maximize2, RefreshCw } from 'lucide-react';
+import { ArrowUp, Camera, ImageOff, MapPin, Maximize2, RefreshCw } from 'lucide-react';
 import { Modal, Tooltip } from 'antd';
 import { useCallback, useEffect, useState } from 'react';
 import { appBasePath } from '../lib/presentation';
 import type { ContactReviewRecord } from '../lib/contact-review';
-import { zijingBasemap, zijingDemoStops, zijingOutline, type NightMarketScene } from '../lib/contact-zijing';
+import type { NightMarketScene } from '../lib/contact-zijing';
+import {
+  caseBasemap,
+  caseOutline,
+  getCaseMapPoints,
+  getCaseMapVariant,
+  type CaseMapRoute,
+} from '../lib/contact-case-map';
+import '../styles/contact-case-map.css';
 
 function imageSource(path: string, revision: number) {
   const source = `${appBasePath}${path}`;
@@ -25,7 +33,8 @@ function GaitPhoto({ scene, revision, full = false }: { scene: NightMarketScene;
       }} />;
 }
 
-export function ContactGaitMap({ records, selectedId, onSelect }: {
+export function ContactGaitMap({ sourceRecordId = '', records, selectedId, onSelect }: {
+  sourceRecordId?: string;
   records: ContactReviewRecord[];
   selectedId: string;
   onSelect: (id: string) => void;
@@ -43,54 +52,108 @@ export function ContactGaitMap({ records, selectedId, onSelect }: {
     window.addEventListener('online', reloadImages);
     return () => window.removeEventListener('online', reloadImages);
   }, [reloadImages]);
-  const points = records.slice(0, zijingDemoStops.length).map((record, index) => ({
-    record, ...zijingDemoStops[index],
-  }));
-  const preview = points.find((point: typeof points[number]) => point.record.id === previewId);
+  const points = getCaseMapPoints(records);
+  const activeId = points.find(point => point.record.id === selectedId)?.record.id ?? points[0]?.record.id;
+  const preview = points.find(point => point.record.id === previewId);
+  const variant = getCaseMapVariant(sourceRecordId, points.length);
+  const routes: CaseMapRoute[] = [{ id: 'primary-route', color: 'blue', points: variant.route }];
+  if (variant.comparisonRoute.length) routes.push({
+    id: 'comparison-route', color: variant.comparisonColor, points: variant.comparisonRoute,
+  });
+  const overlapLabel = `路线重合率${sourceRecordId === 'CR-020' ? '仅 ' : ' '}${variant.overlapRate}%`;
+  if (!points.length) return <section className="cr-nightmarket-map-section" aria-label="夜市仿真街区关联点位">
+    <p className="cr-nightmarket-empty" role="status"><MapPin size={20} />暂无关联点位</p>
+  </section>;
 
-  return <section className="cr-gait-map-section cr-nightmarket-map-section" aria-label="南昌市紫荆夜市演示点位地图">
+  return <section className="cr-gait-map-section cr-nightmarket-map-section" aria-label="夜市仿真街区关联点位"
+    data-source-record-id={sourceRecordId}>
     <header className="cr-nightmarket-heading">
-      <div><MapPin size={17} /><h3>南昌市紫荆夜市</h3><span>地理地图 · 夜市场景演示</span></div>
+      <div className="cr-nightmarket-heading-title"><MapPin size={17} /><div><h3>{variant.title}</h3>
+        <p>仿真街区 · 道路 / 建筑 / 机位</p></div></div>
       <div className="cr-nightmarket-heading-actions">
-        <span className="cr-inspection-tag">{points.length} 个演示点位</span>
+        <span className="cr-inspection-tag amber">演示场景</span>
+        <span className="cr-inspection-tag">{points.length} 个关联点位</span>
+        {points.length >= 3 && <span className="cr-nightmarket-route-overlap" aria-label={overlapLabel}>
+          {overlapLabel}
+        </span>}
         <Tooltip title="重新加载地图和图片"><button type="button" className="ui-icon-button"
           aria-label="重新加载地图和图片" onClick={reloadImages}><RefreshCw size={16} /></button></Tooltip>
       </div>
     </header>
-    <div className="cr-nightmarket-map-viewport" role="region" aria-label="紫荆夜市地图与点位图片">
+    <div className="cr-nightmarket-legend" aria-label="点位图例">
+      {points.filter(point => point.role !== 'transit').map(point => <span key={point.role} className={`cr-case-${point.role}`}>
+        <i />{point.label}</span>)}
+      {routes.map(route => <span key={route.id}><i className={`cr-nightmarket-route-key cr-nightmarket-route-key-${route.color}`} />
+        {route.color === 'blue' ? '主路线' : route.color === 'brown' ? '对比路线' : '第二条路径'}</span>)}
+      {variant.branches.length > 0 && <span><i className="cr-nightmarket-route-key cr-nightmarket-route-key-branch" />分叉路线</span>}
+    </div>
+    <div className="cr-nightmarket-map-viewport" role="region" aria-label="仿真街区地图与点位时间线">
+      <aside className="cr-nightmarket-timeline">
+        <h4>关联时间线</h4>
+        <ol aria-label="关联时间线">{points.map((point, index) => <li key={point.record.id} className={`cr-case-${point.role}`}>
+          <button type="button" data-record-id={point.record.id} aria-pressed={activeId === point.record.id}
+            aria-label={`时间线 ${index + 1} ${point.label} ${point.scene.camera}`} onClick={() => onSelect(point.record.id)}>
+            <span className="cr-nightmarket-step-number">{index + 1}</span>
+            <span className="cr-nightmarket-step-detail"><strong>{point.label}</strong>
+              <small>{point.scene.camera}<time dateTime={`${point.scene.occurredAt.replace(' ', 'T')}+08:00`}>
+                {point.scene.occurredAt.slice(11)}</time></small></span>
+          </button>
+        </li>)}</ol>
+        <p className="cr-nightmarket-timeline-summary">场景日期 {points[0].scene.occurredAt.slice(0, 10)}<br />
+          {points.length} 个机位 · {points.filter(point => point.role !== 'transit').length} 个关键地点</p>
+      </aside>
       <div className={`cr-gait-map${mapFailed ? ' map-failed' : ''}`}>
-        {mapFailed
-          ? <p className="cr-nightmarket-map-error" role="status"><ImageOff size={20} />地图底图暂不可用</p>
-          : <div className="cr-nightmarket-map-surface">
-            <img key={revision} className="cr-nightmarket-basemap" src={imageSource(zijingBasemap.assetPath, revision)}
-              alt="OpenStreetMap 紫荆夜市及周边地理底图，非实景照片"
+        <div className="cr-nightmarket-map-surface" aria-busy={!mapReady && !mapFailed}>
+          {mapFailed
+            ? <p className="cr-nightmarket-map-error" role="status"><ImageOff size={20} />地图底图暂不可用</p>
+            : <>
+            <img key={revision} className="cr-nightmarket-basemap" src={imageSource(caseBasemap.assetPath, revision)}
+              width={caseBasemap.width} height={caseBasemap.height}
+              alt="虚构夜市街区底图：道路、建筑、沿河绿地与停车场，非真实地理位置"
               onLoad={() => setMapReady(true)} onError={() => { setMapFailed(true); setMapReady(false); }} />
             {!mapReady && <span className="cr-inspection-loading" role="status">地图加载中</span>}
             {mapReady && <>
-              <svg className="cr-gait-route-line" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                <polygon className="cr-nightmarket-boundary" points={zijingOutline.map(point => point.join(',')).join(' ')} />
-                {points.map(point => <line key={point.record.id} className="cr-nightmarket-leader"
-                  x1={point.anchor[0]} y1={point.anchor[1]} x2={point.photo[0]} y2={point.photo[1]} />)}
-                <polyline className="cr-nightmarket-route" points={points.map(point => point.anchor.join(',')).join(' ')} />
+              <svg className="cr-gait-route-line" viewBox={`0 0 ${caseBasemap.width} ${caseBasemap.height}`} aria-hidden="true">
+                <polygon className="cr-nightmarket-boundary" points={caseOutline.map(point => point.join(',')).join(' ')} />
+                {routes.map(routeDefinition => {
+                  const routePoints = routeDefinition.points.map(point => point.join(',')).join(' ');
+                  return <g key={routeDefinition.id} data-route-id={routeDefinition.id} aria-label={routeDefinition.id}>
+                    <polyline className="cr-nightmarket-route-halo" points={routePoints} />
+                    <polyline className={`cr-nightmarket-route cr-nightmarket-route-${routeDefinition.color}`} points={routePoints} />
+                  </g>;
+                })}
+                {variant.branches.map(branch => <g key={branch.id} data-route-id={branch.id} aria-label={branch.id}>
+                  <polyline className="cr-nightmarket-route-halo cr-nightmarket-route-branch-halo"
+                    points={branch.points.map(point => point.join(',')).join(' ')} />
+                  <polyline className="cr-nightmarket-route cr-nightmarket-route-branch"
+                    points={branch.points.map(point => point.join(',')).join(' ')} />
+                </g>)}
               </svg>
-              {points.map((point, index) => <button key={point.record.id} type="button" className="cr-nightmarket-anchor"
-                style={{ left: `${point.anchor[0]}%`, top: `${point.anchor[1]}%` }}
-                aria-label={`选择演示点位 ${index + 1} ${point.scene.camera}`} aria-pressed={selectedId === point.record.id}
-                onClick={() => onSelect(point.record.id)}>{index + 1}</button>)}
-              <span className="cr-nightmarket-map-key"><span />预设路线</span>
+              {points.map((point, index) => <button key={point.record.id} type="button"
+                className={`cr-nightmarket-anchor cr-case-${point.role}`} data-record-id={point.record.id}
+                style={{ left: `${point.anchor[0] / caseBasemap.width * 100}%`, top: `${point.anchor[1] / caseBasemap.height * 100}%` }}
+                aria-label={`选择演示点位 ${index + 1} ${point.scene.camera} ${point.label}`} aria-pressed={activeId === point.record.id}
+                onClick={() => onSelect(point.record.id)}>{index + 1}
+                {(point.role === 'contact' || point.role === 'incident') && <span className="cr-nightmarket-place-label">{point.label}</span>}
+              </button>)}
+              <span className="cr-nightmarket-north" aria-label="图示北向"><ArrowUp size={22} />N</span>
+              <span className="cr-nightmarket-map-key">仿真街区 · 非实测比例</span>
             </>}
-          </div>}
-        {points.map((point, index) => {
+          </>}
+        </div>
+      </div>
+    </div>
+    <div className="cr-nightmarket-photo-strip" role="group" aria-label="关联点位图片">
+      {points.map((point, index) => {
           const { record, scene } = point;
-          const selected = selectedId === record.id;
-          return <div key={record.id} className={`cr-nightmarket-photo-marker${selected ? ' selected' : ''}`}
-            style={{ left: `${point.photo[0]}%`, top: `${point.photo[1]}%` }}>
+          const selected = activeId === record.id;
+          return <div key={record.id} className={`cr-nightmarket-photo-marker cr-case-${point.role}${selected ? ' selected' : ''}`}>
             <button type="button" className="cr-gait-point" data-record-id={record.id}
-              aria-label={`摄像头 ${scene.camera} ${scene.title}`} aria-pressed={selected} onClick={() => onSelect(record.id)}>
+              aria-label={`摄像头 ${scene.camera} ${scene.title} ${point.label}`} aria-pressed={selected} onClick={() => onSelect(record.id)}>
               <GaitPhoto key={`${scene.assetPath}:${revision}`} scene={scene} revision={revision} />
-              <span className="cr-nightmarket-photo-label">夜市演示</span>
-              <span className="cr-nightmarket-photo-title"><span className="cr-nightmarket-photo-number">{index + 1}</span>
-                <Camera size={13} /><strong>{scene.camera}</strong><span>{scene.title}</span></span>
+              <span className="cr-nightmarket-photo-label">{index + 1} · {point.label}</span>
+              <span className="cr-nightmarket-photo-title"><Camera size={12} /><strong>{scene.camera}</strong>
+                <time dateTime={`${scene.occurredAt.replace(' ', 'T')}+08:00`}>{scene.occurredAt.slice(11)}</time></span>
             </button>
             <Tooltip title="放大夜市场景图"><button type="button" className="cr-nightmarket-photo-zoom"
               aria-label={`放大 ${scene.camera} 夜市场景图`} onClick={() => { onSelect(record.id); setPreviewId(record.id); }}>
@@ -98,17 +161,15 @@ export function ContactGaitMap({ records, selectedId, onSelect }: {
             </button></Tooltip>
           </div>;
         })}
-      </div>
     </div>
     <footer className="cr-nightmarket-map-footer">
-      <span>地理底图非实景照片；机位与路线为预设，图片为项目夜市演示素材，非紫荆夜市实拍。</span>
-      <a href={zijingBasemap.attributionUrl} target="_blank" rel="noopener noreferrer">{zijingBasemap.attribution}</a>
+      <span>程序绘制的仿真街区，非紫荆夜市真实地理结构；照片为项目既有夜市演示素材。</span>
     </footer>
     <Modal title={preview ? `夜市场景演示 · ${preview.scene.camera}` : '夜市场景图片'} open={!!preview}
       onCancel={() => setPreviewId(undefined)} footer={null} width={960} className="cr-gait-image-modal" destroyOnHidden>
       {preview && <figure className="cr-gait-photo-preview">
         <GaitPhoto key={`${preview.scene.assetPath}:${revision}`} scene={preview.scene} revision={revision} full />
-        <figcaption><strong>{preview.scene.camera} · {preview.scene.title}</strong>
+        <figcaption><strong>{preview.label} · {preview.scene.camera} · {preview.scene.title}</strong>
           <span>素材标注时间：{preview.scene.occurredAt} · UTC+8</span>
           <span>资料来源：项目既有夜市演示素材。非紫荆夜市实拍，非真实监控证据。</span>
           <span>关联记录：{preview.record.id}（预设关联，不代表图中人物身份或实际行程）</span></figcaption>

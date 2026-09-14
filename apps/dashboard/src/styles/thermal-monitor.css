@@ -1,0 +1,36 @@
+.ot-thermal { min-width: 0; color: #263436; }
+.ot-thermal-body { min-width: 0; }
+.ot-thermal.expanded .ot-thermal-body { display: grid; grid-template-columns: minmax(0, 1fr) 230px; gap: 20px; align-items: start; }
+.ot-thermal-viewport { position: relative; display: grid; place-items: center; aspect-ratio: 16 / 9; min-width: 0; overflow: hidden; background: #191e20; color: #d2dadd; }
+.ot-thermal-canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
+.ot-thermal-canvas[hidden] { display: none; }
+.ot-thermal-empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px; color: #b8c3c8; font-size: 13px; text-align: center; overflow-wrap: anywhere; }
+.ot-thermal-badge { position: absolute; top: 8px; left: 8px; padding: 3px 6px; border-radius: 3px; background: #171c20e6; color: #f2d896; font-size: 11px; }
+.ot-thermal-scale { position: absolute; bottom: 10px; right: 10px; display: grid; justify-items: center; gap: 3px; padding: 4px; background: #171c20b3; color: #fff; font-size: 10px; }
+.ot-thermal-scale i { display: block; width: 9px; height: 64px; background: linear-gradient(to bottom, #f00, #ff0, #0f0, #0ff, #00f); }
+.ot-thermal-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 8px 0 16px; }
+.ot-thermal-modes { display: flex; border: 1px solid #d8e1e1; border-radius: 5px; padding: 3px; }
+.ot-thermal-modes label { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 12px; min-height: 34px; border-radius: 3px; color: #566970; cursor: pointer; font-size: 13px; }
+.ot-thermal-modes label.selected { background: #e8f4ef; color: #126b58; }
+.ot-thermal-modes input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.ot-thermal-modes label:has(input:focus-visible) { outline: 2px solid #29809d; outline-offset: 1px; }
+.ot-thermal-edges { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: #566970; cursor: pointer; }
+.ot-thermal-edges input { width: 16px; height: 16px; accent-color: #147b66; }
+.ot-thermal-edges:has(input:disabled) { color: #949fa4; cursor: default; }
+.ot-thermal-analysis { min-width: 0; padding-left: 18px; border-left: 1px solid #dfe6e6; }
+.ot-thermal-analysis h4 { margin: 0 0 4px; font-size: 15px; font-weight: 600; }
+.ot-thermal-disclaimer { display: block; color: #92621c; font-size: 11px; }
+.ot-thermal-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 12px; margin: 18px 0; }
+.ot-thermal-metrics dt { color: #6e7d83; font-size: 11px; overflow-wrap: anywhere; }
+.ot-thermal-metrics dd { margin: 5px 0 0; color: #245d70; font-size: 23px; line-height: 1.3; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.ot-thermal-metrics dd small { margin-left: 4px; color: #71828a; font-size: 11px; }
+.ot-thermal-details { display: grid; gap: 10px; margin: 0; padding-top: 16px; border-top: 1px solid #dfe6e6; font-size: 12px; }
+.ot-thermal-details > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 8px; }
+.ot-thermal-details dt { color: #6e7d83; }
+.ot-thermal-details dd { margin: 0; font-variant-numeric: tabular-nums; }
+@media (max-width: 740px) {
+  .ot-thermal.expanded .ot-thermal-body { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .ot-thermal-analysis { padding: 16px 0 0; border-left: 0; border-top: 1px solid #dfe6e6; }
+  .ot-thermal-metrics { gap: 12px; margin: 14px 0; }
+  .ot-thermal-metrics dd { font-size: 21px; }
+}

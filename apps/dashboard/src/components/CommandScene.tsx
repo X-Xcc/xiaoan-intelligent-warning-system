@@ -1,4 +1,4 @@
-import { ArrowRight, Camera, Check, ClipboardCheck, MapPin, Maximize2, Radio, RefreshCw, UserRound, X } from 'lucide-react';
+import { ArrowLeft, Camera, Check, ClipboardCheck, MapPin, Maximize2, Radio, RefreshCw, UserRound, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { IntakeSource } from '../lib/intake-sheet';
 import { useBridgeInventory } from '../lib/device-bridges-api';
@@ -13,6 +13,9 @@ const cameraViews = [
 type ScenePerson = { name: string; role: string; code: string; age: string; identity: string; address: string; history: string };
 // Fictional case profiles only; these are not identity or criminal-record lookup results.
 const peopleByEvent: Record<string, ScenePerson[]> = {
+  'YS-DEMO-001': [
+    { name: '王五', role: '涉事人员', code: 'YS-DEMO-P-001', age: '35岁', identity: '************************', address: '某区某街道某号', history: '有故意伤人及盗窃前科' },
+  ],
   'alarm-demo-005': [
     { name: '陈某', role: '报警人 / 烧烤店工作人员', code: 'DEMO-P-005', age: '34岁', identity: 'DEMO-ID-001（无效演示编号）', address: '演示市示例区示例路18号', history: '未核验，不作推断' },
   ],
@@ -28,22 +31,20 @@ const peopleByEvent: Record<string, ScenePerson[]> = {
   'alarm-demo-004': [{ name: '吴某', role: '活动组织人', code: 'P-006', age: '38岁', identity: '******1988****006*', address: '示例市XX区XX街道己小区*栋*室', history: '暂未提供相关记录，待核验' }],
 };
 
-export function CommandScene({ event, draft, onNext }: {
+export function CommandScene({ event, draft, onBack }: {
   event: IntakeSource & { id: string };
   draft: Record<string, string>;
-  onNext: () => void;
+  onBack: () => void;
 }) {
   const bridge = useBridgeInventory();
   const [retry, setRetry] = useState<Record<string, number>>({});
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [selectedPerson, setSelectedPerson] = useState(0);
   const [checks, setChecks] = useState<Record<string, boolean>>({});
   const titleRef = useRef<HTMLHeadingElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const demo = event.sourceMode === 'desensitized_demo' || (event.sourceMode !== 'live' && event.id.startsWith('alarm-demo-'));
+  const demo = event.id === 'YS-DEMO-001' || event.sourceMode === 'desensitized_demo' || (event.sourceMode !== 'live' && event.id.startsWith('alarm-demo-'));
   const barbecueDemo = demo && event.id === 'alarm-demo-005';
-  const people = (demo ? peopleByEvent[event.id] : undefined) ?? [{ name: draft.caller || '未提供', role: '报警人', code: 'unknown', age: '待核验', identity: '待核验', address: '待核验', history: '待核验' }];
-  const person = people[selectedPerson] ?? people[0];
+  const person = (demo ? peopleByEvent[event.id]?.[0] : undefined) ?? { name: draft.caller || '未提供', role: '报警人', code: 'unknown', age: '待核验', identity: '待核验', address: '待核验', history: '待核验' };
   const needsProtection = /寻衅滋事|纠纷/.test(draft.category);
   const recommendations = [
     { title: '警力配置', detail: `建议民警${draft.policeCount || '待定'}名、辅警${draft.assistantCount || '待定'}名；车辆：${draft.vehicle || '待配置'}。责任人员：${draft.officer || '待分派'}。` },
@@ -100,11 +101,6 @@ export function CommandScene({ event, draft, onNext }: {
       </section>)}
       <aside className="scene-identity">
         <div className="scene-section-heading"><h3><UserRound size={17} />身份卡</h3><span className="ui-tag warning">{demo ? '演示用' : '待核验'}</span></div>
-        <label className="scene-person-select"><span>关联人员</span>
-          <select aria-label="选择关联人员" value={selectedPerson} onChange={(e) => setSelectedPerson(Number(e.target.value))}>
-            {people.map((item, index) => <option key={item.code} value={index}>{item.name} · {item.role}</option>)}
-          </select>
-        </label>
         <dl className="scene-person-details">
           <div><dt>姓名</dt><dd className="scene-person-name">{person.name}</dd></div>
           <div><dt>年龄</dt><dd>{person.age}</dd></div>
@@ -126,7 +122,7 @@ export function CommandScene({ event, draft, onNext }: {
       </div>
     </section>
     <footer className="scene-next">
-      <button type="button" className="domain-primary-button" onClick={onNext}>下一步<ArrowRight size={16} /></button>
+      <button type="button" className="domain-secondary-button" onClick={onBack}><ArrowLeft size={16} />返回警力配置</button>
     </footer>
     <dialog ref={dialogRef} className="scene-video-dialog" onCancel={() => setExpanded(null)} onClose={() => setExpanded(null)}>
       <div className="scene-section-heading"><h3>{cameraViews.find((item) => item.id === expanded)?.title}</h3>
