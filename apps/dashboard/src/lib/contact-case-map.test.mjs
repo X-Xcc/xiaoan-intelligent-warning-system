@@ -151,26 +151,57 @@ test('route overlap badge highlights ninety percent in red', () => {
   assert.match(rule, /background:\s*#fff1f0\s*;/);
 });
 
-test('map points one two four and five are green while the incident stays red', () => {
+test('point photos fill their card frame while previews keep the complete image', () => {
+  const css = fs.readFileSync(new URL('../styles/contact-case-map.css', import.meta.url), 'utf8');
+  const cardPhoto = css.match(/^\.cr-gait-point > img \{([^}]+)\}/m)?.[1];
+  const previewPhoto = css.match(/^\.cr-gait-photo-preview > img \{([^}]+)\}/m)?.[1];
+  assert.ok(cardPhoto, 'The point photo needs a dedicated card style');
+  assert.ok(previewPhoto, 'The preview photo needs a dedicated style');
+  assert.match(cardPhoto, /object-fit:\s*cover\s*;/);
+  assert.match(previewPhoto, /object-fit:\s*contain\s*;/);
+});
+
+function mapStyleDeclarations(selector) {
   const { parse } = require('postcss');
   const css = parse(fs.readFileSync(new URL('../styles/contact-case-map.css', import.meta.url), 'utf8'));
-  const declarations = (selector) => {
-    const values = {};
-    css.walkRules(rule => {
-      if (rule.selectors.includes(selector)) rule.walkDecls(decl => { values[decl.prop] = decl.value; });
-    });
-    return values;
-  };
-  const markers = model.caseStops.map(stop => declarations(`.cr-nightmarket-anchor.cr-case-${stop.role}`));
+  const values = {};
+  css.walkRules(rule => {
+    if (rule.selectors.includes(selector)) rule.walkDecls(decl => { values[decl.prop] = decl.value; });
+  });
+  return values;
+}
+
+test('shared map markers retain the original red intensities for other records', () => {
+  const markers = model.caseStops.map(stop => mapStyleDeclarations(`.cr-nightmarket-anchor.cr-case-${stop.role}`));
+  assert.deepEqual(markers.map(marker => marker['--cr-marker']), [
+    '#ffccc7', '#ff7875', '#cf1322', '#ff7875', '#ffccc7',
+  ]);
+  assert.deepEqual(markers.map(marker => marker['--cr-marker-text']), [
+    '#7a171f', '#7a171f', 'white', '#7a171f', '#7a171f',
+  ]);
+  const anchor = mapStyleDeclarations('.cr-nightmarket-anchor');
+  assert.equal(anchor.background, 'var(--cr-marker)');
+  assert.equal(anchor.color, 'var(--cr-marker-text)');
+  assert.match(mapStyleDeclarations('.cr-nightmarket-anchor[aria-pressed=true]')['box-shadow'], /var\(--cr-marker\)/);
+  assert.match(mapStyleDeclarations('.cr-nightmarket-anchor:hover').outline, /var\(--cr-marker\)/);
+});
+
+test('only CR-020 overrides points one two four and five to green', () => {
+  const scope = '.cr-nightmarket-map-section[data-source-record-id="CR-020"]';
+  const markers = model.caseStops.map(stop => {
+    const selector = `.cr-nightmarket-anchor.cr-case-${stop.role}`;
+    return { ...mapStyleDeclarations(selector), ...mapStyleDeclarations(`${scope} ${selector}`) };
+  });
   assert.deepEqual(markers.map(marker => marker['--cr-marker']), [
     '#21856d', '#21856d', '#cf1322', '#21856d', '#21856d',
   ]);
   assert.deepEqual(markers.map(marker => marker['--cr-marker-text']), [
     'white', 'white', 'white', 'white', 'white',
   ]);
-  const anchor = declarations('.cr-nightmarket-anchor');
-  assert.equal(anchor.background, 'var(--cr-marker)');
-  assert.equal(anchor.color, 'var(--cr-marker-text)');
-  assert.match(declarations('.cr-nightmarket-anchor[aria-pressed=true]')['box-shadow'], /var\(--cr-marker\)/);
-  assert.match(declarations('.cr-nightmarket-anchor:hover').outline, /var\(--cr-marker\)/);
+  for (const role of ['contact', 'transit', 'disposal']) {
+    const override = mapStyleDeclarations(`${scope} .cr-nightmarket-anchor.cr-case-${role}`);
+    assert.equal(override['--cr-marker'], '#21856d');
+    assert.equal(override['--cr-marker-text'], 'white');
+    assert.equal(override['--cr-point'], undefined, 'Timeline, legend and photo colors must remain unchanged');
+  }
 });

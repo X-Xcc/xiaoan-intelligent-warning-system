@@ -3,12 +3,13 @@ import { Activity, ArrowLeft, Camera, ChevronLeft, ChevronRight, Columns2, Image
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { appBasePath } from '../lib/presentation';
 import {
-  contactAnnotations, contactComparisonRecords, contactGaitRoute, contactRoleIdentity, contactRoleLabels, referenceIdentity, referenceResidence,
-  type ContactPerson, type IdentityField,
+  contactAnnotations, contactComparisonRecords, contactGaitRoute, contactRoleIdentity, contactRoleLabels, referenceIdentity, referenceResidence, resolveContactRole,
+  type ContactPerson, type EditableContactRole, type IdentityField,
 } from '../lib/contact-inspection';
 import { CONTACT_REDACTED_VALUE, type ContactReviewRecord } from '../lib/contact-review';
 import { ContactGaitMap } from './ContactGaitMap';
 import { GaitAnalysisPanel } from './GaitAnalysisPanel';
+import { ContactPersonAnnotations } from './ContactPersonAnnotations';
 import '../styles/contact-inspection.css';
 
 type Props = {
@@ -22,7 +23,11 @@ type Props = {
   onIdentityNext?: () => void;
 };
 
-type AnnotationLevel = 1 | 2 | 3;
+type RoleChoices = Record<string, Record<string, EditableContactRole>>;
+type InspectionProps = Omit<Props, 'open' | 'onClose'> & {
+  roleChoices: RoleChoices;
+  onRoleChange: (id: string, role: EditableContactRole) => void;
+};
 const COMPARISON_ASPECT_RATIO = 429 / 295;
 
 function redactedAnnotationLabel(annotation: { label: string; role?: keyof typeof contactRoleLabels }) {
@@ -64,12 +69,12 @@ function IdentitySection({ title, fields }: { title: string; fields: readonly Id
   </section>;
 }
 
-function InspectionContent({ record, index, count, onPrevious, onNext, onIdentityNext }: Omit<Props, 'open' | 'onClose'>) {
+function InspectionContent({ record, index, count, onPrevious, onNext, onIdentityNext, roleChoices, onRoleChange }: InspectionProps) {
   const [person, setPerson] = useState<ContactPerson>('reference');
-  const annotations = contactAnnotations[record.id] ?? [];
+  const annotations = (contactAnnotations[record.id] ?? []).map(annotation => ({
+    ...annotation, role: resolveContactRole(annotation, roleChoices[record.id]?.[annotation.id]),
+  }));
   const [selectedAnnotationId, setSelectedAnnotationId] = useState(annotations.find(annotation => annotation.person === 'reference')?.id ?? '');
-  const [annotationLevels, setAnnotationLevels] = useState<Record<string, AnnotationLevel>>({});
-  const [showAnnotationMarker, setShowAnnotationMarker] = useState(false);
   const [comparing, setComparing] = useState(false);
   const comparisonRecords = useMemo(() => contactComparisonRecords(record), [record]);
   const [comparisonId, setComparisonId] = useState(() => (
@@ -110,7 +115,6 @@ function InspectionContent({ record, index, count, onPrevious, onNext, onIdentit
     if (previousAnnotationId.current === selectedAnnotationId) return;
     previousAnnotationId.current = selectedAnnotationId;
     sidebar.current?.scrollTo({ top: 0, behavior: 'instant' });
-    if (window.innerWidth <= 720) sidebar.current?.scrollIntoView({ block: 'start', behavior: 'instant' });
   }, [selectedAnnotationId]);
 
   return <div className="cr-inspection">
@@ -121,14 +125,6 @@ function InspectionContent({ record, index, count, onPrevious, onNext, onIdentit
         <div><h3 ref={heading} tabIndex={-1}>{view === 'route' ? `步态记录 · ${gaitDisplayId}` : view === 'gait' ? `步态分析 · ${gaitDisplayId}` : '现场图片与脱敏信息'}</h3>
           <p>{view === 'route' ? `${unknownId} · ${route.length} 个预设关联点位` : view === 'gait' ? `${record.occurredAt} · ${record.camera} · ${record.location}` : `${record.occurredAt} · ${record.camera} · ${record.location}`}</p></div>
       </div>
-      {view === 'photo' && showAnnotationMarker && selectedAnnotation && !selectedRole && <div className="cr-annotation-marker-picker" role="group" aria-label="当前人物标记">
-        <span>标记</span>
-        {[1, 2, 3].map(level => <button type="button" key={level}
-          className={`cr-annotation-marker marker-${level}`}
-          aria-label={`标记 ${level}`}
-          aria-pressed={annotationLevels[selectedAnnotation.id] === level}
-          onClick={() => setAnnotationLevels(current => ({ ...current, [selectedAnnotation.id]: level as AnnotationLevel }))}>{level}</button>)}
-      </div>}
       <div className="cr-inspection-pager"><span>{index + 1} / {count}</span>
         <Tooltip title="上一条记录"><button type="button" className="ui-icon-button" aria-label="弹窗上一条记录"
           disabled={index <= 0} onClick={onPrevious}><ChevronLeft size={17} /></button></Tooltip>
@@ -144,13 +140,9 @@ function InspectionContent({ record, index, count, onPrevious, onNext, onIdentit
               aspectRatio={comparing && comparison ? COMPARISON_ASPECT_RATIO : undefined}
               fit={comparing && comparison && !annotations.some(annotation => annotation.role) ? 'cover' : 'contain'}>
               <span className="cr-inspection-camera"><Camera size={13} />{record.camera}</span>
-              {annotations.map(annotation => <button type="button"
-                key={annotation.id} className={`cr-person-box ${annotation.person}${annotation.role ? ` role-${annotation.role}` : ''}${annotationLevels[annotation.id] ? ` level-${annotationLevels[annotation.id]}` : ''}`}
-                aria-label={`查看${redactedAnnotationLabel(annotation)} 脱敏信息`}
-                aria-pressed={selectedAnnotation?.id === annotation.id} aria-controls={panelId}
-                title={`${redactedAnnotationLabel(annotation)} · ${annotation.role ? '人工指定的演示角色' : '已脱敏'}`}
-                style={{ left: `${annotation.bounds[0]}%`, top: `${annotation.bounds[1]}%`, width: `${annotation.bounds[2]}%`, height: `${annotation.bounds[3]}%` }}
-                onClick={() => { setSelectedAnnotationId(annotation.id); setPerson(annotation.person); setShowAnnotationMarker(true); }}><span>{annotation.role && <span className="cr-person-role">{contactRoleLabels[annotation.role]}</span>}{annotation.label}</span></button>)}
+              <ContactPersonAnnotations annotations={annotations} selectedId={selectedAnnotationId} panelId={panelId}
+                onSelect={annotation => { setSelectedAnnotationId(annotation.id); setPerson(annotation.person); }}
+                onRoleChange={onRoleChange} />
             </InspectionImage>
             <div className="cr-inspection-scene-caption"><span><MapPin size={13} />{record.location}</span></div>
           </div>
@@ -217,8 +209,19 @@ function InspectionContent({ record, index, count, onPrevious, onNext, onIdentit
 }
 
 export function ContactRecordModal({ record, open, onClose, ...props }: Props) {
+  const [roleChoices, setRoleChoices] = useState<RoleChoices>({});
+  useEffect(() => { if (!open) setRoleChoices({}); }, [open]);
+
+  function changeRole(id: string, role: EditableContactRole) {
+    const annotation = contactAnnotations[record.id]?.find(item => item.id === id);
+    if (!annotation || resolveContactRole(annotation) === 'victim') return;
+    setRoleChoices(current => ({
+      ...current, [record.id]: { ...current[record.id], [id]: role },
+    }));
+  }
+
   return <Modal title={`记录详情 · ${record.id}`} open={open} onCancel={onClose} footer={null}
     width={1320} className="cr-record-modal" destroyOnHidden>
-    <InspectionContent key={record.id} record={record} {...props} />
+    <InspectionContent key={record.id} record={record} {...props} roleChoices={roleChoices} onRoleChange={changeRole} />
   </Modal>;
 }

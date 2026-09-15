@@ -1,8 +1,11 @@
 import { CONTACT_REDACTED_VALUE, contactReviewRecords, type ContactReviewRecord } from './contact-review';
 
 export type ContactPerson = 'reference' | 'unknown';
-export type ContactRole = 'victim' | 'suspect';
-export const contactRoleLabels: Record<ContactRole, string> = { victim: '受害者', suspect: '嫌疑人' };
+export type ContactRole = 'victim' | 'auto' | 'passerby' | 'suspect';
+export type EditableContactRole = Exclude<ContactRole, 'victim'>;
+export const contactRoleLabels: Record<ContactRole, string> = {
+  victim: '受害者', auto: '自动', passerby: '疑似路人', suspect: '疑似嫌疑',
+};
 export type ContactAnnotation = {
   id: string;
   label: string;
@@ -16,61 +19,68 @@ export function contactAnnotationLabel(annotation: ContactAnnotation): string {
   return `${personLabel} ${annotation.label}`;
 }
 
+export function resolveContactRole(annotation: ContactAnnotation, override?: EditableContactRole): ContactRole {
+  if (annotation.person === 'reference' || annotation.role === 'victim') return 'victim';
+  return override ?? annotation.role ?? 'auto';
+}
+
 // Head bounds are reviewed percentages of each full source image, not detector output.
 const faceAnnotationsByAsset: Readonly<Record<string, readonly ContactAnnotation[]>> = {
   '/contact-review-assets/night-market-cam-03.jpg': [
     { id: '01', label: '01', person: 'reference', role: 'victim', bounds: [43.4, 17.9, 5.0, 13.4] },
-    { id: '02', label: '02', person: 'unknown', role: 'suspect', bounds: [52.4, 4.3, 4.3, 12.3] },
-    { id: '03', label: '03', person: 'unknown', role: 'suspect', bounds: [64.6, 4.5, 4.3, 13.4] },
-    { id: '04', label: '04', person: 'unknown', role: 'suspect', bounds: [11.0, 13.2, 5.6, 14.3] },
+    { id: '02', label: '02', person: 'unknown', role: 'auto', bounds: [52.4, 4.3, 4.3, 12.3] },
+    { id: '03', label: '03', person: 'unknown', role: 'auto', bounds: [64.6, 4.5, 4.3, 13.4] },
+    { id: '04', label: '04', person: 'unknown', role: 'auto', bounds: [11.0, 13.2, 5.6, 14.3] },
   ],
   '/contact-review-assets/night-market-cam-04.jpg': [
     { id: '01', label: '01', person: 'reference', role: 'victim', bounds: [12.8, 15.3, 7.4, 15.1] },
-    { id: '02', label: '02', person: 'unknown', role: 'suspect', bounds: [30.5, 13.4, 5.0, 13.0] },
-    { id: '03', label: '03', person: 'unknown', role: 'suspect', bounds: [37.5, 4.2, 3.3, 11.5] },
-    { id: '04', label: '04', person: 'unknown', role: 'suspect', bounds: [42.8, 5.7, 3.7, 11.3] },
+    { id: '02', label: '02', person: 'unknown', role: 'auto', bounds: [30.5, 13.4, 5.0, 13.0] },
+    { id: '03', label: '03', person: 'unknown', role: 'auto', bounds: [37.5, 4.2, 3.3, 11.5] },
+    { id: '04', label: '04', person: 'unknown', role: 'auto', bounds: [42.8, 5.7, 3.7, 11.3] },
   ],
   '/contact-review-assets/night-market-cam-05.jpg': [
     { id: '01', label: '01', person: 'reference', role: 'victim', bounds: [29.7, 41.4, 6.7, 13.5] },
-    { id: '02', label: '02', person: 'unknown', role: 'suspect', bounds: [36.8, 43.4, 6.8, 13.1] },
-    { id: '03', label: '03', person: 'unknown', role: 'suspect', bounds: [47.3, 30.6, 3.9, 11.0] },
-    { id: '04', label: '04', person: 'unknown', role: 'suspect', bounds: [55.0, 32.1, 4.8, 11.3] },
+    { id: '02', label: '02', person: 'unknown', role: 'auto', bounds: [36.8, 43.4, 6.8, 13.1] },
+    { id: '03', label: '03', person: 'unknown', role: 'auto', bounds: [47.3, 30.6, 3.9, 11.0] },
+    { id: '04', label: '04', person: 'unknown', role: 'auto', bounds: [55.0, 32.1, 4.8, 11.3] },
   ],
   '/contact-review-assets/night-market-cam-06.jpg': [
     { id: '01', label: '01', person: 'reference', role: 'victim', bounds: [44.3, 32.2, 4.2, 11.0] },
-    { id: '02', label: '02', person: 'unknown', role: 'suspect', bounds: [50.4, 21.9, 3.1, 9.6] },
-    { id: '03', label: '03', person: 'unknown', role: 'suspect', bounds: [59.8, 20.4, 3.1, 9.7] },
-    { id: '04', label: '04', person: 'unknown', role: 'suspect', bounds: [63.3, 15.7, 3.0, 8.4] },
+    { id: '02', label: '02', person: 'unknown', role: 'auto', bounds: [50.4, 21.9, 3.1, 9.6] },
+    { id: '03', label: '03', person: 'unknown', role: 'auto', bounds: [59.8, 20.4, 3.1, 9.7] },
+    { id: '04', label: '04', person: 'unknown', role: 'auto', bounds: [63.3, 15.7, 3.0, 8.4] },
   ],
   '/contact-review-assets/night-market-cam-07.jpg': [
     { id: '01', label: '01', person: 'reference', role: 'victim', bounds: [36.9, 23.5, 3.8, 12.3] },
-    { id: '02', label: '02', person: 'unknown', role: 'suspect', bounds: [41.5, 25.4, 4.3, 12.5] },
-    { id: '03', label: '03', person: 'unknown', role: 'suspect', bounds: [50.6, 13.9, 3.2, 10.6] },
-    { id: '04', label: '04', person: 'unknown', role: 'suspect', bounds: [59.3, 11.2, 3.0, 10.4] },
+    { id: '02', label: '02', person: 'unknown', role: 'auto', bounds: [41.5, 25.4, 4.3, 12.5] },
+    { id: '03', label: '03', person: 'unknown', role: 'auto', bounds: [50.6, 13.9, 3.2, 10.6] },
+    { id: '04', label: '04', person: 'unknown', role: 'auto', bounds: [59.3, 11.2, 3.0, 10.4] },
   ],
   '/contact-review-assets/night-market-cam-08.jpg': [
     { id: '01', label: '01', person: 'reference', role: 'victim', bounds: [29.6, 29.4, 6.5, 16.1] },
-    { id: '02', label: '02', person: 'unknown', role: 'suspect', bounds: [36.9, 32.2, 6.7, 15.0] },
-    { id: '03', label: '03', person: 'unknown', role: 'suspect', bounds: [47.2, 16.5, 4.1, 13.2] },
-    { id: '04', label: '04', person: 'unknown', role: 'suspect', bounds: [55.0, 18.8, 4.7, 13.2] },
+    { id: '02', label: '02', person: 'unknown', role: 'auto', bounds: [36.9, 32.2, 6.7, 15.0] },
+    { id: '03', label: '03', person: 'unknown', role: 'auto', bounds: [47.2, 16.5, 4.1, 13.2] },
+    { id: '04', label: '04', person: 'unknown', role: 'auto', bounds: [55.0, 18.8, 4.7, 13.2] },
   ],
   '/contact-review-assets/night-market-cam-09.jpg': [
     { id: '01', label: '01', person: 'reference', role: 'victim', bounds: [42.7, 25.7, 6.5, 16.3] },
-    { id: '02', label: '02', person: 'unknown', role: 'suspect', bounds: [29.9, 22.3, 4.6, 13.0] },
-    { id: '03', label: '03', person: 'unknown', role: 'suspect', bounds: [43.3, 5.6, 3.9, 11.2] },
-    { id: '04', label: '04', person: 'unknown', role: 'suspect', bounds: [36.5, 2.4, 3.1, 9.4] },
+    { id: '02', label: '02', person: 'unknown', role: 'auto', bounds: [29.9, 22.3, 4.6, 13.0] },
+    { id: '03', label: '03', person: 'unknown', role: 'auto', bounds: [43.3, 5.6, 3.9, 11.2] },
+    { id: '04', label: '04', person: 'unknown', role: 'auto', bounds: [36.5, 2.4, 3.1, 9.4] },
   ],
   '/contact-review-assets/night-market-cam-10.jpg': [
     { id: '01', label: '01', person: 'reference', role: 'victim', bounds: [31.8, 23.4, 5.1, 12.5] },
-    { id: '02', label: '02', person: 'unknown', role: 'suspect', bounds: [39.1, 14.3, 3.4, 12.3] },
-    { id: '03', label: '03', person: 'unknown', role: 'suspect', bounds: [45.9, 16.9, 4.2, 12.5] },
-    { id: '04', label: '04', person: 'unknown', role: 'suspect', bounds: [54.3, 15.3, 3.5, 12.7] },
+    { id: '02', label: '02', person: 'unknown', role: 'auto', bounds: [39.1, 14.3, 3.4, 12.3] },
+    { id: '03', label: '03', person: 'unknown', role: 'auto', bounds: [45.9, 16.9, 4.2, 12.5] },
+    { id: '04', label: '04', person: 'unknown', role: 'auto', bounds: [54.3, 15.3, 3.5, 12.7] },
   ],
   '/contact-review-assets/night-market-sequence-01.jpg': [
     { id: '01', label: '01', person: 'reference', role: 'victim', bounds: [18.9, 33.1, 6.8, 10.3] },
-    { id: '02', label: '02', person: 'unknown', role: 'suspect', bounds: [41.4, 37.3, 6.7, 9.4] },
-    { id: '03', label: '03', person: 'unknown', role: 'suspect', bounds: [63.3, 24.8, 4.9, 7.2] },
-    { id: '04', label: '04', person: 'unknown', role: 'suspect', bounds: [56.3, 23.0, 4.0, 7.0] },
+    { id: '02', label: '02', person: 'unknown', role: 'auto', bounds: [41.4, 37.3, 6.7, 9.4] },
+    { id: '03', label: '03', person: 'unknown', role: 'auto', bounds: [63.3, 24.8, 4.9, 7.2] },
+    { id: '04', label: '04', person: 'unknown', role: 'auto', bounds: [56.3, 23.0, 4.0, 7.0] },
+    { id: '05', label: '05', person: 'unknown', role: 'auto', bounds: [41.4, 24.7, 3.5, 6.5] },
+    { id: '06', label: '06', person: 'unknown', role: 'auto', bounds: [78.5, 30.5, 3.8, 7.0] },
   ],
   '/contact-review-assets/night-market-cam-11.jpg': [
     { id: '01', label: '01', person: 'reference', bounds: [52, 29, 8, 15] },
@@ -84,21 +94,21 @@ const faceAnnotationsByAsset: Readonly<Record<string, readonly ContactAnnotation
   ],
   '/contact-review-assets/night-market-sequence-02.jpg': [
     { id: '01', label: '01', person: 'reference', role: 'victim', bounds: [28.9, 37.7, 8.2, 16.6] },
-    { id: '02', label: '02', person: 'unknown', role: 'suspect', bounds: [52.5, 16.8, 5.0, 11.2] },
-    { id: '03', label: '03', person: 'unknown', role: 'suspect', bounds: [66.5, 17.9, 5.6, 12.3] },
-    { id: '04', label: '04', person: 'unknown', role: 'suspect', bounds: [54.5, 30.9, 7.3, 11.7] },
+    { id: '02', label: '02', person: 'unknown', role: 'auto', bounds: [52.5, 16.8, 5.0, 11.2] },
+    { id: '03', label: '03', person: 'unknown', role: 'auto', bounds: [66.5, 17.9, 5.6, 12.3] },
+    { id: '04', label: '04', person: 'unknown', role: 'auto', bounds: [54.5, 30.9, 7.3, 11.7] },
   ],
   '/contact-review-assets/night-market-sequence-03.jpg': [
     { id: '01', label: '01', person: 'reference', role: 'victim', bounds: [29.1, 39.0, 8.1, 16.6] },
-    { id: '02', label: '02', person: 'unknown', role: 'suspect', bounds: [36.0, 37.3, 7.7, 14.1] },
-    { id: '03', label: '03', person: 'unknown', role: 'suspect', bounds: [51.6, 17.6, 5.5, 12.9] },
-    { id: '04', label: '04', person: 'unknown', role: 'suspect', bounds: [56.3, 21.6, 8.0, 14.8] },
+    { id: '02', label: '02', person: 'unknown', role: 'auto', bounds: [36.0, 37.3, 7.7, 14.1] },
+    { id: '03', label: '03', person: 'unknown', role: 'auto', bounds: [51.6, 17.6, 5.5, 12.9] },
+    { id: '04', label: '04', person: 'unknown', role: 'auto', bounds: [56.3, 21.6, 8.0, 14.8] },
   ],
   '/contact-review-assets/night-market-sequence-04.jpg': [
     { id: '01', label: '01', person: 'reference', role: 'victim', bounds: [20.8, 35.3, 5.7, 9.6] },
-    { id: '02', label: '02', person: 'unknown', role: 'suspect', bounds: [41.7, 33.4, 10.8, 14.5] },
-    { id: '03', label: '03', person: 'unknown', role: 'suspect', bounds: [64.1, 28.7, 3.9, 7.9] },
-    { id: '04', label: '04', person: 'unknown', role: 'suspect', bounds: [71.6, 29.9, 4.6, 7.6] },
+    { id: '02', label: '02', person: 'unknown', role: 'auto', bounds: [41.7, 33.4, 10.8, 14.5] },
+    { id: '03', label: '03', person: 'unknown', role: 'auto', bounds: [64.1, 28.7, 3.9, 7.9] },
+    { id: '04', label: '04', person: 'unknown', role: 'auto', bounds: [71.6, 29.9, 4.6, 7.6] },
   ],
 };
 
@@ -107,7 +117,7 @@ export const contactAnnotations: Readonly<Record<string, readonly ContactAnnotat
     const annotations = faceAnnotationsByAsset[record.assetPath] ?? [];
     return [record.id, annotations.map(annotation => ({
       ...annotation,
-      role: annotation.role ?? (annotation.person === 'reference' ? 'victim' : 'suspect'),
+      role: resolveContactRole(annotation),
     }))];
   }),
 );
