@@ -11,6 +11,7 @@ export type CompanionProfile = {
 export type ContactReviewRecord = {
   id: string;
   assetPath: string;
+  thumbnailPath?: string;
   occurredAt: string;
   location: string;
   camera: string;
@@ -43,6 +44,9 @@ export function createContactSearchStages(resultCount: number, corpusSize = CONT
 
 export const CONTACT_DEMO_DATE = '2026-09-06';
 export const CONTACT_STORAGE_KEY = 'contact-review-demo-v1';
+export const CONTACT_TEA_SHOP_LOCATION = '__tea_shop_surroundings__';
+export const CONTACT_DEFAULT_TIME_FROM = '00:00';
+export const CONTACT_DEFAULT_TIME_TO = '23:59';
 export type ContactReviewDraft = Record<string, { status: ReviewStatus; note: string }>;
 
 const recurringCompanion: CompanionProfile = {
@@ -137,18 +141,52 @@ export const contactReviewRecords: ContactReviewRecord[] = locations.map(([locat
   status: '待复核',
 }));
 
+const contactLocationDisplayLabels = new Map<string, string>([
+  ['东城服务中心外侧', '服务中心外'],
+  ['滨江步行街北入口', '步行街北口'],
+  ['市民广场东侧长廊', '市民广场'],
+  ['科技园一号门', '科技园一号门'],
+  ['文化馆南侧通道', '文化馆南侧'],
+  ['公交枢纽西侧落客区', '公交枢纽'],
+  ['社区服务站门厅', '服务站门厅'],
+  ['商业街停车区入口', '商业街入口'],
+  ['河畔步道观景平台', '河畔步道'],
+  ['大学城共享大厅', '大学城大厅'],
+  ['图书馆北侧连廊', '图书馆北侧'],
+  ['会展中心东广场', '会展中心'],
+  ['园区食堂外摆区', '园区食堂'],
+  ['体育中心南门', '体育中心南门'],
+  ['老城街区拐角处', '老城街区'],
+  ['社区公园西入口', '社区公园'],
+  ['市政大厅前坪', '市政大厅'],
+  ['火车站南侧广场', '火车站南侧'],
+  ['创新园咖啡外摆区', '创新园咖啡'],
+  ['公共文化中心入口', '文化中心入口'],
+]);
+
+export function contactLocationDisplayLabel(location: string) {
+  return contactLocationDisplayLabels.get(location) ?? location;
+}
+
 export const CONTACT_REDACTED_VALUE = '已脱敏';
 
-// Reviewed person-photo sources only. Maps, reference uploads and duplicate
-// copies (cr-019-point-3 / cr-020-incident = night-market-sequence-03) stay out.
+// Provenance: contact manifest / PNG generation metadata; night-market JPEGs
+// from the AI-labelled records. Unverified JPEGs 01, 02, 11, 12 stay out.
+// cr-019-point-3 and cr-020-incident duplicate night-market-sequence-03.
 const identityPersonPhotoFiles = [
   'contact-01-self-portrait.png',
   'contact-02-self-portrait.png',
-  ...Array.from({ length: 12 }, (_, index) => `night-market-cam-${String(index + 1).padStart(2, '0')}.jpg`),
+  ...Array.from({ length: 8 }, (_, index) => `night-market-cam-${String(index + 3).padStart(2, '0')}.jpg`),
   ...Array.from({ length: 4 }, (_, index) => `night-market-sequence-${String(index + 1).padStart(2, '0')}.jpg`),
   'cr-019-point-1.png',
   'cr-019-point-2.png',
   'cr-019-point-5.png',
+];
+
+const identityVideoStillLocations = [
+  '东门主通道', '中心广场', '餐饮南区', '餐饮北区', '停车场入口',
+  '停车场出口', '舞台前场', '舞台后场', '治安岗亭', '河堤步道',
+  '便民服务点', '东侧巷道', '西侧巷道', '后勤通道', '河景高位点',
 ];
 
 export const identitySearchRecords: ContactReviewRecord[] = [
@@ -179,8 +217,69 @@ export const identitySearchRecords: ContactReviewRecord[] = [
       status: '待复核',
     };
   }),
+  // VideoLinkagePage at 859efb8 documents these as generated night-market stills.
+  ...identityVideoStillLocations.map((location, index): ContactReviewRecord => {
+    const camera = String(index + 2).padStart(2, '0');
+    const id = `AI-VIDEO-${camera}`;
+    const assetPath = `/night-market-cam-${camera}.png`;
+    return {
+      id,
+      assetPath,
+      thumbnailPath: ['02', '03', '04', '05', '08'].includes(camera)
+        ? `/contact-review-assets/zijing-demo-cam-${camera}.thumb.webp`
+        : assetPath,
+      occurredAt: `${CONTACT_DEMO_DATE} 20:${String(index + 13).padStart(2, '0')}:50`,
+      location,
+      camera: `CAM-${camera}`,
+      behavior: '可疑观察',
+      companion: {
+        id,
+        label: CONTACT_REDACTED_VALUE,
+        name: CONTACT_REDACTED_VALUE,
+        source: 'AI 合成演示素材',
+        note: '未关联人物身份；时间为演示预设',
+      },
+      status: '待复核',
+    };
+  }),
 ];
 const identityPersonPhotoPaths = new Set(identitySearchRecords.map(record => record.assetPath));
+
+// Curated by visible crowd density, stall detail and scene depth, not capture time.
+const identityScenePriority = new Map([
+  '/night-market-cam-04.png',
+  '/night-market-cam-05.png',
+  '/night-market-cam-03.png',
+  '/night-market-cam-02.png',
+  '/night-market-cam-08.png',
+  '/night-market-cam-14.png',
+  '/contact-review-assets/night-market-cam-05.jpg',
+  '/contact-review-assets/night-market-cam-06.jpg',
+  '/contact-review-assets/night-market-cam-10.jpg',
+  '/contact-review-assets/night-market-cam-08.jpg',
+  '/contact-review-assets/night-market-cam-03.jpg',
+  '/contact-review-assets/night-market-cam-04.jpg',
+  '/contact-review-assets/night-market-cam-07.jpg',
+  '/contact-review-assets/night-market-cam-09.jpg',
+  '/night-market-cam-12.png',
+  '/night-market-cam-13.png',
+  '/night-market-cam-06.png',
+  '/night-market-cam-11.png',
+  '/night-market-cam-07.png',
+  '/night-market-cam-16.png',
+  '/night-market-cam-09.png',
+  '/night-market-cam-10.png',
+  '/night-market-cam-15.png',
+  '/contact-review-assets/night-market-sequence-01.jpg',
+  '/contact-review-assets/night-market-sequence-02.jpg',
+  '/contact-review-assets/night-market-sequence-03.jpg',
+  '/contact-review-assets/night-market-sequence-04.jpg',
+  '/contact-review-assets/cr-019-point-2.png',
+  '/contact-review-assets/cr-019-point-1.png',
+  '/contact-review-assets/contact-02-self-portrait.png',
+  '/contact-review-assets/contact-01-self-portrait.png',
+  '/contact-review-assets/cr-019-point-5.png',
+].map((path, index) => [path, index] as const));
 
 const companionDisplayLabels = new Map(
   [...new Set(contactReviewRecords.map((record) => record.companion.id))]
@@ -230,6 +329,8 @@ export type ContactFilters = {
   field?: ContactFilterField;
   from?: string;
   to?: string;
+  timeFrom?: string;
+  timeTo?: string;
   location?: string;
   behaviors?: ContactBehavior[];
   companion?: string;
@@ -242,8 +343,11 @@ export function selectContactRecords(records: ContactReviewRecord[], filters: Co
   records.forEach((record) => counts.set(record.companion.id, (counts.get(record.companion.id) ?? 0) + 1));
   return filterContactRecords(records, filters.field ?? 'all', filters.query ?? '').filter((record) => {
     const date = record.occurredAt.slice(0, 10);
+    const time = record.occurredAt.slice(11, 16);
     return (!filters.from || date >= filters.from) && (!filters.to || date <= filters.to)
-      && (!filters.location || record.location === filters.location)
+      && (!filters.timeFrom || time >= filters.timeFrom)
+      && (!filters.timeTo || time <= filters.timeTo)
+      && (!filters.location || filters.location === CONTACT_TEA_SHOP_LOCATION || record.location === filters.location)
       && (!filters.behaviors?.length || filters.behaviors.length === contactBehaviors.length || filters.behaviors.includes(record.behavior))
       && (!filters.companion || record.companion.id === filters.companion)
       && (!filters.status || filters.status === 'all' || record.status === filters.status);
@@ -260,6 +364,9 @@ export function selectIdentitySearchRecords(
 ): ContactReviewRecord[] {
   return selectContactRecords(records, filters).filter(
     (record) => identityPersonPhotoPaths.has(record.assetPath),
+  ).sort((a, b) =>
+    (identityScenePriority.get(a.assetPath) ?? identityScenePriority.size)
+    - (identityScenePriority.get(b.assetPath) ?? identityScenePriority.size),
   );
 }
 

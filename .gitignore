@@ -84,6 +84,7 @@ tmp/
 !apps/dashboard/public/contact-review-assets/night-market-sequence-04.jpg
 !apps/dashboard/public/contact-review-assets/cr-019-point-3.jpg
 !apps/dashboard/public/contact-review-assets/cr-020-incident.jpg
+!apps/dashboard/public/contact-review-assets/identity-screening-demo.jpg
 *.html
 !apps/dashboard/index.html
 *_text.txt

@@ -12,14 +12,26 @@ import { ContactRecordModal } from '../components/ContactRecordModal';
 import {
   CONTACT_DEMO_DATE, CONTACT_REDACTED_VALUE, CONTACT_STORAGE_KEY, contactCompanionDisplayLabel, contactDateWindow, contactReviewCsv,
   CONTACT_SEARCH_CORPUS_SIZE, contactBehaviors, contactReviewRecords, createContactSearchStages, identitySearchRecords,
+  CONTACT_DEFAULT_TIME_FROM, CONTACT_DEFAULT_TIME_TO, CONTACT_TEA_SHOP_LOCATION, contactLocationDisplayLabel,
   parseContactDraft, selectContactRecords, selectIdentitySearchRecords,
   type ContactBehavior, type ContactFilters, type ContactReviewDraft, type ContactReviewRecord, type ReviewStatus,
 } from '../lib/contact-review';
 
-const initialFilters: ContactFilters = { ...contactDateWindow(30), query: '', location: '', behaviors: [...contactBehaviors], companion: '', sort: 'oldest', status: 'all' };
+const initialFilters: ContactFilters = {
+  ...contactDateWindow(30),
+  query: '',
+  location: '',
+  timeFrom: CONTACT_DEFAULT_TIME_FROM,
+  timeTo: CONTACT_DEFAULT_TIME_TO,
+  behaviors: [...contactBehaviors],
+  companion: '',
+  sort: 'oldest',
+  status: 'all',
+};
 const statuses: Array<'all' | ReviewStatus> = ['all', '待复核', '已标记', '已排除'];
 const locations = [...new Set(contactReviewRecords.map((record) => record.location))];
 const companions = [...new Map(contactReviewRecords.map((record) => [record.companion.id, record.companion])).values()];
+const appearanceOptions = ['面部未遮挡', '未佩戴眼镜', '未佩戴帽子'] as const;
 
 function sameBehaviors(left?: ContactBehavior[], right?: ContactBehavior[]) {
   const a = left ?? [];
@@ -31,10 +43,11 @@ function StatusTag({ status }: { status: ReviewStatus }) {
   return <span className={`cr-status ${status === '已标记' ? 'marked' : status === '已排除' ? 'excluded' : 'pending'}`}><i />{status}</span>;
 }
 
-function RecordImage({ path, label, thumbnail = false, fit }: {
+function RecordImage({ path, label, thumbnail = false, thumbnailPath, fit }: {
   path: string;
   label: string;
   thumbnail?: boolean;
+  thumbnailPath?: string;
   fit?: 'cover' | 'contain';
 }) {
   const [failedPath, setFailedPath] = useState('');
@@ -42,7 +55,7 @@ function RecordImage({ path, label, thumbnail = false, fit }: {
     ? <div className="cr-image-unavailable" role="img" aria-label={label + '，素材未就绪'}><ImageOff size={22} /><span>素材未就绪</span></div>
     : <img
       className={fit ? `cr-record-image-${fit}` : undefined}
-      src={`${appBasePath}${thumbnail ? path.replace(/\.png$/, '.thumb.webp') : path}`}
+      src={`${appBasePath}${thumbnail ? thumbnailPath ?? path.replace(/\.png$/, '.thumb.webp') : path}`}
       alt={label}
       loading="lazy"
       onError={() => setFailedPath(path)}
@@ -57,7 +70,7 @@ function SearchScanPreview({ records, scanned, matched }: { records: ContactRevi
     </div>
     <div className="cr-search-scan-stream" aria-hidden="true">
       {records.slice(0, 12).map((record, index) => <div className={`cr-search-scan-frame frame-${index % 4}`} key={record.id}>
-        <RecordImage path={record.assetPath} label={`${record.id} 扫描中`} thumbnail />
+        <RecordImage path={record.assetPath} label={`${record.id} 扫描中`} thumbnail thumbnailPath={record.thumbnailPath} />
         <span>{record.camera}</span>
       </div>)}
     </div>
@@ -80,10 +93,12 @@ export function ContactReviewPage({ onBack, onNext, showGait = false }: { onBack
   const [formError, setFormError] = useState('');
   const [view, setView] = useState<'grid' | 'timeline'>('grid');
   const [workspace, setWorkspace] = useState<'records' | 'map' | 'collision'>('records');
-  const [searchPhase, setSearchPhase] = useState<'idle' | 'scanning' | 'complete'>('idle');
+  const [searchPhase, setSearchPhase] = useState<'idle' | 'scanning' | 'complete'>(showGait ? 'complete' : 'idle');
   const [searchScanned, setSearchScanned] = useState(0);
   const [searchMatched, setSearchMatched] = useState(0);
+  const [hasScreened, setHasScreened] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [appearanceSelections, setAppearanceSelections] = useState<string[]>([]);
   const uploadRef = useRef<HTMLInputElement>(null);
   const uploadVersion = useRef(0);
   const searchRun = useRef(0);
@@ -123,7 +138,7 @@ export function ContactReviewPage({ onBack, onNext, showGait = false }: { onBack
   const selectedIndex = selected ? filtered.findIndex((record) => record.id === selected.id) : -1;
   const chronological = useMemo(() => [...filtered].sort((a, b) => a.occurredAt.localeCompare(b.occurredAt)), [filtered]);
   const scopeRecords = useMemo(() => selectResults(records, { ...filters, status: 'all', query }), [records, filters, query, showGait]);
-  const hasPendingFilters = ['from', 'to', 'location'].some((key) => pendingFilters[key as keyof ContactFilters] !== filters[key as keyof ContactFilters])
+  const hasPendingFilters = ['from', 'to', 'location', 'timeFrom', 'timeTo'].some((key) => pendingFilters[key as keyof ContactFilters] !== filters[key as keyof ContactFilters])
     || !sameBehaviors(pendingFilters.behaviors, filters.behaviors);
 
   function selectRecord(id: string) {
@@ -153,31 +168,53 @@ export function ContactReviewPage({ onBack, onNext, showGait = false }: { onBack
   }
 
   function applyFilters() {
+    if (searchPhase === 'scanning') return;
     if (!pendingFilters.from || !pendingFilters.to || pendingFilters.from > pendingFilters.to) {
       setFormError('请选择有效日期，开始日期不能晚于结束日期。'); return;
     }
+    if (pendingFilters.timeFrom && pendingFilters.timeTo && pendingFilters.timeFrom > pendingFilters.timeTo) {
+      setFormError('请选择有效时段，开始时间不能晚于结束时间。'); return;
+    }
     setFormError('');
-    const nextFilters = { ...filters, from: pendingFilters.from, to: pendingFilters.to, location: pendingFilters.location, behaviors: pendingFilters.behaviors };
+    const nextFilters = {
+      ...filters,
+      from: pendingFilters.from,
+      to: pendingFilters.to,
+      location: pendingFilters.location,
+      timeFrom: pendingFilters.timeFrom,
+      timeTo: pendingFilters.timeTo,
+      behaviors: pendingFilters.behaviors,
+    };
     const nextFiltered = selectResults(records, { ...nextFilters, query });
     const run = ++searchRun.current;
+    const stageDelay = showGait ? 360 : 90;
     setFilters(nextFilters);
+    setHasScreened(false);
+    setExpanded(false);
+    if (showGait) setWorkspace('records');
     setSearchPhase('scanning');
     setSearchScanned(0);
     setSearchMatched(0);
-    createContactSearchStages(nextFiltered.length, CONTACT_SEARCH_CORPUS_SIZE).forEach((stage, index) => {
+    createContactSearchStages(showGait ? 1 : nextFiltered.length, CONTACT_SEARCH_CORPUS_SIZE).forEach((stage, index) => {
       window.setTimeout(() => {
         if (searchRun.current !== run) return;
         setSearchScanned(stage.scanned);
         setSearchMatched(stage.matched);
-        if (stage.phase === 'complete') setSearchPhase('complete');
-      }, 90 * (index + 1));
+        if (stage.phase === 'complete') {
+          setSearchPhase('complete');
+          setHasScreened(showGait);
+        }
+      }, stageDelay * (index + 1));
     });
   }
 
   function reset() {
     ++searchRun.current;
+    setHasScreened(false);
+    setExpanded(false);
+    setAppearanceSelections([]);
     setFilters(initialFilters); setPendingFilters(initialFilters); setQuery(''); setRange('30'); setFormError('');
-    setSearchPhase('idle'); setSearchScanned(0); setSearchMatched(0);
+    setSearchPhase(showGait ? 'complete' : 'idle'); setSearchScanned(0); setSearchMatched(0);
     if (queryImage?.startsWith('blob:')) URL.revokeObjectURL(queryImage);
     setQueryImage(null);
   }
@@ -191,11 +228,14 @@ export function ContactReviewPage({ onBack, onNext, showGait = false }: { onBack
     setFeedback(`已导出 ${marked.length} 条人工标记记录`);
   }
 
-  const visibleResultCount = searchPhase === 'complete' ? filtered.length : searchMatched;
-  const visiblePlaceCount = searchPhase === 'complete'
+  const showSingleResult = showGait && hasScreened && searchPhase === 'complete';
+  const visibleResultCount = showSingleResult ? 1 : searchPhase === 'complete' ? filtered.length : searchMatched;
+  const visiblePlaceCount = showSingleResult ? 1 : searchPhase === 'complete'
     ? new Set(filtered.map(record => record.location)).size
     : searchPhase === 'scanning' ? Math.min(searchMatched, filtered.length) : 0;
-  const searchButtonLabel = searchPhase === 'scanning' ? '快速检索中' : searchPhase === 'complete' || showGait ? '重新检索' : '筛选记录';
+  const searchButtonLabel = searchPhase === 'scanning'
+    ? (showGait ? '筛查中' : '快速检索中')
+    : showGait ? '筛查' : searchPhase === 'complete' ? '重新检索' : '筛选记录';
 
   return <section className="contact-review-page" aria-label={showGait ? '身份检索工作台' : '视频筛查工作台'}>
     <header className="contact-review-heading">
@@ -217,11 +257,19 @@ export function ContactReviewPage({ onBack, onNext, showGait = false }: { onBack
           {!showGait && <><input ref={uploadRef} className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" aria-label="上传参考照片" onChange={(event) => { void upload(event.target.files?.[0]); event.target.value = ''; }} />
             {queryImage && <div className="cr-upload-note">当前照片不参与匹配；下方仍为原演示集。<button type="button" className="ui-text-button" onClick={() => { ++uploadVersion.current; if (queryImage.startsWith('blob:')) URL.revokeObjectURL(queryImage); setQueryImage(null); }}>清除照片</button></div>}</>}
         </section>
-        <form className="cr-filter-section" onSubmit={(event) => { event.preventDefault(); applyFilters(); }}>
-          <label className="cr-field cr-range-field"><span>时间范围</span><select aria-label="时间范围" value={range} onChange={(event) => {
+        <form className={`cr-filter-section${showGait ? ' cr-identity-filters' : ''}`} onSubmit={(event) => {
+          event.preventDefault();
+          applyFilters();
+        }}>
+          <label className="cr-field cr-range-field"><span>日期范围</span><select aria-label="日期范围" value={range} onChange={(event) => {
             setRange(event.target.value);
             if (event.target.value !== 'custom') setPendingFilters((current) => ({ ...current, ...contactDateWindow(Number(event.target.value)) }));
           }}><option value="30">样例近 30 天</option><option value="7">样例近 7 天</option><option value="custom">自定义日期</option></select></label>
+          <div className="cr-field cr-time-field"><span>细分时段</span><div className="cr-time-range">
+            <input aria-label="开始时间" type="time" step="60" value={pendingFilters.timeFrom ?? CONTACT_DEFAULT_TIME_FROM} onChange={(event) => setPendingFilters((current) => ({ ...current, timeFrom: event.target.value }))} />
+            <span aria-hidden="true">至</span>
+            <input aria-label="结束时间" type="time" step="60" value={pendingFilters.timeTo ?? CONTACT_DEFAULT_TIME_TO} onChange={(event) => setPendingFilters((current) => ({ ...current, timeTo: event.target.value }))} />
+          </div></div>
           {!showGait && <div className="cr-field cr-behavior-field"><span>行为类型</span><div className="cr-behavior-options" role="group" aria-label="行为类型筛选">
             <button type="button" aria-pressed={(pendingFilters.behaviors?.length ?? 0) === contactBehaviors.length} onClick={() => setPendingFilters((current) => ({ ...current, behaviors: [...contactBehaviors] }))}>全选</button>
             {contactBehaviors.map((behavior) => {
@@ -237,10 +285,21 @@ export function ContactReviewPage({ onBack, onNext, showGait = false }: { onBack
             <span>地点</span>
             <select aria-label="地点" value={pendingFilters.location} onChange={(event) => setPendingFilters((current) => ({ ...current, location: event.target.value }))}>
               <option value="">全部地点</option>
-              {locations.map((location) => <option key={location} value={location}>{location}</option>)}
+              <option value={CONTACT_TEA_SHOP_LOCATION}>茶铺周边</option>
+              {locations.map((location) => <option key={location} value={location}>{contactLocationDisplayLabel(location)}</option>)}
             </select>
           </label>}
-          <div className="cr-query-actions"><button className="ui-button primary cr-search-submit" type="submit" disabled={searchPhase === 'scanning'}><Search size={16} />{searchButtonLabel}{hasPendingFilters && searchPhase !== 'scanning' && <i className="cr-change-dot" />}</button>
+          <div className={`cr-query-actions${showGait ? ' cr-identity-actions' : ''}`}>
+          {showGait && <fieldset className="cr-appearance-options" aria-label="外观筛选">
+            {appearanceOptions.map((option) => <label key={option}>
+              <input type="checkbox" checked={appearanceSelections.includes(option)} onChange={(event) => {
+                const checked = event.target.checked;
+                setAppearanceSelections((current) => checked ? [...current, option] : current.filter((item) => item !== option));
+              }} />
+              <span>{option}</span>
+            </label>)}
+          </fieldset>}
+          <button className="ui-button primary cr-search-submit" type="submit" aria-label={showGait ? searchButtonLabel : undefined} disabled={searchPhase === 'scanning'}><Search size={16} />{searchButtonLabel}{!showGait && hasPendingFilters && searchPhase !== 'scanning' && <i className="cr-change-dot" />}</button>
           <Tooltip title="重置所有筛选"><button className="ui-icon-button" type="button" aria-label="重置所有筛选" onClick={reset}><RotateCcw size={16} /></button></Tooltip></div>
           {formError && <p className="cr-form-error" role="alert">{formError}</p>}
         </form>
@@ -282,14 +341,16 @@ export function ContactReviewPage({ onBack, onNext, showGait = false }: { onBack
         <div className="cr-range-caption"><CalendarDays size={13} /><span>{filters.from} 至 {filters.to} · UTC+8</span>{!showGait && filters.companion && <button type="button" className="ui-text-button" onClick={() => setFilters((current) => ({ ...current, companion: '' }))}>{contactCompanionDisplayLabel({ id: filters.companion })}<X size={12} /></button>}</div>
         <div id="cr-workspace-panel" role="tabpanel" aria-labelledby={workspace === 'records' ? 'cr-records-tab' : workspace === 'map' ? 'cr-map-tab' : 'cr-collision-tab'}>
         {workspace === 'collision' ? <ContactCollisionMap /> : searchPhase === 'idle' && <div className="cr-search-empty" role="status"><Search size={25} /><strong>等待快速检索</strong>{!showGait && <span>点击“筛选记录”，从影像样例集中快速筛出匹配画面。</span>}</div>}
-        {workspace !== 'collision' && searchPhase === 'scanning' && <SearchScanPreview records={filtered} scanned={searchScanned} matched={searchMatched} />}
-        {workspace !== 'collision' && searchPhase === 'complete' && workspace === 'records' ? <div className={`cr-record-list ${view} revealed`} role="list" aria-label="接触记录列表">
-          {filtered.map((record) => <article role="listitem" className={`cr-record-card ${selected?.id === record.id ? 'selected' : ''}`} key={record.id}>
+        {workspace !== 'collision' && searchPhase === 'scanning' && <SearchScanPreview records={showGait ? records : filtered} scanned={searchScanned} matched={searchMatched} />}
+        {workspace !== 'collision' && searchPhase === 'complete' && workspace === 'records' ? <div className={`cr-record-list ${view} revealed${showSingleResult ? ' cr-single-result' : ''}`} role="list" aria-label="接触记录列表">
+          {showSingleResult ? <article role="listitem" className="cr-record-card cr-screening-result">
+            <div className="cr-record-media"><RecordImage path="/contact-review-assets/identity-screening-demo.jpg" label="筛查结果" fit="contain" /></div>
+          </article> : filtered.map((record) => <article role="listitem" className={`cr-record-card ${selected?.id === record.id ? 'selected' : ''}`} key={record.id}>
             <button type="button" className="cr-record-open" aria-label={`查看 ${record.id}`} aria-pressed={selected?.id === record.id} onClick={() => {
               setSelectedId(record.id);
               setExpanded(true);
             }}>
-              <div className="cr-record-media"><RecordImage path={record.assetPath} label={`${record.id} AI 合成场景`} thumbnail fit={record.assetPath.includes('night-market') ? 'cover' : undefined} /><span className="cr-camera-chip"><Camera size={11} />{record.camera}</span></div>
+              <div className="cr-record-media"><RecordImage path={record.assetPath} label={`${record.id} AI 合成场景`} thumbnail thumbnailPath={record.thumbnailPath} fit={record.assetPath.includes('night-market') ? 'cover' : undefined} /><span className="cr-camera-chip"><Camera size={11} />{record.camera}</span></div>
               <div className="cr-record-info"><div className="cr-record-time"><strong>{record.occurredAt}</strong>{selected?.id === record.id && <Check size={15} />}</div><span className="cr-record-place"><MapPin size={13} />{record.location}</span><div className="cr-record-bottom"><span>{contactCompanionDisplayLabel(record.companion)}</span><StatusTag status={record.status} /></div></div>
             </button>
           </article>)}
@@ -300,12 +361,12 @@ export function ContactReviewPage({ onBack, onNext, showGait = false }: { onBack
             <span className="cr-sequence-number">{String(index + 1).padStart(2, '0')}</span><span><strong>{record.occurredAt.slice(5)}</strong><small>{record.location}</small></span>
           </button>)}</div>
         </div> : null}
-        {searchPhase === 'complete' && !filtered.length && <div className="cr-empty"><Search size={25} /><strong>没有符合条件的记录</strong><button className="ui-text-button" type="button" onClick={reset}>重置筛选</button></div>}
+        {searchPhase === 'complete' && !showSingleResult && !filtered.length && <div className="cr-empty"><Search size={25} /><strong>没有符合条件的记录</strong><button className="ui-text-button" type="button" onClick={reset}>重置筛选</button></div>}
         </div>
         <div className="cr-list-footer"><span>共 {showGait ? visibleResultCount : filtered.length} 条 / 样例集 {records.length} 条</span><span>离散出现记录 · 非连续轨迹</span></div>
       </section>
     </div>
-    {selected && <ContactRecordModal record={selected} open={expanded} onClose={() => setExpanded(false)}
+    {!showSingleResult && selected && <ContactRecordModal record={selected} open={expanded} onClose={() => setExpanded(false)}
       index={selectedIndex} count={filtered.length}
       onIdentityNext={handleNext}
       onPrevious={() => { if (selectedIndex > 0) setSelectedId(filtered[selectedIndex - 1].id); }}

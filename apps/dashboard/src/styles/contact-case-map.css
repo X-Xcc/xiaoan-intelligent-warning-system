@@ -45,8 +45,12 @@
 .cr-nightmarket-map-section[data-source-record-id="CR-020"] .cr-nightmarket-route-overlap { border-color: #d4c2b4; color: #754d30; background: #fff; }
 .cr-nightmarket-route-branch-halo { stroke-width: 6; }
 .cr-nightmarket-route-branch { stroke-width: 3; stroke-dasharray: 3 5; opacity: .86; }
-.cr-nightmarket-anchor.cr-case-contact, .cr-nightmarket-anchor.cr-case-transit, .cr-nightmarket-anchor.cr-case-disposal { --cr-marker: #21856d; --cr-marker-text: white; }
+.cr-nightmarket-anchor.cr-case-contact, .cr-nightmarket-anchor.cr-case-disposal { --cr-marker: #ffccc7; --cr-marker-text: #7a171f; }
+.cr-nightmarket-anchor.cr-case-transit { --cr-marker: #ff7875; --cr-marker-text: #7a171f; }
 .cr-nightmarket-anchor.cr-case-incident { --cr-marker: #cf1322; --cr-marker-text: white; }
+.cr-nightmarket-map-section[data-source-record-id="CR-020"] .cr-nightmarket-anchor.cr-case-contact,
+.cr-nightmarket-map-section[data-source-record-id="CR-020"] .cr-nightmarket-anchor.cr-case-transit,
+.cr-nightmarket-map-section[data-source-record-id="CR-020"] .cr-nightmarket-anchor.cr-case-disposal { --cr-marker: #21856d; --cr-marker-text: white; }
 .cr-nightmarket-anchor { position: absolute; z-index: 2; display: grid; place-items: center; width: 30px; height: 30px; transform: translate(-50%, -50%); border: 2px solid white; border-radius: 50%; padding: 0; color: var(--cr-marker-text); background: var(--cr-marker); box-shadow: 0 1px 5px #253f4933; font-weight: 600; font-size: 12px; }
 .cr-nightmarket-anchor[aria-pressed=true] { box-shadow: 0 0 0 4px color-mix(in srgb, var(--cr-marker), transparent 76%), 0 1px 5px #253f4933; }
 .cr-nightmarket-anchor:hover { outline: 2px solid color-mix(in srgb, var(--cr-marker), white 30%); }
@@ -60,7 +64,7 @@
 .cr-nightmarket-photo-marker { position: relative; min-width: 0; }
 .cr-gait-point { position: relative; display: block; width: 100%; padding: 0; overflow: hidden; text-align: left; border: 1px solid #dce4e9; border-radius: 4px; color: #42607b; background: white; }
 .cr-gait-point[aria-pressed=true] { border-color: var(--cr-point); box-shadow: 0 0 0 2px color-mix(in srgb, var(--cr-point), transparent 83%); }
-.cr-gait-point > img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: contain; background: #e6ebef; }
+.cr-gait-point > img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #e6ebef; }
 .cr-gait-point .cr-nightmarket-photo-label { position: absolute; top: 5px; left: 5px; max-width: calc(100% - 46px); padding: 1px 4px; border-radius: 2px; color: white; background: var(--cr-point); font-size: 11px; line-height: 18px; overflow-wrap: anywhere; }
 .cr-nightmarket-photo-title { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 4px; min-height: 32px; padding: 4px 6px; font-size: 11px; }
 .cr-nightmarket-photo-title > svg, .cr-nightmarket-photo-title > strong { flex-shrink: 0; }

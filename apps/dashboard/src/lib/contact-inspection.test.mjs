@@ -26,27 +26,31 @@ test('reviewed demo names belong to the selected record and annotation', () => {
     assert.deepEqual(fields.find(([label]) => label === '身份资料'), ['身份资料', '已脱敏']);
   }
   const unedited = inspection.contactAnnotations['CR-018'].find(item => item.id === '04');
-  assert.deepEqual(inspection.contactRoleIdentity('CR-018', unedited)[0], ['演示角色', '嫌疑人']);
+  assert.deepEqual(inspection.contactRoleIdentity('CR-018', unedited)[0], ['演示角色', '自动']);
   assert.deepEqual(inspection.contactRoleIdentity('CR-020'), []);
 });
 
 test('suspect identity fields omit the redundant redacted name row', () => {
   assert.equal(typeof inspection.contactRoleIdentity, 'function');
   for (const recordId of ['CR-019', 'CR-020']) {
-    for (const annotation of inspection.contactAnnotations[recordId].filter(item => item.role === 'suspect')) {
-      const fields = inspection.contactRoleIdentity(recordId, annotation);
+    for (const annotation of inspection.contactAnnotations[recordId].filter(item => item.person === 'unknown')) {
+      const fields = inspection.contactRoleIdentity(recordId, { ...annotation, role: 'suspect' });
       assert.equal(fields.some(([label]) => label === '姓名'), false);
       assert.deepEqual(fields.find(([label]) => label === '人员编号'), ['人员编号', '已脱敏']);
     }
   }
 });
 
-test('the first scene has the four manually assigned demo roles', () => {
+test('the first scene preserves four head boxes and adds two automatic people', () => {
   const annotations = inspection.contactAnnotations['CR-020'];
   assert.deepEqual(annotations.map(item => [item.id, item.role]), [
-    ['01', 'victim'], ['02', 'suspect'], ['03', 'suspect'], ['04', 'suspect'],
+    ['01', 'victim'], ['02', 'auto'], ['03', 'auto'], ['04', 'auto'], ['05', 'auto'], ['06', 'auto'],
   ]);
-  const headCenters = [[22, 39], [44.5, 44], [66.5, 29.5], [58.5, 27]];
+  assert.deepEqual(annotations.slice(0, 4).map(item => item.bounds), [
+    [18.9, 33.1, 6.8, 10.3], [41.4, 37.3, 6.7, 9.4],
+    [63.3, 24.8, 4.9, 7.2], [56.3, 23.0, 4.0, 7.0],
+  ]);
+  const headCenters = [[22, 39], [44.5, 44], [66.5, 29.5], [58.5, 27], [42.8, 27], [80, 33]];
   annotations.forEach((annotation, index) => {
     const [x, y, width, height] = annotation.bounds;
     const [centerX, centerY] = headCenters[index];
@@ -59,7 +63,7 @@ test('the first scene has the four manually assigned demo roles', () => {
 test('CR-019 marks the four people from the reviewed scene', () => {
   const annotations = inspection.contactAnnotations['CR-019'];
   assert.deepEqual(annotations.map(item => [item.id, item.role]), [
-    ['01', 'victim'], ['02', 'suspect'], ['03', 'suspect'], ['04', 'suspect'],
+    ['01', 'victim'], ['02', 'auto'], ['03', 'auto'], ['04', 'auto'],
   ]);
   annotations.forEach(annotation => {
     const [x, y, width, height] = annotation.bounds;
@@ -72,7 +76,7 @@ test('every scene gives each annotated person a consistent demo role', () => {
   assert.deepEqual(inspection.contactAnnotations['CR-016'].map(item => item.id), ['01', '02', '03', '04']);
   for (const annotations of Object.values(inspection.contactAnnotations)) {
     assert.ok(annotations.length >= 3);
-    assert.ok(annotations.every(item => item.role === (item.person === 'reference' ? 'victim' : 'suspect')));
+    assert.ok(annotations.every(item => item.role === (item.person === 'reference' ? 'victim' : 'auto')));
   }
 });
 
@@ -98,7 +102,7 @@ test('head frames cover the reviewed head centers in all twelve source images', 
     'night-market-cam-08.jpg': [[32.8, 37], [40.2, 39.3], [49.1, 23], [57.5, 25]],
     'night-market-cam-09.jpg': [[45.8, 33.3], [32.2, 28.5], [45.2, 11], [38.1, 7]],
     'night-market-cam-10.jpg': [[34.3, 29.5], [40.8, 20], [48, 23], [56, 21.5]],
-    'night-market-sequence-01.jpg': [[22, 39], [44.5, 44], [66.5, 29.5], [58.5, 27]],
+    'night-market-sequence-01.jpg': [[22, 39], [44.5, 44], [66.5, 29.5], [58.5, 27], [42.8, 27], [80, 33]],
     'night-market-sequence-02.jpg': [[33, 46], [55, 23], [69.2, 24], [58, 37]],
     'night-market-sequence-03.jpg': [[33, 48], [40, 44.2], [54.5, 24], [60, 29.5]],
     'night-market-sequence-04.jpg': [[23.8, 40.5], [47.5, 40.5], [66, 32.7], [74, 34]],
@@ -131,11 +135,26 @@ test('records sharing an image share the same head positions', () => {
 test('annotation labels distinguish assigned roles and keep legacy labels', () => {
   assert.equal(typeof inspection.contactAnnotationLabel, 'function');
   assert.deepEqual(inspection.contactAnnotations['CR-020'].map(inspection.contactAnnotationLabel), [
-    '受害者 01', '嫌疑人 02', '嫌疑人 03', '嫌疑人 04',
+    '受害者 01', '自动 02', '自动 03', '自动 04', '自动 05', '自动 06',
   ]);
   assert.deepEqual(inspection.contactAnnotations['CR-018'].map(inspection.contactAnnotationLabel), [
-    '受害者 01', '嫌疑人 02', '嫌疑人 03', '嫌疑人 04',
+    '受害者 01', '自动 02', '自动 03', '自动 04',
   ]);
+  const annotation = inspection.contactAnnotations['CR-020'][1];
+  assert.equal(inspection.contactAnnotationLabel({ ...annotation, role: 'passerby' }), '疑似路人 02');
+  assert.equal(inspection.contactAnnotationLabel({ ...annotation, role: 'suspect' }), '疑似嫌疑 02');
+});
+
+test('effective roles lock the victim and allow restoring automatic status', () => {
+  assert.equal(typeof inspection.resolveContactRole, 'function');
+  const [victim, person] = inspection.contactAnnotations['CR-020'];
+  for (const role of ['auto', 'passerby', 'suspect']) {
+    assert.equal(inspection.resolveContactRole(victim, role), 'victim');
+    assert.equal(inspection.resolveContactRole(person, role), role);
+  }
+  assert.equal(inspection.resolveContactRole(person), 'auto');
+  assert.equal(inspection.resolveContactRole({ ...victim, role: undefined }, 'suspect'), 'victim');
+  assert.equal(person.role, 'auto', 'choices do not mutate shared scene defaults');
 });
 
 test('comparison candidates keep CAM-11 records in nearest-time order without including the current record', () => {

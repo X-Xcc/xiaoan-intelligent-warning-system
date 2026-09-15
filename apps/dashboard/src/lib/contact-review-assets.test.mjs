@@ -38,7 +38,7 @@ test('identity gallery contains the synthetic manifest and unique reviewed perso
   const expected = [
     ...manifest.records.filter(record => record.synthetic).map(record => record.filename),
     'contact-01-self-portrait.png', 'contact-02-self-portrait.png',
-    ...Array.from({ length: 12 }, (_, index) => `night-market-cam-${String(index + 1).padStart(2, '0')}.jpg`),
+    ...Array.from({ length: 8 }, (_, index) => `night-market-cam-${String(index + 3).padStart(2, '0')}.jpg`),
     ...Array.from({ length: 4 }, (_, index) => `night-market-sequence-${String(index + 1).padStart(2, '0')}.jpg`),
     'cr-019-point-1.png', 'cr-019-point-2.png', 'cr-019-point-5.png',
   ];
@@ -46,6 +46,11 @@ test('identity gallery contains the synthetic manifest and unique reviewed perso
   for (const filename of expected) {
     assert.ok(paths.has(`/contact-review-assets/${filename}`), `Missing synthetic person photo: ${filename}`);
   }
+  for (let camera = 2; camera <= 16; camera++) {
+    const assetPath = `/night-market-cam-${String(camera).padStart(2, '0')}.png`;
+    assert.ok(paths.has(assetPath), `Missing generated video-wall still: ${assetPath}`);
+  }
+  assert.equal(identitySearchRecords.length, 52);
   assert.equal(paths.size, identitySearchRecords.length);
   assert.equal(new Set(identitySearchRecords.map(record => record.id)).size, identitySearchRecords.length);
   const hashes = identitySearchRecords.map(record => {
