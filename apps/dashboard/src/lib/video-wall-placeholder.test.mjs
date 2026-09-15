@@ -1,0 +1,127 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import test from 'node:test';
+import vm from 'node:vm';
+import { transformSync } from 'esbuild';
+
+const read = (path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8');
+const device = {
+  id: 'real-camera', name: 'Real camera', online: false, status: 'stopped',
+  frameCount: 0, lastFrameAt: '', webrtc: false,
+};
+
+function renderPreview(props, { loadedImage = false } = {}) {
+  const module = { exports: {} };
+  const code = transformSync(read('../components/BridgePreview.tsx'), {
+    loader: 'tsx', format: 'cjs', jsx: 'automatic',
+  }).code;
+  const jsx = (type, props) => ({ type, props });
+  const hooks = {
+    useRef: (current) => ({ current }),
+    useState: (initial) => [
+      loadedImage && initial === false ? true : typeof initial === 'function' ? initial() : initial,
+      () => {},
+    ],
+    useEffect() {},
+  };
+  const api = {
+    hasFreshFrame: (value) => value.online,
+    bridgeSourceKey: (value) => value.id,
+    bridgeStatusLabels: { stopped: 'Stopped' },
+    bridgeMediaUrl: () => '/real-camera/feed',
+  };
+  vm.runInNewContext(code, {
+    module, exports: module.exports, Date, RTCPeerConnection: function () {},
+    require: (name) => name === 'react' ? hooks
+      : name === 'react/jsx-runtime' ? { jsx, jsxs: jsx }
+        : name.includes('device-bridges-api') ? api : {},
+  });
+  const nodes = [];
+  const visit = (node) => {
+    if (node == null || typeof node === 'boolean') return;
+    if (Array.isArray(node)) { node.forEach(visit); return; }
+    if (typeof node !== 'object') { nodes.push(node); return; }
+    if (typeof node.type === 'function') { visit(node.type(node.props)); return; }
+    nodes.push(node);
+    visit(node.props?.children);
+  };
+  visit(module.exports.BridgePreview({
+    available: true, authorized: true,
+    ...props,
+  }));
+  return nodes;
+}
+
+for (const compact of [true, false]) {
+  test(`confirmed empty slot stays unavailable without fabricated footage (${compact})`, () => {
+    const nodes = renderPreview({ compact });
+    assert.ok(!nodes.some((node) => node.type === 'img' || node.type === 'video'));
+    assert.ok(nodes.some((node) => node.props?.role === 'status'));
+    assert.ok(nodes.some((node) => node === '未绑定设备'));
+    assert.ok(nodes.some((node) => node.props?.['data-preview-state'] === 'unavailable'));
+    assert.ok(!nodes.some((node) => node.props?.['data-preview-state'] === 'live'));
+  });
+
+  for (const available of [true, false]) {
+    test(`real offline device never receives a demo image (${compact}, service ${available})`, () => {
+      const nodes = renderPreview({ compact, available, device });
+      assert.ok(!nodes.some((node) => node.type === 'img' && node.props.src === '/demo.png'));
+      assert.ok(nodes.some((node) => node.props?.role === 'status'));
+    });
+  }
+
+  test(`unavailable service does not turn unknown slots into demonstrations (${compact})`, () => {
+    const nodes = renderPreview({ compact, available: false });
+    assert.ok(!nodes.some((node) => node.type === 'img' || node.type === 'video'));
+    assert.ok(nodes.some((node) => node.props?.role === 'status'));
+  });
+
+  test(`a fresh camera still requires preview authorization (${compact})`, () => {
+    const nodes = renderPreview({ compact, authorized: false, device: { ...device, online: true } });
+    assert.ok(!nodes.some((node) => node.type === 'img'));
+    assert.ok(nodes.some((node) => node === '预览未授权'));
+    assert.ok(!nodes.some((node) => node.props?.['data-preview-state'] === 'live'));
+  });
+}
+
+test('offline WebRTC cameras preserve their actual unavailable state', () => {
+  const nodes = renderPreview({ device: { ...device, webrtc: true } });
+  assert.ok(nodes.some((node) => node.props?.['data-preview-mode'] === 'webrtc'));
+  assert.ok(nodes.some((node) => node.props?.role === 'status'));
+  assert.ok(!nodes.some((node) => node.type === 'img' && node.props.src === '/demo.png'));
+});
+
+test('telemetry polling does not make the preview playback key depend on updatedAt', () => {
+  const source = read('../components/BridgePreview.tsx');
+  assert.match(source, /const key = props\.device \? `\$\{props\.device\.id\}:\$\{props\.epoch \?\? 0\}`/);
+  assert.match(source, /const key = `\$\{props\.device \? props\.device\.id : 'unbound'\}:\$\{props\.epoch \?\? 0\}`/);
+});
+
+test('WebRTC preview has a bounded JPEG fallback when browser negotiation stalls', () => {
+  const source = read('../components/BridgePreview.tsx');
+  assert.match(source, /WEBRTC_FALLBACK_DELAY_MS = 2500/);
+  assert.match(source, /setFallback\(true\)/);
+  assert.match(source, /return props\.compact \? <SnapshotSource/);
+});
+
+test('retired placeholder props and image state cannot make an unbound slot live', () => {
+  const nodes = renderPreview({ compact: false, placeholderSrc: '/demo.png' }, { loadedImage: true });
+  assert.ok(!nodes.some((node) => node.type === 'img' || node.type === 'video'));
+  assert.ok(!nodes.some((node) => node.props?.['data-preview-state'] === 'live'));
+  assert.ok(nodes.some((node) => node.props?.role === 'status'));
+});
+
+test('wall uses real previews without placeholder sources and preserves open access and errors', () => {
+  const page = read('../pages/VideoLinkagePage.tsx');
+  assert.doesNotMatch(page, /placeholderSrc|night-market-cam-/);
+  assert.match(page, /<BridgePreview device=\{camera\}/);
+  assert.match(page, /<BridgePreview device=\{selected\}/);
+  assert.match(page, /monitoring-service/);
+  assert.match(page, /bridge-video-alert/);
+  assert.doesNotMatch(page, /BridgeLogin|bridge\.authRequired|bridge\.lock/);
+});
+
+test('video wall does not turn one stale camera into a global disconnected banner', () => {
+  const page = read('../pages/VideoLinkagePage.tsx');
+  assert.doesNotMatch(page, /\(readiness && !readiness\.ready\)/);
+});

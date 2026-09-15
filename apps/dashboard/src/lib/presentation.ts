@@ -2,7 +2,6 @@ export const routePaths = {
   platform: '/platform',
   command: '/command',
   'command-workbench': '/command/workbench',
-  case: '/case',
   community: '/community',
   'duty-plan': '/duty-situation/training',
   'duty-situation': '/duty-situation',
@@ -12,6 +11,7 @@ export const routePaths = {
   'device-bridges': '/admin/bridges',
   video: '/video',
   'night-market-command': '/night-market/command',
+  'identity-search': '/identity-search',
 } as const;
 export const appBasePath = import.meta.env.BASE_URL.replace(/\/$/, '');
 

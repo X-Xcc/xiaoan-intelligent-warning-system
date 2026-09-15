@@ -5,6 +5,7 @@ export const DOCUMENT_VOICE_CUES = {
   'portrait-ready': '画像已生成',
   'training-passed': '全体科目达标',
   'new-incident': '新警情',
+  'incident-arrival': '您有新的警情，请注意查收',
   'route-pushed': '路线已推送',
   'verification-done': '核验完成',
   'linked-four': '已串并4起',

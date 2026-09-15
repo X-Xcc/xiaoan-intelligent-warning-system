@@ -53,8 +53,8 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
-describe('authenticated SSE', () => {
-  it('sends the JWT in a header and shares one stream between subscribers', async () => {
+describe('anonymous SSE', () => {
+  it('ignores stored JWTs and shares one stream between subscribers', async () => {
     const stream = streamResponse();
     fetchMock.mockResolvedValue(stream.response);
     subscribe('cameras');
@@ -64,7 +64,7 @@ describe('authenticated SSE', () => {
     const [url, options] = fetchMock.mock.calls[0];
     expect(String(url)).toBe('http://localhost:3000/api/sse/stream');
     expect(String(url)).not.toContain('fixture-jwt');
-    expect(new Headers(options?.headers).get('Authorization')).toBe('Bearer fixture-jwt');
+    expect(new Headers(options?.headers).get('Authorization')).toBeNull();
     expect(new Headers(options?.headers).get('Accept')).toBe('text/event-stream');
   });
 
@@ -94,7 +94,7 @@ describe('authenticated SSE', () => {
     expect(callback).toHaveBeenCalledExactlyOnceWith([]);
   });
 
-  it('reconnects after EOF using the current JWT', async () => {
+  it('reconnects after EOF without attaching obsolete stored credentials', async () => {
     const first = streamResponse();
     const second = streamResponse();
     fetchMock.mockResolvedValueOnce(first.response).mockResolvedValueOnce(second.response);
@@ -107,7 +107,7 @@ describe('authenticated SSE', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     await vi.advanceTimersByTimeAsync(1);
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(new Headers(fetchMock.mock.calls[1][1]?.headers).get('Authorization')).toBe('Bearer replacement-jwt');
+    expect(new Headers(fetchMock.mock.calls[1][1]?.headers).get('Authorization')).toBeNull();
   });
 
   it('backs off transient failures without opening parallel retry streams', async () => {
@@ -154,15 +154,15 @@ describe('authenticated SSE', () => {
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
-  it('invalidates a rejected JWT and stops retrying unauthorized requests', async () => {
+  it('stops terminal HTTP failures without triggering login state', async () => {
     fetchMock.mockResolvedValue(new Response('{}', { status: 401 }));
     const invalid = vi.fn();
     window.addEventListener('rtk:token-invalid', invalid);
     try {
       subscribe('cameras');
       await flush();
-      expect(localStorage.getItem('jwt_token')).toBeNull();
-      expect(invalid).toHaveBeenCalledTimes(1);
+      expect(localStorage.getItem('jwt_token')).toBe('fixture-jwt');
+      expect(invalid).not.toHaveBeenCalled();
       await vi.advanceTimersByTimeAsync(60000);
       expect(fetchMock).toHaveBeenCalledTimes(1);
     } finally {
@@ -180,11 +180,12 @@ describe('authenticated SSE', () => {
     expect(localStorage.getItem('jwt_token')).toBe('fixture-jwt');
   });
 
-  it('does not open an unauthenticated SSE connection', async () => {
+  it('opens an SSE connection without any stored credentials', async () => {
     localStorage.clear();
+    fetchMock.mockResolvedValue(streamResponse().response);
     subscribe('cameras');
     await flush();
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(vi.getTimerCount()).toBe(0);
   });
 });

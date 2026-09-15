@@ -1,4 +1,4 @@
-import { API_BASE, getToken } from '../lib/api';
+import { API_BASE } from '../lib/api';
 import type { EvidenceItem } from './dataService';
 
 export const EVIDENCE_PAGE_SIZE = 12;
@@ -36,8 +36,6 @@ export async function downloadEvidenceSnapshot(item: EvidenceItem): Promise<void
   if (!rawUrl) throw new Error('无可用图片');
 
   const headers: Record<string, string> = {};
-  const token = getToken();
-  if (token) headers.Authorization = `Bearer ${token}`;
 
   const url = rawUrl.startsWith('http') ? rawUrl : `${API_BASE}${rawUrl}`;
   const res = await fetch(url, { headers });

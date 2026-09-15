@@ -1,6 +1,5 @@
 package com.yolov8.security.config;
 
-import jakarta.annotation.PostConstruct;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
@@ -17,40 +16,6 @@ public class AppConfig {
     private QwenVLConfig qwenVl = new QwenVLConfig();
     private Go2rtcConfig go2rtc = new Go2rtcConfig();
     private boolean demoMode = false;
-    private String apiKey;
-    private String jwtSecret;
-    private String adminUsername;
-    private String adminPassword;
-
-    @PostConstruct
-    public void validate() {
-        // .env 通过 System.setProperty 加载，但 @ConfigurationProperties 在 WAR 嵌套 ClassLoader 下绑定不到系统属性
-        fallbackFromSystemProperty("JWT_SECRET", v -> this.jwtSecret = v,
-                () -> jwtSecret == null || jwtSecret.isBlank());
-        fallbackFromSystemProperty("ADMIN_USERNAME", v -> this.adminUsername = v,
-                () -> adminUsername == null || adminUsername.isBlank());
-        fallbackFromSystemProperty("ADMIN_PASSWORD", v -> this.adminPassword = v,
-                () -> adminPassword == null || adminPassword.isBlank());
-
-        if (jwtSecret == null || jwtSecret.isBlank() || jwtSecret.contains("change-this")) {
-            throw new IllegalStateException(
-                "JWT_SECRET 未配置或使用了默认值！请在 .env 文件或环境变量中设置 JWT_SECRET（至少32字符）");
-        }
-        if (adminPassword == null || adminPassword.isBlank()) {
-            throw new IllegalStateException(
-                "ADMIN_PASSWORD 未配置！请在 .env 文件或环境变量中设置管理员密码");
-        }
-    }
-
-    private void fallbackFromSystemProperty(String key, java.util.function.Consumer<String> setter,
-                                            java.util.function.BooleanSupplier needsFallback) {
-        if (needsFallback.getAsBoolean()) {
-            String val = System.getProperty(key);
-            if (val != null && !val.isBlank()) {
-                setter.accept(val);
-            }
-        }
-    }
 
     @Data
     public static class FileConfig {

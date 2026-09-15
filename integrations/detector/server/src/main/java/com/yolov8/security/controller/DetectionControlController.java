@@ -3,6 +3,7 @@ package com.yolov8.security.controller;
 import com.yolov8.security.config.DataCleanupTask;
 import com.yolov8.security.model.ApiResponse;
 import com.yolov8.security.service.DetectionService;
+import com.yolov8.security.service.FrameService;
 import com.yolov8.security.service.PythonScriptService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,13 +25,16 @@ public class DetectionControlController {
     private final PythonScriptService pythonScriptService;
     private final DataCleanupTask dataCleanupTask;
     private final DetectionService detectionService;
+    private final FrameService frameService;
 
     public DetectionControlController(PythonScriptService pythonScriptService,
                                       DataCleanupTask dataCleanupTask,
-                                      DetectionService detectionService) {
+                                      DetectionService detectionService,
+                                      FrameService frameService) {
         this.pythonScriptService = pythonScriptService;
         this.dataCleanupTask = dataCleanupTask;
         this.detectionService = detectionService;
+        this.frameService = frameService;
     }
 
     @PostMapping("/detection/start")
@@ -61,7 +65,10 @@ public class DetectionControlController {
     public ResponseEntity<ApiResponse<Map<String, Object>>> getDetectionStatus() {
         try {
             boolean running = pythonScriptService.isRunning();
-            return ResponseEntity.ok(ApiResponse.success(Map.of("running", running)));
+            return ResponseEntity.ok(ApiResponse.success(Map.of(
+                    "running", running,
+                    "frames", frameService.getCameraStats()
+            )));
         } catch (Exception e) {
             log.error("Error getting detection status", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

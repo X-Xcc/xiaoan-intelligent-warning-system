@@ -1,0 +1,41 @@
+.gait-analysis { --gait-bg: #0b0e17; --gait-panel: #131a26; --gait-line: #273449; min-width: 0; padding: 20px; border: 1px solid #dbe3eb; border-radius: 6px; color: #d0d9e8; background: var(--gait-bg); }
+.gait-analysis-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 14px; border-bottom: 1px solid #202b3b; }
+.gait-analysis-title { display: flex; align-items: center; gap: 8px; color: #9bc6ff; }
+.gait-analysis-title h4 { margin: 0; font-size: 15px; font-weight: 600; }
+.gait-analysis-header p { margin: 5px 0 0; color: #7a8aa0; font-size: 12px; }
+.gait-analysis-status { padding: 5px 9px; border: 1px solid #2d3b4f; border-radius: 4px; color: #8ea4c7; font-size: 11px; white-space: nowrap; }
+.gait-analysis-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; margin-top: 16px; }
+.gait-analysis-skeleton, .gait-analysis-card { min-width: 0; padding: 8px; border: 1px solid #1f2b3d; border-radius: 5px; background: #0e141f; }
+.gait-analysis-skeleton { position: relative; }
+.gait-analysis canvas { display: block; width: 100%; height: auto; border-radius: 3px; background: #080d17; }
+.gait-analysis-skeleton canvas { aspect-ratio: 4 / 3; }
+.gait-analysis-canvas-label { position: absolute; left: 18px; bottom: 16px; padding: 3px 8px; border: 1px solid #1f2b3d; border-radius: 3px; color: #8ea4c7; background: #0a101acc; font-size: 11px; }
+.gait-analysis-side { display: grid; gap: 16px; align-content: start; }
+.gait-analysis-card-title { display: flex; align-items: center; gap: 7px; margin-bottom: 9px; color: #9aa9bd; font-size: 12px; }
+.gait-analysis-card-title small { margin-left: auto; color: #4a5f7a; font-size: 10px; }
+.gait-dot { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; }
+.gait-dot.amber { background: #ffb74d; }
+.gait-dot.red { background: #ff6b6b; }
+.gait-analysis-legend { display: flex; flex-wrap: wrap; gap: 6px 10px; margin-top: 8px; color: #8ea4c7; font-size: 10px; }
+.gait-analysis-legend span { display: inline-flex; align-items: center; gap: 4px; }
+.gait-analysis-legend i { width: 14px; height: 3px; border-radius: 2px; }
+.gait-analysis-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin-top: 14px; padding-top: 14px; border-top: 1px solid #1f2b3d; }
+.gait-analysis-controls .ui-button { min-height: 32px; padding: 6px 10px; border-color: #2d3b4f; color: #b0c6e5; background: #1a2538; font-size: 12px; }
+.gait-analysis-controls-right { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin-left: auto; }
+.gait-analysis-controls label { display: inline-flex; align-items: center; gap: 8px; color: #7a8aa0; font-size: 12px; }
+.gait-analysis-controls input[type="range"] { width: 110px; accent-color: #4a7cf7; }
+.gait-analysis-controls label span, .gait-analysis-fps { color: #8ea4c7; font-size: 11px; font-variant-numeric: tabular-nums; }
+.gait-analysis-fps { padding-left: 10px; border-left: 1px solid #2d3b4f; }
+.gait-analysis-next { gap: 6px; border-color: #4a7cf7 !important; color: #fff !important; background: #326dc5 !important; }
+.gait-analysis-note { margin: 12px 0 0; color: #6f829b; font-size: 11px; }
+.cr-inspection-action-secondary { width: 100%; justify-content: center; margin-top: 8px; min-height: 34px; font-size: 12px; }
+@media (max-width: 900px) {
+  .gait-analysis-grid { grid-template-columns: minmax(0, 1fr); }
+  .gait-analysis-side { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .gait-analysis { padding: 12px; }
+  .gait-analysis-header { align-items: flex-start; flex-wrap: wrap; }
+  .gait-analysis-side { grid-template-columns: minmax(0, 1fr); }
+  .gait-analysis-controls-right { margin-left: 0; flex-basis: 100%; }
+}

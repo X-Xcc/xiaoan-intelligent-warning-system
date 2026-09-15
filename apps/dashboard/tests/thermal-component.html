@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><title>Thermal mounted regression</title></head>
+<body>
+  <h1>Mounted component regression / local test frames</h1>
+  <ol id="results"></ol>
+  <div id="root" style="width:800px;max-width:100%"></div>
+  <script type="module">
+    import { createElement as h } from 'react';
+    import { createRoot } from 'react-dom/client';
+    import { flushSync } from 'react-dom';
+    import { ThermalMonitor } from '/src/components/ThermalMonitor.tsx';
+
+    const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+    const results = document.getElementById('results');
+    function check(condition, message) {
+      if (!condition) throw new Error(message);
+      const item = document.createElement('li');
+      item.textContent = `PASS: ${message}`;
+      results.append(item);
+    }
+    async function waitLive() {
+      for (let i = 0; i < 200; i++) {
+        if (document.querySelector('[data-preview-state="live"]')) return;
+        await pause(25);
+      }
+      throw new Error('Live frame timed out');
+    }
+    const bitmap = document.createElement('canvas');
+    bitmap.width = 320;
+    bitmap.height = 180;
+    const context = bitmap.getContext('2d');
+    context.fillStyle = '#303030';
+    context.fillRect(0, 0, 320, 180);
+    context.fillStyle = '#f0f0f0';
+    context.fillRect(90, 35, 100, 100);
+    const blob = await new Promise(resolve => bitmap.toBlob(resolve, 'image/jpeg'));
+    let requests = 0;
+    window.fetch = (_url, init) => new Promise((resolve, reject) => {
+      requests++;
+      const cancel = () => { clearTimeout(timer); reject(new DOMException('Cancelled', 'AbortError')); };
+      const timer = setTimeout(() => {
+        init.signal.removeEventListener('abort', cancel);
+        resolve(new Response(blob, { headers: { 'Content-Type': 'image/jpeg' } }));
+      }, 80);
+      init.signal.addEventListener('abort', cancel, { once: true });
+      if (init.signal.aborted) cancel();
+    });
+    const root = createRoot(document.getElementById('root'));
+    let props = {
+      device: { id: 'test-device', name: 'Local fixture', kind: 'hikvision', host: 'source-a', port: 554,
+        online: true, status: 'online', frameCount: 1, lastFrameAt: Date.now(), updatedAt: 'revision-a' },
+      available: true, authorized: true, compact: false, epoch: '1', mode: 'thermal', edges: true,
+      onModeChange() {}, onEdgesChange() {},
+    };
+    const render = () => flushSync(() => root.render(h(ThermalMonitor, props)));
+    const hidden = () => !document.querySelector('[data-preview-state="live"]')
+      && document.querySelector('.ot-thermal-canvas').hidden
+      && document.querySelector('.ot-thermal-metrics dd').textContent.startsWith('--');
+    try {
+      render();
+      await waitLive();
+      const canvas = document.querySelector('.ot-thermal-canvas');
+      const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+      let colored = 0;
+      for (let i = 0; i < pixels.length; i += 4) if (Math.max(...pixels.slice(i, i + 3)) - Math.min(...pixels.slice(i, i + 3)) > 50) colored++;
+      check(colored > pixels.length / 8, 'Mounted canvas has processed color pixels');
+      props = { ...props, device: { ...props.device, host: 'source-b', updatedAt: 'revision-b' } };
+      render();
+      check(hidden(), 'Same-id source revision immediately clears old pixels and metrics');
+      await waitLive();
+      props = { ...props, authorized: false };
+      render();
+      check(hidden(), 'Authorization loss immediately clears pixels and metrics');
+      const unauthorizedCount = requests;
+      await pause(220);
+      check(requests === unauthorizedCount, 'Unauthorized component has no active snapshot loop');
+      props = { ...props, authorized: true };
+      render();
+      await waitLive();
+      props = { ...props, device: { ...props.device, lastFrameAt: Date.now() - 20000 } };
+      render();
+      check(hidden(), 'Expired device frame clears pixels and metrics');
+      props = { ...props, device: { ...props.device, lastFrameAt: Date.now() } };
+      render();
+      await waitLive();
+      flushSync(() => root.unmount());
+      const stoppedCount = requests;
+      await pause(220);
+      check(requests === stoppedCount, 'Unmount cancels the component snapshot loop');
+      document.title = 'PASS thermal mounted regression';
+    } catch (error) {
+      const item = document.createElement('li');
+      item.textContent = `FAIL: ${error.message}`;
+      results.append(item);
+      document.title = 'FAIL thermal mounted regression';
+      flushSync(() => root.unmount());
+    }
+  </script>
+</body>
+</html>

@@ -7,7 +7,7 @@
 在项目自带的 Python 环境中安装桥接依赖：
 
 ```powershell
-server\.venv-runtime\Scripts\python.exe -m pip install "go2-webrtc-connect[video]"
+server\.venv-runtime\Scripts\python.exe -m pip install "unitree-webrtc-connect==2.2.0"
 ```
 
 ## 启动
@@ -42,6 +42,10 @@ npm run dashboard:dev
 
 ## 固件与连接方式
 
-`go2-webrtc-connect` 0.2.x 支持 `LocalSTA`、`LocalAP` 和 `Remote`。本地局域网优先使用 `LocalSTA` 并设置 `GO2_IP`；如果 Go2 处于直连热点模式，可使用 `GO2_CONNECT_MODE=LocalAP`，服务会使用驱动约定的 AP 地址。
+使用 `unitree-webrtc-connect` 2.2.0；本桥接仅开放 `LocalSTA` 和 `LocalAP`。已对 GO2 X 软件 V1.1.14、硬件 V2.0 的热点连接收到真实 1280x720 视频帧。旧 `go2-webrtc-connect` 0.2.1 无法处理该设备的 `data2=2` 握手。
+
+本地局域网优先使用 `LocalSTA` 并设置 `GO2_IP`；热点直连使用 `GO2_CONNECT_MODE=LocalAP`，地址为 `192.168.12.1`。其他固件版本仍需单独验证，当前配置不提供新版固件的逐设备密钥输入。
+
+该上游驱动还声明了音频依赖；Linux 安装 PyAudio 时可能需要系统提供 PortAudio 开发包。桥接不打开本机麦克风或发送音频。
 
 视频驱动通过 WebRTC 接收轨道，桥接层只把轨道帧编码为 JPEG 并提供 MJPEG，不保存视频文件。

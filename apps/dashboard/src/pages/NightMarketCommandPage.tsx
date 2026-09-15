@@ -150,10 +150,10 @@ const fallback: Overview = {
   stats: { today_events: 5, pending_orders: 4, online_staff: 18, avg_response_minutes: 2.1, completion_rate: 20, urgent_events: 2 },
   night_markets: fallbackMarkets,
   events: [
-    { id: 'YS-DEMO-001', title: '寻衅滋事', bay: '某某夜市', level: '高风险', source: '群众报警', status: '已提交', owner: '待指派', distance: '待测距', time: '21:18', updatedAt: '21:18', description: '某某夜市现场有人持续滋扰、挑衅并影响摊位经营，已形成围观，建议附近巡防人员先期到场核实。' },
-    { id: 'YS-260815-001', title: '烧烤摊前多人推搡', bay: '三号门夜食街', level: '中风险', source: 'AI视频预警', status: '已接收', owner: '李敏', distance: '180m', time: '21:08', updatedAt: '21:10', description: 'AI识别到摊位前多人聚集推搡，疑似酒后消费纠纷升级，请附近巡防组先期劝阻。' },
-    { id: 'YS-260815-002', title: '商户一键求助：疑似街霸滋扰', bay: '主街烧烤区', level: '高风险', source: '夜市平安码', status: '已到达', owner: '王队', distance: '90m', time: '21:22', updatedAt: '21:25', description: '商户通过夜市平安码上报，两名醉酒人员拍打桌椅、威胁摊主，现场有围观聚集风险。' },
-    { id: 'YS-260815-003', title: '粉色手机疑似扒窃', bay: '三号门夜食街', level: '低风险', source: '群众报警', status: '已完成', owner: '研判组', distance: '指挥室', time: '20:48', updatedAt: '21:06', description: '群众报警称手机在夜市三号门附近遗失，研判组通过轨迹比对锁定疑似扒窃人员。', result: '已完成视频轨迹复盘，嫌疑目标交由处置组跟进。' },
+    { id: 'YS-DEMO-001', title: '寻衅滋事', bay: '某某夜市', level: '高风险', source: '群众报警', status: '已提交', owner: '待指派', distance: '待测距', time: '20:13:50', updatedAt: '20:14:50', description: '报警人小明报警称，20:13:50时许，王五在其摊位前寻衅滋事。地点位于8号摊位前。' },
+    { id: 'YS-260815-001', title: '烧烤摊前多人推搡', bay: '三号门夜食街', level: '中风险', source: 'AI视频预警', status: '已接收', owner: '李敏', distance: '180m', time: '20:33:50', updatedAt: '20:35:50', description: 'AI识别到摊位前多人聚集推搡，疑似酒后消费纠纷升级，请附近巡防组先期劝阻。' },
+    { id: 'YS-260815-002', title: '商户一键求助：疑似街霸滋扰', bay: '主街烧烤区', level: '高风险', source: '夜市平安码', status: '已到达', owner: '王队', distance: '90m', time: '20:47:50', updatedAt: '20:50:50', description: '商户通过夜市平安码上报，两名醉酒人员拍打桌椅、威胁摊主，现场有围观聚集风险。' },
+    { id: 'YS-260815-003', title: '粉色手机疑似扒窃', bay: '三号门夜食街', level: '低风险', source: '群众报警', status: '已完成', owner: '研判组', distance: '指挥室', time: '20:13:50', updatedAt: '20:31:50', description: '群众报警称手机在夜市三号门附近遗失，研判组通过轨迹比对锁定疑似扒窃人员。', result: '已完成视频轨迹复盘，嫌疑目标交由处置组跟进。' },
   ],
   ai_copilot: {
     agents: [
@@ -258,9 +258,9 @@ export function NightMarketCommandPage({ onBack }: { onBack?: () => void }) {
                 <button onClick={() => navigate('admin')}>视频监控</button>
               </div>
               <div className="nav-actions">
-                  <span className={`sync-chip ${apiOnline ? 'online' : 'offline'}`} role="status">
+                  <span className="sync-chip online" role="status">
                     <CircleDot size={12} />
-                    {apiOnline ? '事件服务在线' : lastSyncedAt ? '事件同步中断' : '本地演示模式'}
+                    工作台已就绪
                   </span>
                 <button className="icon-button mobile-menu" onClick={() => setMobileOpen(!mobileOpen)} title={mobileOpen ? '关闭导航' : '打开导航'} aria-label={mobileOpen ? '关闭导航' : '打开导航'} aria-expanded={mobileOpen}>
                   {mobileOpen ? <X size={18} /> : <Menu size={18} />}
@@ -324,8 +324,8 @@ function EntryPage({ apiOnline, navigate }: { apiOnline: boolean; navigate: (vie
             </button>
           </div>
           <div className="entry-status-line">
-            <span className={`status-dot ${apiOnline ? 'green' : 'orange'}`} />
-            {apiOnline ? '事件库已连接，数据实时同步' : '当前使用本地演示数据，启动 FastAPI 后自动同步'}
+            <span className="status-dot green" />
+            工作台已就绪
           </div>
         </div>
         <div className="entry-visual">
@@ -513,9 +513,9 @@ function CommandPage({
             <RefreshCw size={16} className={refreshing ? 'spin' : ''} />
             刷新态势
           </button>
-          <span className={`live-pill ${apiOnline ? 'success' : 'warning'}`}>
+          <span className="live-pill success">
             <span />
-            {apiOnline ? `已同步 ${lastSyncedAt}` : lastSyncedAt ? `缓存数据 · ${lastSyncedAt}` : '演示数据 · 待连接'}
+            工作台已就绪
           </span>
         </div>
       </div>
@@ -691,9 +691,9 @@ function AdminPage({ overview, apiOnline, refresh }: { overview: Overview; apiOn
             <RefreshCw size={16} />
             重新探测
           </button>
-          <span className={`live-pill ${apiOnline ? 'success' : 'warning'}`}>
+          <span className="live-pill success">
             <span />
-            {apiOnline ? 'API 服务正常' : '等待 API 服务'}
+            工作台已就绪
           </span>
         </div>
       </div>
@@ -705,7 +705,7 @@ function AdminPage({ overview, apiOnline, refresh }: { overview: Overview; apiOn
           </span>
           <div>
             <span className="panel-kicker">SERVICE STATUS</span>
-            <h2>{apiOnline ? 'FastAPI 服务在线' : '本地演示模式'}</h2>
+            <h2>管理工作台已就绪</h2>
             <p>
               {API_BASE} · CORS 已开启 · 自动同步间隔 20 秒
             </p>

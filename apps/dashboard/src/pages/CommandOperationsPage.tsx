@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { Button, Input, Select, Tag, Tooltip } from 'antd';
-import { ArrowLeft, ArrowUpRight, Check, FileCheck2, LogIn, LogOut, Monitor, Plus, RefreshCw, Send, ShieldCheck, Upload, X } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, Check, FileCheck2, Monitor, Plus, RefreshCw, Send, ShieldCheck, Upload, X } from 'lucide-react';
 import {
   actionAllowed, advanceControl, acceptsResponse, initialControl, localDateTimeInput, RequestLedger, stages, commandRequestId,
   type CommandContext, type CommandEvent, type CommandMode, type CommandResponse,
@@ -17,10 +17,6 @@ import '../styles/command.css';
 
 type Principal = { openid: string; roles: string[]; staffId?: string };
 type CommandProps = { onBack?: () => void };
-const personaOptions = [
-  { value: 'intake', label: '接警员' }, { value: 'dispatch', label: '指挥席' },
-  { value: 'field', label: '处警人员' }, { value: 'analysis', label: '研判人员' }, { value: 'screen', label: '控屏员' },
-];
 const stageNames = ['接警工单', '导航派警', '盘查核验', '物证同步', '研判移交'];
 const errorText = (error: unknown) => error instanceof Error ? error.message : '请求失败，请核对回执';
 
@@ -41,10 +37,8 @@ function readControl(): ControlState {
 
 export function CommandOperationsPage({ onBack }: CommandProps) {
   const [control, setControl] = useState(readControl);
-  const [token, setToken] = useState(() => sessionStorage.getItem('command-token') || '');
-  const [tokenInput, setTokenInput] = useState('');
+  const token = '';
   const [principal, setPrincipal] = useState<Principal | null>(null);
-  const [persona, setPersona] = useState('intake');
   const [demoEnabled, setDemoEnabled] = useState(false);
   const [events, setEvents] = useState<CommandEvent[]>([]);
   const [snapshot, setSnapshot] = useState<CommandResponse | null>(null);
@@ -123,7 +117,7 @@ export function CommandOperationsPage({ onBack }: CommandProps) {
     setPrincipal(null); setSnapshot(null); setEvents([]); setOnline(false); setError(''); setRoute(null);
     current.current.version = 0;
     loadSequence.current++;
-    if (token) void commandRequest<Principal>('/command/me', token, { signal: abort.signal })
+    void commandRequest<Principal>('/command/me', '', { signal: abort.signal })
       .then(setPrincipal).catch((cause) => { if (!abort.signal.aborted) setError(errorText(cause)); });
     return () => abort.abort();
   }, [token]);
@@ -177,15 +171,6 @@ export function CommandOperationsPage({ onBack }: CommandProps) {
     return () => { cancelled = true; objectUrls.forEach(URL.revokeObjectURL); };
   }, [snapshot?.command.version, snapshot?.event.id, token, playback]);
 
-  const signIn = (value: string) => {
-    if (!mounted.current) return;
-    sessionStorage.setItem('command-token', value); setToken(value); setTokenInput('');
-  };
-  const signOut = () => {
-    const prefix = `command-pending:${principal?.openid}:`;
-    Object.keys(sessionStorage).filter((key) => key.startsWith(prefix)).forEach((key) => sessionStorage.removeItem(key));
-    sessionStorage.removeItem('command-token'); setToken(''); setSnapshot(null); setEvents([]);
-  };
   const reconcile = async () => {
     const id = control.eventId;
     if (!id || !principal || operation.current || playback) return;
@@ -200,15 +185,6 @@ export function CommandOperationsPage({ onBack }: CommandProps) {
       }
     } catch (cause) { setError(`核对未完成：${errorText(cause)}`); }
     finally { operation.current = false; setBusy(false); }
-  };
-  const demoLogin = async () => {
-    if (operation.current) return;
-    setBusy(true);
-    try {
-      const response = await commandRequest<{ token: string }>(`/command/demo-session/${persona}`, '', { method: 'POST' });
-      signIn(response.token);
-    } catch (cause) { setError(errorText(cause)); }
-    finally { setBusy(false); }
   };
 
   const perform = async (action: string, fields: Record<string, unknown>) => {
@@ -255,7 +231,7 @@ export function CommandOperationsPage({ onBack }: CommandProps) {
   };
 
   const create = async (demo: boolean) => {
-    if (operation.current || !principal?.roles.includes('intake') || playback) return;
+    if (operation.current || !principal || playback) return;
     const fields = demo ? { runKey: commandRequestId(), scenarioId: commandScenario.scenarioId, scenarioVersion: commandScenario.version }
       : { transcript: newText, bay: newBay };
     operation.current = true; setBusy(true);
@@ -294,7 +270,7 @@ export function CommandOperationsPage({ onBack }: CommandProps) {
   if (display) return <main className="command-display-shell">{view
     ? <CommandStageView snapshot={view} stage={control.stage} reveal={control.reveal} display playback={playback} offline={!online && !playback} materialUrls={materialUrls} />
     : <section className="command-display-wait"><Monitor size={56} /><h1>小安 · 等待控屏连接</h1>
-      <p>{error || (token ? '读取获授权的事件快照' : '请从已登录的同机控制窗口打开大屏')}</p></section>}</main>;
+      <p>{error || '正在读取事件快照'}</p></section>}</main>;
 
   return <section className="command-workbench">
     <header className="command-header"><div><span className="command-kicker">小安 / 接处警</span><h1>接处警工作台</h1></div>
@@ -304,15 +280,6 @@ export function CommandOperationsPage({ onBack }: CommandProps) {
         onChange={setMode} options={[{ value: 'playback', label: '只读教学回放' }, { value: 'rehearsal', label: '业务联调' }]} />
         <Tooltip title="打开同机大屏"><Button aria-label="打开同机大屏" icon={<Monitor size={17} />} onClick={openDisplay} /></Tooltip></div>
     </header>
-    <div className="command-session">
-      <ShieldCheck size={18} /><span>{principal ? `${principal.openid} · ${principal.roles.join(' / ')}` : playback ? '未登录 · 只读教学回放' : '未登录 · 业务操作不可用'}</span>
-      {demoEnabled && <><Select aria-label="教学账号" value={persona} onChange={setPersona} options={personaOptions} disabled={busy} />
-        <Button icon={<LogIn size={15} />} onClick={() => void demoLogin()} disabled={busy}>登录教学账号</Button></>}
-      {!demoEnabled && !principal && <><Input.Password aria-label="接处警访问令牌" value={tokenInput}
-        onChange={(event: ChangeEvent<HTMLInputElement>) => setTokenInput(event.target.value)} placeholder="访问令牌" autoComplete="off" />
-        <Button onClick={() => signIn(tokenInput.trim())} disabled={!tokenInput.trim()}>登录</Button></>}
-      {principal && <Tooltip title="退出当前账号"><Button aria-label="退出账号" icon={<LogOut size={15} />} onClick={signOut} disabled={busy} /></Tooltip>}
-    </div>
     <div className="command-status" role="status" aria-live="polite">
       <Tag color={playback ? 'gold' : online ? 'green' : 'red'}>{playback ? '只读回放，不写业务' : online ? '接口在线' : '离线 / 未同步'}</Tag>
       <span>{error || feedback || (lastSync && !playback ? `最后同步 ${lastSync}` : '教学场景 V1.0')}</span>
@@ -322,14 +289,14 @@ export function CommandOperationsPage({ onBack }: CommandProps) {
     </div>
     <div className={`command-layout ${playback ? 'command-layout-playback' : ''}`}>
       {!playback && <aside className="command-queue"><div className="command-section-heading"><h2>事件队列</h2><b>{events.length}</b></div>
-        <div className="command-queue-actions"><Button icon={<Plus size={15} />} disabled={busy || !principal?.roles.includes('intake')} onClick={() => setCreateOpen(!createOpen)}>登记接警</Button>
-          {demoEnabled && <Button disabled={busy || !principal?.roles.includes('intake')} onClick={() => void create(true)}>新建教学轮次</Button>}</div>
+        <div className="command-queue-actions"><Button icon={<Plus size={15} />} disabled={busy || !principal} onClick={() => setCreateOpen(!createOpen)}>登记接警</Button>
+          {demoEnabled && <Button disabled={busy || !principal} onClick={() => void create(true)}>新建教学轮次</Button>}</div>
         {createOpen && <div className="command-new-intake"><label>报警地点<Input value={newBay} onChange={(e: ChangeEvent<HTMLInputElement>) => setNewBay(e.target.value)} maxLength={80} /></label>
           <label>接警文本<Input.TextArea value={newText} onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setNewText(e.target.value)} rows={4} /></label>
           <Button type="primary" disabled={busy || !newBay.trim() || !newText.trim()} onClick={() => void create(false)}>保存新接警</Button></div>}
         {events.map((item) => <button key={item.id} type="button" className={item.id === control.eventId ? 'active' : ''}
           disabled={busy} onClick={() => pickEvent(item.id)}><strong>{item.title}</strong><span>{item.bay}</span><small>{item.id}</small><b>{item.status}</b></button>)}
-        {!events.length && <p>{principal ? '当前账号暂无可访问的事件' : '登录后读取事件'}</p>}
+        {!events.length && <p>{principal ? '暂无事件' : '正在连接事件服务'}</p>}
       </aside>}
       <div className="command-main">
         <CommandVoice key={`${principal?.openid || 'guest'}:${control.mode}`}
@@ -337,7 +304,7 @@ export function CommandOperationsPage({ onBack }: CommandProps) {
         <CommandControls value={control} onChange={updateControl} disabled={busy} />
         {view ? <CommandStageView snapshot={view} stage={control.stage} reveal={surface === 'control' || playback ? control.reveal : 3}
           route={route} playback={playback} offline={!playback && !online} materialUrls={materialUrls} />
-          : <div className="command-empty"><FileCheck2 size={44} /><h2>选择接警事件</h2><p>当前没有可展示的授权事件快照</p></div>}
+          : <div className="command-empty"><FileCheck2 size={44} /><h2>选择接警事件</h2><p>当前没有可展示的事件快照</p></div>}
         {!playback && snapshot && <CommandActions key={`${snapshot.event.id}:${principal?.openid}`} snapshot={snapshot}
           roles={principal?.roles || []} token={token} stage={control.stage} busy={busy} online={online} staff={staff}
           perform={perform} onPreview={async (id) => {
@@ -399,7 +366,7 @@ function CommandActions({ snapshot, stage, roles, token, busy, online, staff, pe
     finally { setUploading(false); }
   };
   return <section className="command-actions"><header><h3>{stageNames[stages.indexOf(stage as typeof stages[number])]} · 业务操作</h3><span>版本 {command.version} · {event.status}</span></header>
-    {roles.includes('field') && nextStatus[event.status] && <div className="command-field-status">
+    {nextStatus[event.status] && <div className="command-field-status">
       {event.status === '处理中' && <label>现场处置结果<Input.TextArea value={result} onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setResult(e.target.value)} rows={2} /></label>}
       <Button icon={<Check size={16} />} disabled={!allowed('status') || (event.status === '处理中' && (!result.trim() || command.handover?.status !== 'accepted'))}
         onClick={() => void perform('status', { status: nextStatus[event.status], result })}>{event.status === '处理中' ? '提交结果并完成现场任务' : nextStatus[event.status] === '已接收' ? '接收任务' : nextStatus[event.status] === '已到达' ? '确认到场' : '开始处置'}</Button>
@@ -458,17 +425,17 @@ function CommandActions({ snapshot, stage, roles, token, busy, online, staff, pe
         <div key={item.evidenceId}><FileCheck2 size={16} /><b>{item.name}</b><span>{item.evidenceId}</span></div>)}</div>
     </div>}
     {(stage === 'handover' || stage === 'b4') && <div className="command-transfer">
-      {roles.includes('field') && <><label>移交摘要<Input.TextArea value={handover} onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setHandover(e.target.value)} rows={2} /></label>
+      <label>移交摘要<Input.TextArea value={handover} onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setHandover(e.target.value)} rows={2} /></label>
         <Button type="primary" icon={<ArrowUpRight size={16} />} disabled={!allowed('handover') || !handover.trim() || !command.evidenceIndex.length
           || !['confirmed', 'no_match', 'fallback'].includes(verification?.resultStatus || '')}
-          onClick={() => void perform('handover', { summary: handover, evidenceIds: command.evidenceIndex.map((item) => item.evidenceId) })}>提交研判移交</Button></>}
+          onClick={() => void perform('handover', { summary: handover, evidenceIds: command.evidenceIndex.map((item) => item.evidenceId) })}>提交研判移交</Button>
       {command.handover && <div className="command-handover-receipt"><Tag>{command.handover.status}</Tag><span>{command.handover.handoverId} · 第 {command.handover.version} 版</span>
         {command.handover.rejectionReason && <p>退回原因：{command.handover.rejectionReason}</p>}</div>}
-      {roles.includes('analyze') && <><label>退回原因<Input.TextArea value={reason} onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setReason(e.target.value)} rows={2} /></label>
+      <label>退回原因<Input.TextArea value={reason} onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setReason(e.target.value)} rows={2} /></label>
         <div className="command-button-row"><Button type="primary" disabled={!allowed('handover/review')} onClick={() =>
           void perform(`handover/${command.handover?.handoverId}/review`, { decision: 'accepted' })}>接收研判移交</Button>
         <Button danger disabled={!allowed('handover/review') || !reason.trim()} onClick={() =>
-          void perform(`handover/${command.handover?.handoverId}/review`, { decision: 'rejected', reason })}>退回补正</Button></div></>}
+          void perform(`handover/${command.handover?.handoverId}/review`, { decision: 'rejected', reason })}>退回补正</Button></div>
     </div>}
   </section>;
 }

@@ -1,13 +1,13 @@
 """Import YOLO camera profiles through the running, encrypted bridge API.
 
-Default: offline dry-run. Pass --token-file to compare with the local inventory;
-add --apply to create missing profiles, and --bind-empty to fill vacant slots.
-RTSP is the default. --include-local opts into USB; --include-http-alternatives
+Default: offline dry-run. Pass --apply to create missing profiles without login,
+and --bind-empty to fill vacant slots. --token-file supports older deployments.
+RTSP is the default. USB records are always skipped; --include-http-alternatives
 opts into HTTP snapshot/MJPEG profiles from explicit camera records and URL fields.
 --conflict-side current/incoming selects Git conflict hunks in memory only.
 Application properties, disabled snapshot defaults and example files are not read.
 --allow-short-local-token explicitly accepts an existing 4-15 character token
-file for HTTP loopback only; the default minimum remains 16. API authorization remains required.
+file for HTTP loopback only; the default minimum remains 16 when a file is supplied.
 No devices are started or tested. Run with no concurrent registry/wall editors:
 the existing API has no transaction or compare-and-swap for wall bindings.
 After an interrupted apply, rerun the same command; completed creates are kept.
@@ -45,8 +45,7 @@ CONFLICT = re.compile(r"(?m)^[ \t]*(?:<{7,}|={7,}|>{7,}|\|{7,})")
 HTTP_TYPES = {"http": "http_snapshot", "http_snapshot": "http_snapshot",
               "http_mjpeg": "http_mjpeg"}
 HTTP_ALTERNATIVES = {"httpMjpegUrl": "http_mjpeg", "httpSnapshotUrl": "http_snapshot"}
-METHOD_SUFFIXES = {"usb": " [USB]", "http_snapshot": " [HTTP snapshot]",
-                   "http_mjpeg": " [HTTP MJPEG]"}
+METHOD_SUFFIXES = {"http_snapshot": " [HTTP snapshot]", "http_mjpeg": " [HTTP MJPEG]"}
 
 
 class ImportFailure(ValueError):
@@ -134,9 +133,6 @@ def _validated_payload(config):
     config = validate_config(config)
     if len(config["name"]) > 100 or len(config["username"]) > 128:
         raise ImportFailure("camera_exceeds_api_limits")
-    if config["kind"] == "usb":
-        config.pop("username", None)
-        config.pop("password", None)
     return config
 
 
@@ -183,13 +179,7 @@ def parse_camera(row, variables, *, include_local=False, include_http_alternativ
                 raise ImportFailure("invalid_camera_address")
             return None
         if source_type == "usb" or type(address) is int:
-            if not include_local:
-                return None
-            index = int(address) if isinstance(address, str) and re.fullmatch(r"[0-9]{1,2}", address) else address
-            if type(index) is not int or not 0 <= index <= 15:
-                raise ImportFailure("invalid_usb_index")
-            return _validated_payload({"name": _profile_name(row, "usb"), "kind": "usb",
-                                       "host": "", "usbIndex": index, "autoStart": False})
+            return None
         if not isinstance(address, str) or not address:
             raise ImportFailure("invalid_camera_address")
         is_http = source_type in HTTP_TYPES or address.lower().startswith(("http:", "https:"))
@@ -238,10 +228,6 @@ def parse_camera(row, variables, *, include_local=False, include_http_alternativ
 def endpoint_key(config):
     """A stream identity excludes names, credentials and auto-start preferences."""
     try:
-        if config["kind"] == "usb":
-            if type(config["usbIndex"]) is not int or not 0 <= config["usbIndex"] <= 15:
-                raise ValueError()
-            return "usb", config["usbIndex"]
         host = validate_host(config["host"])
         if config["kind"] in ("http_snapshot", "http_mjpeg"):
             return config["httpScheme"], host, config["port"], config["httpPath"]
@@ -418,11 +404,11 @@ class _NoRedirect(HTTPRedirectHandler):
 
 
 class BridgeApi:
-    def __init__(self, url, token_file, *, allow_short_local_token=False):
+    def __init__(self, url, token_file=None, *, allow_short_local_token=False):
         self._base = normalize_api_url(url)
-        token = _read_text(Path(token_file), 4096).strip()
+        token = _read_text(Path(token_file), 4096).strip() if token_file is not None else ""
         minimum = 4 if allow_short_local_token is True and urlsplit(self._base).scheme == "http" else 16
-        if not minimum <= len(token) <= 256 or any(not 33 <= ord(c) <= 126 for c in token):
+        if token_file is not None and (not minimum <= len(token) <= 256 or any(not 33 <= ord(c) <= 126 for c in token)):
             raise ImportFailure("invalid_token_file")
         self._token = token
         self._opener = build_opener(ProxyHandler({}), _NoRedirect())
@@ -493,7 +479,7 @@ def import_plan(plan, api, *, dry_run=True, bind_empty=False):
         except (ValueError, TypeError):
             raise ImportFailure("source_validation_failed") from None
     auth = api.request("GET", "/auth")
-    if auth.get("enabled") is not True or auth.get("authorized") is not True:
+    if auth.get("authorized") is not True:
         raise ImportFailure("authenticated_api_required")
     existing, bindings, identifiers = _inventory(api.request("GET"))
     pending = [c for c in plan.candidates if endpoint_key(c.config) not in existing]
@@ -560,7 +546,7 @@ def main(argv=None):
     modes.add_argument("--dry-run", action="store_true", help="Validate without writing (default)")
     modes.add_argument("--apply", action="store_true", help="Create missing devices; never start them")
     parser.add_argument("--bind-empty", action="store_true", help="Fill vacant slots with source matches")
-    parser.add_argument("--include-local", action="store_true", help="Include explicit local USB profiles")
+    parser.add_argument("--include-local", action="store_true", help="Deprecated and ignored; USB profiles are unsupported")
     parser.add_argument("--include-http-alternatives", action="store_true",
                         help="Include explicit HTTP snapshot/MJPEG sources and alternative URLs")
     parser.add_argument("--conflict-side", choices=("skip", "current", "incoming"), default="skip",
@@ -569,14 +555,12 @@ def main(argv=None):
     try:
         args = parser.parse_args(argv)
         url = normalize_api_url(args.api_url)
-        if args.apply and args.token_file is None:
-            raise ImportFailure("apply_requires_token_file")
         plan = read_sources(args.source_root, conflict_side=args.conflict_side,
                             include_local=args.include_local,
                             include_http_alternatives=args.include_http_alternatives)
         if plan.errors:
             raise ImportFailure("source_validation_failed")
-        if args.token_file is None:
+        if args.token_file is None and not args.apply:
             report = {**plan.report(), "mode": "dry-run", "inventoryChecked": False,
                       "created": 0, "bindingsAdded": 0}
         else:

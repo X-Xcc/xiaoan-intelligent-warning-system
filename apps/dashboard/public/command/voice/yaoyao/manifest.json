@@ -11,6 +11,11 @@
       "id": "training-passed",
       "text": "全体科目达标",
       "source": "9.5 A3 逐界面详细需求"
+    },
+    {
+      "id": "incident-arrival",
+      "text": "您有新的警情，请注意查收",
+      "source": "接处警系统侧栏点击提示"
     }
   ]
 }

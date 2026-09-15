@@ -60,10 +60,7 @@ def report_gpu_status(web_server_url="http://127.0.0.1:5000"):
         return
     try:
         import requests
-        from config import API_KEY
         session = requests.Session()
-        if API_KEY:
-            session.headers['X-API-Key'] = API_KEY
         handle = pynvml.nvmlDeviceGetHandle(0)
         gpu_percent = pynvml.nvmlDeviceGetUtilizationRates(handle).gpu
         memory_info = pynvml.nvmlDeviceGetMemoryInfo(handle)

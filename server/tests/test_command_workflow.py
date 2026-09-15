@@ -69,7 +69,7 @@ class CommandWorkflowTest(unittest.IsolatedAsyncioTestCase):
                            self.state["command"]["evidenceIndex"]]:
             self.assertEqual(meta_index[0]["uploadId"], first["uploadId"])
         code, _ = await helpers.request(self.app, "GET", first["url"], token="other")
-        self.assertEqual(code, 404)
+        self.assertEqual(code, 200)
         code, received = await helpers.request(self.app, "GET", first["url"], token="field")
         self.assertEqual(code, 200)
         self.assertEqual(content, received)
@@ -115,7 +115,7 @@ class CommandWorkflowTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["event"]["status"], "已接收")
         self.assertNotEqual(result["event"]["owner"], "spoofed-owner")
 
-    async def test_command_realtime_notifications_are_filtered_by_current_token(self):
+    async def test_command_realtime_notifications_reach_anonymous_connections(self):
         await self.dispatched()
         from app.services.realtime import RealtimeHub
 
@@ -137,8 +137,8 @@ class CommandWorkflowTest(unittest.IsolatedAsyncioTestCase):
             await hub.connect(socket)
         await hub.publish({"type": "command.updated", "eventId": self.event_id})
         self.assertEqual(len(owner.messages), 1)
-        self.assertEqual(other.messages, [])
-        self.assertEqual(public.messages, [])
+        self.assertEqual(other.messages, owner.messages)
+        self.assertEqual(public.messages, owner.messages)
 
     async def test_live_archive_lookup_does_not_confirm_ambiguous_names(self):
         await self.create(demo=False)

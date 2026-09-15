@@ -22,13 +22,13 @@ except ImportError:
 
 from ultralytics import YOLO
 
-from config import Config, WEB_SERVER_URL, SEND_FRAME_INTERVAL, JPEG_QUALITY, DRAW_OVERLAY, API_KEY
+from config import Config, WEB_SERVER_URL, SEND_FRAME_INTERVAL, JPEG_QUALITY, DRAW_OVERLAY
 from utils import Utils
 from detector import DetectionModule
 from data_saver import DataSaver
 from alert_manager import AlertManager
 from ui_manager import UIManager
-from camera import detect_cameras, load_cameras_config
+from camera import load_cameras_config
 from gpu_monitor import init_gpu, report_gpu_status, HAS_CV2_CUDA
 
 
@@ -44,11 +44,6 @@ class SecurityMonitor:
         # 从 Java API 加载摄像头配置
         self.config.SOURCES = load_cameras_config()
         self._go2rtc_available = self._check_go2rtc()
-        if not self.config.SOURCES and os.environ.get("DETECTOR_DISCOVER_USB", "false").lower() == "true":
-            logger.warning("未找到 cameras.json 或配置为空，回退到 USB 摄像头自动检测...")
-            usb_cams = detect_cameras(max_index=5)
-            self.config.SOURCES = [{"id": f"cam{i}", "type": "usb", "address": i, "name": f"USB摄像头{i}"} for i in usb_cams]
-
         self.detection_module = DetectionModule(self.config)
         self.data_saver = DataSaver(self.config)
         self.alert_manager = AlertManager(self.config)
@@ -83,8 +78,6 @@ class SecurityMonitor:
         # 是否启用 web 视频流
         self.enable_web_stream = _HAS_REQUESTS
         self.session = requests.Session() if _HAS_REQUESTS else None
-        if self.session and API_KEY:
-            self.session.headers['X-API-Key'] = API_KEY
 
         # 帧大小
         self.web_stream_width = 960
@@ -114,7 +107,7 @@ class SecurityMonitor:
         logger.warning("go2rtc 不可用，RTSP 摄像头可能无法拉流")
         return False
 
-    def _init_video_source(self, source=0, cam_type="usb"):
+    def _init_video_source(self, source, cam_type):
         """初始化视频源"""
         cap = None
         try:
@@ -184,8 +177,7 @@ class SecurityMonitor:
                 "gpu_available": Config.DEVICE == "cuda",
                 "half_precision": Config.HALF
             }
-            headers = {'X-API-Key': API_KEY} if API_KEY else {}
-            requests.post(f"{WEB_SERVER_URL}/api/model_info", json=info, timeout=2, headers=headers)
+            requests.post(f"{WEB_SERVER_URL}/api/model_info", json=info, timeout=2)
         except Exception as e:
             logger.warning("模型信息上报失败: %s", e)
 
@@ -222,7 +214,7 @@ class SecurityMonitor:
         cv2.destroyAllWindows()
         logger.info("系统已退出")
 
-    def _get_frame_from_cap(self, cap, use_static, test_image, cam_type="usb"):
+    def _get_frame_from_cap(self, cap, use_static, test_image, cam_type):
         """从指定摄像头获取视频帧"""
         if use_static:
             return test_image.copy(), use_static
@@ -290,8 +282,6 @@ class SecurityMonitor:
             test_image = np.zeros((720, 1280, 3), dtype=np.uint8)
 
         session = requests.Session() if _HAS_REQUESTS else None
-        if session and API_KEY:
-            session.headers['X-API-Key'] = API_KEY
 
         prev_centers = []
         last_move_times = []

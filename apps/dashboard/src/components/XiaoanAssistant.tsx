@@ -1,19 +1,20 @@
 import {
-  ArrowUp, ArrowUpRight, BookOpenText, Check, ChevronDown, ClipboardList,
-  Info, MessageCircle, RotateCcw, ShieldCheck, Sparkles, Square, Volume2, VolumeX, X,
+  ArrowLeft, ArrowUp, ArrowUpRight, BookOpenText, Check, ClipboardList,
+  Info, MessageCircle, ShieldCheck, Sparkles, Square, Volume2, VolumeX, X,
 } from 'lucide-react';
-import { Popover, Tooltip } from 'antd';
+import { ConfigProvider, Popover, Tooltip } from 'antd';
 import {
-  useCallback, useEffect, useRef, useState,
+  useCallback, useEffect, useLayoutEffect, useRef, useState,
   type CSSProperties, type KeyboardEvent, type PointerEvent,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { XiaoanAvatar } from './XiaoanAvatar';
 import { nextStreamStep, type AssistantPhase } from '../lib/xiaoan-motion';
 import { trainingEntryPath } from '../lib/training-navigation';
 import {
   ASSISTANT_PROMPTS, ASSISTANT_SIZE, ASSISTANT_STORAGE_KEY,
-  clampPosition, demoReply, parsePosition, snapPosition,
-  type AssistantPosition, type AssistantReply,
+  assistantPanelLayout, assistantSize, clampPosition, demoReply, parsePosition,
+  type AssistantPanelLayout, type AssistantPosition, type AssistantReply,
 } from '../lib/xiaoan-assistant';
 import '../styles/xiaoan-assistant.css';
 
@@ -22,8 +23,13 @@ type Message = { id: number; role: 'user'; text: string }
 type Drag = {
   id: number; startX: number; startY: number;
   origin: AssistantPosition; latest: AssistantPosition; moved: boolean;
+  target: HTMLElement;
 };
-type Props = { visible: boolean; onVisibilityChange: (visible: boolean) => void };
+type Props = {
+  visible: boolean;
+  onVisibilityChange: (visible: boolean) => void;
+  onNavigate: (path: string) => void;
+};
 
 const promptIcons = [ClipboardList, BookOpenText, ShieldCheck];
 const phaseLabels: Record<AssistantPhase, string> = {
@@ -39,17 +45,20 @@ function initialPosition(): AssistantPosition {
     const saved = parsePosition(localStorage.getItem(ASSISTANT_STORAGE_KEY), innerWidth, innerHeight);
     if (saved) return saved;
   } catch { /* Storage can be unavailable in embedded or private contexts. */ }
-  return clampPosition({ x: innerWidth - ASSISTANT_SIZE.width - 24, y: innerHeight - ASSISTANT_SIZE.height - 28 }, innerWidth, innerHeight);
+  const size = assistantSize(innerWidth, innerHeight);
+  return clampPosition({ x: innerWidth - size.width - 24, y: innerHeight - size.height - 28 }, innerWidth, innerHeight);
 }
 
 function storePosition(position: AssistantPosition) {
   try { localStorage.setItem(ASSISTANT_STORAGE_KEY, JSON.stringify(position)); } catch { /* Keep the pet usable without persistence. */ }
 }
 
-export function XiaoanAssistant({ visible, onVisibilityChange }: Props) {
+export function XiaoanAssistant({ visible, onVisibilityChange, onNavigate }: Props) {
+  const [portalHost] = useState(() => document.createElement('div'));
   const [position, setPosition] = useState(initialPosition);
   const positionRef = useRef(position);
-  const [viewport, setViewport] = useState({ width: innerWidth, height: innerHeight });
+  const [panelLayout, setPanelLayout] = useState<AssistantPanelLayout | null>(null);
+  const panelRef = useRef<AssistantPanelLayout | null>(null);
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<AssistantPhase>('idle');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -60,7 +69,7 @@ export function XiaoanAssistant({ visible, onVisibilityChange }: Props) {
     try { return localStorage.getItem('xiaoan-assistant:muted:v1') === '1'; } catch { return false; }
   });
   const mutedRef = useRef(muted);
-  const [greetingVisible, setGreetingVisible] = useState(false);
+  const greeted = useRef(false);
   const drag = useRef<Drag | null>(null);
   const suppressClick = useRef(false);
   const busyRef = useRef(false);
@@ -74,8 +83,20 @@ export function XiaoanAssistant({ visible, onVisibilityChange }: Props) {
   const input = useRef<HTMLTextAreaElement>(null);
   const transcript = useRef<HTMLDivElement>(null);
 
+  useLayoutEffect(() => {
+    portalHost.className = 'xiaoan-assistant-layer';
+    // Keep the portal target stable so fullscreen changes do not remount the conversation.
+    const attach = () => (document.fullscreenElement ?? document.body).appendChild(portalHost);
+    attach();
+    document.addEventListener('fullscreenchange', attach);
+    return () => {
+      document.removeEventListener('fullscreenchange', attach);
+      portalHost.remove();
+    };
+  }, [portalHost]);
+
   const move = useCallback((next: AssistantPosition, persist = false) => {
-    const clamped = clampPosition(next, innerWidth, innerHeight);
+    const clamped = clampPosition(next, innerWidth, innerHeight, panelRef.current);
     positionRef.current = clamped;
     setPosition(clamped);
     if (persist) storePosition(clamped);
@@ -117,14 +138,28 @@ export function XiaoanAssistant({ visible, onVisibilityChange }: Props) {
     });
   }, []);
 
+  const interruptDrag = useCallback(() => {
+    const current = drag.current;
+    if (!current) return;
+    drag.current = null;
+    suppressClick.current = true;
+    if (current.target.hasPointerCapture(current.id)) current.target.releasePointerCapture(current.id);
+    animate(busyRef.current ? responsePhase.current : 'idle');
+  }, [animate]);
+
   useEffect(() => {
     const resize = () => {
-      setViewport({ width: innerWidth, height: innerHeight });
+      interruptDrag();
+      if (panelRef.current) {
+        const anchor = clampPosition(positionRef.current, innerWidth, innerHeight);
+        panelRef.current = assistantPanelLayout(anchor, innerWidth, innerHeight);
+        setPanelLayout(panelRef.current);
+      }
       move(positionRef.current, true);
     };
     window.addEventListener('resize', resize);
     return () => window.removeEventListener('resize', resize);
-  }, [move]);
+  }, [move, interruptDrag]);
 
   useEffect(() => () => {
     replyGeneration.current++;
@@ -135,23 +170,23 @@ export function XiaoanAssistant({ visible, onVisibilityChange }: Props) {
 
   useEffect(() => {
     if (!visible) {
-      cancelReply();
       setOpen(false);
-      setGreetingVisible(false);
-      drag.current = null;
-      animate('idle');
+      panelRef.current = null;
+      setPanelLayout(null);
+      interruptDrag();
     }
-  }, [visible, cancelReply, animate]);
+  }, [visible, interruptDrag]);
 
   useEffect(() => {
     if (open) input.current?.focus({ preventScroll: true });
   }, [open]);
 
   useEffect(() => {
-    if (!open) { setGreetingVisible(false); cancelWelcomeSpeech(); return; }
+    if (!open) { cancelWelcomeSpeech(); return; }
+    if (greeted.current) return;
     welcomeSpeechTimer.current = window.setTimeout(() => {
       welcomeSpeechTimer.current = null;
-      setGreetingVisible(true);
+      greeted.current = true;
       if (mutedRef.current) return;
       if (!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) return;
       const utterance = new SpeechSynthesisUtterance(welcomeSpeech);
@@ -168,9 +203,19 @@ export function XiaoanAssistant({ visible, onVisibilityChange }: Props) {
   }, [messages, busy, open]);
 
   const closePanel = useCallback(() => {
+    panelRef.current = null;
+    setPanelLayout(null);
     setOpen(false);
     launcher.current?.focus({ preventScroll: true });
   }, []);
+
+  const openPanel = () => {
+    const layout = assistantPanelLayout(positionRef.current, innerWidth, innerHeight);
+    panelRef.current = layout;
+    setPanelLayout(layout);
+    move(positionRef.current, true);
+    setOpen(true);
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -181,17 +226,20 @@ export function XiaoanAssistant({ visible, onVisibilityChange }: Props) {
     return () => document.removeEventListener('keydown', escape);
   }, [open, closePanel]);
 
-  const beginDrag = (event: PointerEvent<HTMLButtonElement>) => {
+  const beginDrag = (event: PointerEvent<HTMLElement>) => {
     if (event.button !== 0 || !event.isPrimary) return;
+    if (event.currentTarget !== launcher.current
+      && (event.target as Element).closest('button, a, input, textarea, [role="button"]')) return;
     suppressClick.current = false;
     drag.current = {
       id: event.pointerId, startX: event.clientX, startY: event.clientY,
       origin: positionRef.current, latest: positionRef.current, moved: false,
+      target: event.currentTarget,
     };
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
-  const continueDrag = (event: PointerEvent<HTMLButtonElement>) => {
+  const continueDrag = (event: PointerEvent<HTMLElement>) => {
     const current = drag.current;
     if (!current || current.id !== event.pointerId) return;
     const dx = event.clientX - current.startX;
@@ -200,22 +248,23 @@ export function XiaoanAssistant({ visible, onVisibilityChange }: Props) {
     current.moved = true;
     current.latest = clampPosition({
       x: current.origin.x + dx, y: current.origin.y + dy,
-    }, innerWidth, innerHeight);
+    }, innerWidth, innerHeight, panelRef.current);
     animate('dragging');
     move(current.latest);
   };
 
-  const endDrag = (event: PointerEvent<HTMLButtonElement>, cancelled = false) => {
+  const endDrag = (event: PointerEvent<HTMLElement>, cancelled = false) => {
     const current = drag.current;
     if (!current || current.id !== event.pointerId) return;
     drag.current = null;
     suppressClick.current = current.moved || cancelled;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
-    if (current.moved) move(snapPosition(current.latest, innerWidth, innerHeight), true);
+    if (current.moved) move(current.latest, true);
     animate(busyRef.current ? responsePhase.current : 'idle');
   };
 
-  const launcherKey = (event: KeyboardEvent<HTMLButtonElement>) => {
+  const launcherKey = (event: KeyboardEvent<HTMLElement>) => {
+    if (event.target !== event.currentTarget) return;
     const deltas: Record<string, [number, number]> = {
       ArrowLeft: [-24, 0], ArrowRight: [24, 0], ArrowUp: [0, -24], ArrowDown: [0, 24],
     };
@@ -228,6 +277,8 @@ export function XiaoanAssistant({ visible, onVisibilityChange }: Props) {
   const submit = (value: string) => {
     const text = value.trim().slice(0, 200);
     if (!text || busyRef.current) return;
+    greeted.current = true;
+    cancelWelcomeSpeech();
     busyRef.current = true;
     responsePhase.current = 'thinking';
     const generation = ++replyGeneration.current;
@@ -267,31 +318,33 @@ export function XiaoanAssistant({ visible, onVisibilityChange }: Props) {
 
   const reset = () => {
     cancelReply();
+    cancelWelcomeSpeech();
+    greeted.current = true;
     setMessages([]);
     setDraft('');
-    animate('greeting', 1100);
-    input.current?.focus();
+    animate('idle');
+    input.current?.focus({ preventScroll: true });
   };
 
-  if (!visible) return null;
-  const compact = viewport.width < 600;
+  if (!visible) return createPortal(
+    <ConfigProvider getPopupContainer={() => portalHost}>
+      <Tooltip title="恢复小安助手"><button type="button" className="xiaoan-restore-button"
+        aria-label="恢复小安助手" onClick={() => onVisibilityChange(true)}><ShieldCheck size={20} /></button></Tooltip>
+    </ConfigProvider>,
+    portalHost,
+  );
   const avatarPhase = phase === 'idle' && open && inputFocused ? 'listening' : phase;
-  const panelWidth = Math.min(368, viewport.width - 24);
-  const proposedLeft = position.x > viewport.width / 2
-    ? position.x - panelWidth - 14 : position.x + ASSISTANT_SIZE.width + 14;
-  const panelLeft = compact ? 12 : Math.max(12, Math.min(proposedLeft, viewport.width - panelWidth - 12));
-  const panelHeight = Math.min(546, Math.max(0, viewport.height - 96));
-  const panelBottom = compact ? 12 : Math.max(12, Math.min(
-    viewport.height - position.y - ASSISTANT_SIZE.height,
-    viewport.height - panelHeight - 76,
-  ));
-  const panelStyle: CSSProperties = { left: panelLeft, bottom: panelBottom, width: panelWidth };
+  const size = assistantSize(innerWidth, innerHeight);
+  const panelStyle: CSSProperties | undefined = panelLayout ? {
+    left: panelLayout.x, top: panelLayout.y, width: panelLayout.width, height: panelLayout.height,
+  } : undefined;
 
-  return <>
+  return createPortal(<ConfigProvider getPopupContainer={() => portalHost}><div className="xiaoan-assistant-group"
+    style={{ left: position.x, top: position.y, width: size.width, height: size.height }}>
     <div
-      className={`xiaoan-assistant-pet ${open && compact ? 'is-concealed' : ''} ${greetingVisible ? 'is-greeting' : ''}`}
+      className="xiaoan-assistant-pet"
       data-testid="xiaoan-pet" data-phase={avatarPhase} data-artwork-mode="reference-derived-cutout-rig"
-      style={{ left: position.x, top: position.y, width: ASSISTANT_SIZE.width, height: ASSISTANT_SIZE.height }}
+      style={{ ...ASSISTANT_SIZE, transform: `scale(${size.height / ASSISTANT_SIZE.height})`, transformOrigin: 'top left' }}
     >
       <div className="xiaoan-pet-tools">
         <Tooltip title="收起小安"><button type="button" aria-label="收起小安" onClick={() => onVisibilityChange(false)}><X size={13} /></button></Tooltip>
@@ -307,11 +360,11 @@ export function XiaoanAssistant({ visible, onVisibilityChange }: Props) {
         onKeyDown={launcherKey}
         onClick={event => {
           if (event.detail !== 0 && suppressClick.current) { suppressClick.current = false; return; }
-          setOpen(value => !value);
+          if (open) closePanel(); else openPanel();
           if (!busyRef.current) animate('greeting', 1800);
         }}
       >
-        <XiaoanAvatar phase={avatarPhase} active={!(open && compact)} />
+        <XiaoanAvatar phase={avatarPhase} active />
         <span className="xiaoan-pet-caption"><i /><strong>{phaseLabels[avatarPhase]}</strong><MessageCircle size={12} /></span>
       </button>
       <Tooltip title={muted ? '打开小安语音' : '静音小安语音'}>
@@ -319,21 +372,24 @@ export function XiaoanAssistant({ visible, onVisibilityChange }: Props) {
           {muted ? <VolumeX size={13} /> : <Volume2 size={13} />}
         </button>
       </Tooltip>
-      {greetingVisible && <div className="xiaoan-greeting-bubble" role="status">{welcomeSpeech}</div>}
     </div>
 
-    {open && <section
+    {open && panelLayout && <section
       id="xiaoan-assistant-dialog" className="xiaoan-assistant-panel"
       role="dialog" aria-modal="false" aria-labelledby="xiaoan-dialog-title" style={panelStyle}
     >
-      <header className="xiaoan-panel-header">
-        <span className="xiaoan-panel-brand"><ShieldCheck size={20} /></span>
+      <header className="xiaoan-panel-header" tabIndex={0} aria-label="移动小安和对话框"
+        onPointerDown={beginDrag} onPointerMove={continueDrag}
+        onPointerUp={event => endDrag(event)} onPointerCancel={event => endDrag(event, true)}
+        onLostPointerCapture={event => { if (drag.current) endDrag(event, true); }}
+        onKeyDown={launcherKey}>
+        <Tooltip title="返回首页，清空本轮对话"><button type="button" className="xiaoan-icon-button"
+          aria-label="返回小安首页" onClick={reset}><ArrowLeft size={18} /></button></Tooltip>
         <div className="xiaoan-header-copy"><h2 id="xiaoan-dialog-title">小安 <span>智能助手</span></h2><p><i />{busy ? phase === 'thinking' ? '正在整理思路' : '正在回答你的问题' : draft ? '我在，慢慢说' : '有什么我可以帮你？'}</p></div>
         <Popover title="关于小安" content={disclosure} trigger="click">
           <button type="button" className="xiaoan-icon-button" aria-label="关于小安" title="关于小安"><Info size={15} /></button>
         </Popover>
-        <Tooltip title="重新开始"><button type="button" className="xiaoan-icon-button" aria-label="重新开始小安对话" onClick={reset}><RotateCcw size={15} /></button></Tooltip>
-        <Tooltip title="收起对话"><button type="button" className="xiaoan-icon-button" aria-label="收起小安对话面板" onClick={closePanel}><ChevronDown size={18} /></button></Tooltip>
+        <Tooltip title="收起对话"><button type="button" className="xiaoan-icon-button" aria-label="收起小安对话面板" onClick={closePanel}><X size={18} /></button></Tooltip>
       </header>
 
       <div ref={transcript} className="xiaoan-transcript" role="log" aria-label="小安对话" aria-live="polite" aria-relevant="additions" aria-busy={busy}>
@@ -359,7 +415,12 @@ export function XiaoanAssistant({ visible, onVisibilityChange }: Props) {
               {paragraphs.map((line, index) => <p key={index}>{line}</p>)}
             </div>
             {message.status === 'complete' && message.reply.trainingLinks?.length && <nav className="xiaoan-training-links" aria-label="推荐训练课程">
-              {message.reply.trainingLinks.map(link => <a key={link.taskId} href={trainingEntryPath(link.taskId)}>
+              {message.reply.trainingLinks.map(link => <a key={link.taskId} href={trainingEntryPath(link.taskId)}
+                onClick={event => {
+                  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                  event.preventDefault();
+                  onNavigate(trainingEntryPath(link.taskId));
+                }}>
                 <span>{link.label}</span><ArrowUpRight size={14} aria-hidden="true" />
               </a>)}
             </nav>}
@@ -394,5 +455,5 @@ export function XiaoanAssistant({ visible, onVisibilityChange }: Props) {
       </form>
       <footer className="xiaoan-panel-footer">内容仅供参考，重要信息请核对</footer>
     </section>}
-  </>;
+  </div></ConfigProvider>, portalHost);
 }

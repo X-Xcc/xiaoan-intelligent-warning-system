@@ -20,7 +20,6 @@ router = APIRouter(prefix="/platform", tags=["platform"])
 DATA_DOMAINS = [
     {"key": "org", "label": "组织与警力", "description": "机构、岗位、在岗状态", "objects": ["机构", "民警", "岗位"], "status": "待接入"},
     {"key": "alarm", "label": "警情与指令", "description": "接报、分级、派警、处置回传", "objects": ["警情", "指令", "处置结果"], "status": "待接入"},
-    {"key": "case", "label": "案件与证据", "description": "案件、卷宗、证据链", "objects": ["案件", "证据", "文书"], "status": "待接入"},
     {"key": "person", "label": "人员与车辆", "description": "身份核验、车辆和轨迹", "objects": ["人员", "车辆", "轨迹"], "status": "待接入"},
     {"key": "community", "label": "社区与地址", "description": "网格、重点人地事物", "objects": ["网格", "地址", "走访任务"], "status": "待接入"},
     {"key": "training", "label": "训练与健康", "description": "课程、成绩、训练档案", "objects": ["课程", "成绩", "健康指标"], "status": "待接入"},
@@ -34,13 +33,6 @@ BUSINESS_SYSTEMS = [
         "shortName": "接处警",
         "description": "接警、询问、分类分级、派警和处置回传",
         "capabilities": ["语音转写", "警单摘要", "分级派警", "警情画像"],
-    },
-    {
-        "key": "case",
-        "name": "执法办案系统",
-        "shortName": "执法办案",
-        "description": "法律依据、取证清单、卷宗审核和类案辅助",
-        "capabilities": ["法律助手", "证据校验", "文书生成", "串并分析"],
     },
     {
         "key": "community",
@@ -161,7 +153,6 @@ def _runtime_snapshot() -> dict[str, Any]:
                 "status": "运行中" if system["key"] == "alarm" and today_events else "待接入",
                 "metric": {
                     "alarm": today_events,
-                    "case": int((ops.get("analysis") or {}).get("total") or 0),
                     "community": int((ops.get("duty") or {}).get("total") or 0),
                     "training": int((ops.get("identity") or {}).get("profiles") or 0),
                     "mobile": online_staff,
@@ -171,7 +162,6 @@ def _runtime_snapshot() -> dict[str, Any]:
         ],
         "workspaces": {
             "alarm": {"queue": normalized_events[:8], "pending": pending_orders, "completionRate": completion_rate},
-            "case": {"total": int((ops.get("analysis") or {}).get("total") or 0), "review": 0, "evidence": 0, "today": 0},
             "community": {"gridCount": 0, "openTasks": int((ops.get("duty") or {}).get("total") or 0), "riskCount": active_risks, "coverage": 0},
             "training": {"records": int((ops.get("identity") or {}).get("profiles") or 0), "courses": 0, "avgScore": 0, "pending": 0},
             "mobile": {"online": online_staff, "activeTasks": pending_orders, "signed": 0, "alerts": active_risks},
@@ -194,15 +184,14 @@ def _runtime_snapshot() -> dict[str, Any]:
             {"label": "分类分级", "count": today_events, "status": "待业务上报"},
             {"label": "派警", "count": pending_orders, "status": "已接入" if pending_orders else "待业务上报"},
             {"label": "移动签收", "count": 0, "status": "待业务上报"},
-            {"label": "案件办理", "count": int((ops.get("analysis") or {}).get("total") or 0), "status": "待业务上报"},
             {"label": "社区闭环", "count": active_risks, "status": "待业务上报"},
             {"label": "训练复盘", "count": int((ops.get("identity") or {}).get("profiles") or 0), "status": "待业务上报"},
         ],
         "governance": {
-            "identity": "统一身份与最小权限",
+            "identity": "公共工作台",
             "audit": "关键操作 100% 留痕",
             "humanReview": "AI建议必须人工确认",
-            "security": "公安内网部署，数据分级授权",
+            "security": "受控网络部署，开放访问",
         },
     }
 

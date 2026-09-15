@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { API_BASE, getWorkspaceApiUrl, isZeroPort } from './api-config';
-import { clearToken, getToken, setToken } from './auth-token';
 
 describe('api config helpers', () => {
   it('builds workspace api base from current window location', () => {
@@ -12,14 +11,4 @@ describe('api config helpers', () => {
     expect(isZeroPort).toBe(false);
   });
 
-  it('stores and clears JWT token in localStorage', () => {
-    clearToken();
-    expect(getToken()).toBeNull();
-
-    setToken('demo-token');
-    expect(getToken()).toBe('demo-token');
-
-    clearToken();
-    expect(getToken()).toBeNull();
-  });
 });

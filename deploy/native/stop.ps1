@@ -2,7 +2,10 @@
 . (Join-Path $PSScriptRoot 'common.ps1')
 
 try {
-    foreach ($name in @('web', 'detector', 'api')) { Stop-NativeChild $name }
+    Stop-NativeWatchdogProcess
+    Stop-NativeChild 'web'
+    Stop-NativeChild 'detector'
+    Stop-NativeChild 'api'
     $data = Join-Path (Get-NativeDirectory) 'data/postgres'
     if (Test-Path -LiteralPath (Join-Path $data 'PG_VERSION')) {
         & (Join-Path (Get-NativePostgresBin) 'pg_ctl.exe') -D $data -m fast -w stop | Out-Null

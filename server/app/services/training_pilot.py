@@ -15,6 +15,10 @@ from app.services.training_catalog import training_subjects
 
 RULE_VERSION = "READINESS-RULE-2026.09-V1"
 DATA_MODE = "desensitized_sample"
+SAMPLE_TIME_SLOTS = [
+    "20:13:50", "20:43:50", "21:13:50", "21:43:50",
+    "22:13:50", "22:43:50", "23:13:50", "23:43:50",
+]
 
 
 class TrainingStateError(ValueError):
@@ -134,10 +138,8 @@ def readiness_snapshot() -> dict[str, Any]:
             {"name": "东侧弱光通道", "level": "中", "basis": "脱敏巡查记录"},
         ],
         "timeTrend": [
-            {"time": "18:00", "value": 18},
-            {"time": "20:00", "value": 37},
-            {"time": "22:00", "value": 51},
-            {"time": "00:00", "value": 29},
+            {"time": time, "value": value}
+            for time, value in zip(SAMPLE_TIME_SLOTS, (18, 26, 37, 44, 51, 42, 29, 16))
         ],
         "recommendations": [
             {"subject": item["subject"], "taskId": item["taskId"], "basis": item["basis"], "standard": item["standard"]}
@@ -146,7 +148,7 @@ def readiness_snapshot() -> dict[str, Any]:
         "dutySituation": {
             "title": "A1 勤务态势大屏",
             "location": "绳金塔夜市",
-            "period": "今晚 18:00–01:00",
+            "period": "今晚 20:13:50–23:43:50",
             "composition": [
                 {"label": "滋事纠纷", "value": 41, "color": "#e5ad45"},
                 {"label": "手机扒窃", "value": 28, "color": "#38b2ac"},
@@ -154,14 +156,8 @@ def readiness_snapshot() -> dict[str, Any]:
                 {"label": "可疑物品", "value": 4, "color": "#dc3545"},
             ],
             "timeTrend": [
-                {"time": "18:00", "value": 18},
-                {"time": "19:00", "value": 26},
-                {"time": "20:00", "value": 44},
-                {"time": "21:00", "value": 58},
-                {"time": "22:00", "value": 63},
-                {"time": "23:00", "value": 49},
-                {"time": "00:00", "value": 29},
-                {"time": "01:00", "value": 16},
+                {"time": time, "value": value}
+                for time, value in zip(SAMPLE_TIME_SLOTS, (18, 26, 44, 58, 63, 49, 29, 16))
             ],
             "zones": [
                 {"id": "A", "name": "夜市入口", "level": "medium", "share": 24,

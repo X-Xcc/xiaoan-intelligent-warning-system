@@ -1,6 +1,5 @@
 import { Camera, DiscoveredCamera, Alert, AuditLog, CameraStatus, SystemStatus, SystemInfo, Settings, PageResponse, TrendData, RegionalStat, EvidenceStats, AlertFilterParams, AuditFilterParams, FpsStats, StatsSummary, ModelInfo, FullStatsResponse, AnnotationData, ImageItem } from "../types";
-import { apiGet, apiPost, apiPut, apiPatch, apiDelete, apiDownload, subscribeSse, setToken, clearToken, API_BASE } from "../lib/api";
-import { getToken } from "../lib/auth-token";
+import { apiGet, apiPost, apiPut, apiPatch, apiDelete, apiDownload, subscribeSse, API_BASE } from "../lib/api";
 import { DEFAULT_DEVICE_SETTINGS } from "./devices-data";
 
 // --- Camera Config ---
@@ -34,30 +33,6 @@ export async function fetchCameras(signal?: AbortSignal): Promise<Camera[]> {
       personCount: 0,
     };
   });
-}
-
-// --- Auth ---
-
-export async function login(username: string, password: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/api/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: "登录失败" }));
-    throw new Error(err.error || "登录失败");
-  }
-  const data = await res.json();
-  setToken(data.token);
-}
-
-export async function getCurrentUser(signal?: AbortSignal): Promise<{ username: string; name: string; role: string }> {
-  return apiGet("/api/me", signal);
-}
-
-export function logout(): void {
-  clearToken();
 }
 
 // --- Subscribe (SSE) ---
@@ -453,12 +428,10 @@ export function exportAnnotation(format: "yolo" | "coco" = "yolo"): void {
 }
 
 export async function uploadAnnotationImage(file: File): Promise<{ filename: string }> {
-  const token = getToken();
   const form = new FormData();
   form.append("file", file);
   const res = await fetch(`${API_BASE}/api/annotations/upload`, {
     method: "POST",
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: form,
   });
   if (!res.ok) {

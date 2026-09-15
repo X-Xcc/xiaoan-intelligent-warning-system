@@ -20,7 +20,13 @@ function bundle(entry, taro, intervals = new Map(), environment = {}) {
   const key = JSON.stringify([entry, environment.base || BASE, environment.platform || 'weapp'])
   if (!bundles.has(key)) {
     bundles.set(key, buildSync({
-      entryPoints: [path.join(src, entry)],
+      ...(entry === 'hooks/useSafetyEvents.ts' ? {
+        stdin: {
+          contents: "export * from './hooks/useSafetyEvents'; export { clearAuthSession } from './utils/api'",
+          resolveDir: src,
+          loader: 'ts',
+        },
+      } : { entryPoints: [path.join(src, entry)] }),
       bundle: true,
       write: false,
       platform: 'node',
@@ -101,7 +107,7 @@ function mocks(storage = new Map([[TOKEN_KEY, 'session-a']])) {
 
 async function mount(m = mocks()) {
   const intervals = new Map()
-  const { useSafetyEvents } = bundle('hooks/useSafetyEvents.ts', m.taro, intervals)
+  const { useSafetyEvents, clearAuthSession } = bundle('hooks/useSafetyEvents.ts', m.taro, intervals)
   const slots = []
   let cursor = 0
   let alive = true
@@ -151,7 +157,7 @@ async function mount(m = mocks()) {
   }
   await act(async () => render())
   return {
-    ...m, intervals,
+    ...m, intervals, clearAuthSession,
     get value() { return current },
     rerender: () => act(async () => render()),
     close: async () => { alive = false; for (const slot of slots) slot?.cleanup?.() },
@@ -212,6 +218,78 @@ test('auth helpers expose the current user and clear the local session', async (
   assert.deepEqual(await api.getCurrentUser(), user)
   api.clearAuthSession()
   assert.equal(api.getAuthToken(), '')
+})
+
+test('command actions need no token and preserve uncertain retry IDs and versions', async () => {
+  const m = mocks(new Map())
+  const api = bundle('utils/api.ts', m.taro)
+  let fail = true
+  m.taro.request = async (options) => {
+    m.calls.push(options)
+    if (fail) throw new Error('Offline')
+    return { statusCode: 200, data: { event: event('TASK') } }
+  }
+  await assert.rejects(api.submitCommandTaskAction('TASK', 3, 'status', { status: '已接收' }), /Offline/)
+  await assert.rejects(api.submitCommandTaskAction('TASK', 3, 'status', { status: '处理中' }), /回执/)
+  fail = false
+  await api.submitCommandTaskAction('TASK', 4, 'status', { status: '已接收' })
+  const posts = m.calls.filter((call) => call.method === 'POST')
+  assert.equal(posts.length, 2)
+  assert.deepEqual(posts[0].data, posts[1].data)
+  assert.equal(posts[1].data.expectedVersion, 3)
+})
+
+test('legacy tokens are local receipt partitions, not API or upload credentials', async () => {
+  const m = mocks()
+  const api = bundle('utils/api.ts', m.taro)
+  await api.requestApi('/auth/me')
+  await api.uploadEventEvidence('/tmp/a.jpg', 'image')
+  assert.equal(m.calls[0].header.authorization, undefined)
+  assert.equal(m.calls[1].header?.authorization, undefined)
+})
+
+test('report creation stops when a token-free local receipt session is reset during upload', async () => {
+  const m = mocks(new Map())
+  const api = bundle('utils/api.ts', m.taro)
+  const pending = deferred()
+  m.taro.uploadFile = () => pending.promise
+  const report = api.createReportEvent({ category: 'other', bay: 'North', description: 'Report' },
+    [{ kind: 'image', filePath: '/tmp/a.jpg' }])
+  api.clearAuthSession()
+  pending.resolve({ statusCode: 200, data: '{"evidence":{"url":"/a.jpg"}}' })
+  await assert.rejects(report, /会话|session/i)
+  assert.equal(m.calls.length, 0)
+})
+
+test('token-free receipts survive remount but do not cross a local session reset', async (t) => {
+  const m = mocks(new Map())
+  const first = await mount(m)
+  await act(() => first.value.createHelp({ bay: 'North' }))
+  await first.close()
+  const second = await mount(m)
+  t.after(() => second.close())
+  assert.equal(second.value.savedHelpId, 'HELP-1')
+  second.clearAuthSession()
+  await second.rerender()
+  assert.equal(second.value.savedHelpId, '')
+  assert.deepEqual(second.value.events, [])
+  assert.equal(m.calls.some((call) => call.url === `${BASE}/events`), false)
+})
+
+test('uncertain command retries remain isolated by selected worker without tokens', async () => {
+  const m = mocks(new Map())
+  const api = bundle('utils/api.ts', m.taro)
+  m.taro.request = async (options) => {
+    m.calls.push(options)
+    throw new Error('Offline')
+  }
+  await assert.rejects(api.updateSafetyEventStatus('TASK', '已完成', 'Worker', 'First result', 3), /Offline/)
+  await assert.rejects(api.updateSafetyEventStatus('TASK', '已完成', 'Other', 'Other result', 3), /Offline/)
+  await assert.rejects(api.updateSafetyEventStatus('TASK', '已完成', 'Worker', 'First result', 4), /Offline/)
+  const posts = m.calls.filter((call) => call.method === 'POST')
+  assert.equal(posts.length, 3)
+  assert.notEqual(posts[0].data.requestId, posts[1].data.requestId)
+  assert.deepEqual(posts[0].data, posts[2].data)
 })
 
 test('empty citizen receipts never fetch the global collection', async (t) => {
@@ -463,7 +541,7 @@ test('H5 relative API base resolves requests, evidence and realtime against brow
     await Promise.resolve()
     const socketUrl = new URL(m.calls.find((call) => call.type === 'socket').url)
     assert.equal(`${socketUrl.origin}${socketUrl.pathname}`, `${origin.replace(/^http/, 'ws')}/api/events/realtime`)
-    assert.equal(socketUrl.searchParams.get('token'), 'session-a')
+    assert.equal(socketUrl.searchParams.get('token'), null)
     disconnect()
   }
 })

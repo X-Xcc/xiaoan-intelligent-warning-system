@@ -1,0 +1,1 @@
+import{r as n}from"./index-U7yJpHxH.js";function p(e=3,s=500,t){const c=n.useRef(new WeakMap);return{onError:n.useCallback(u=>{const r=u.currentTarget,o=c.current.get(r)??e;o>0?(c.current.set(r,o-1),setTimeout(()=>{const a=r.src.split("?")[0];r.src=`${a}?_t=${Date.now()}`},s)):t==null||t(r)},[e,s,t])}}export{p as u};

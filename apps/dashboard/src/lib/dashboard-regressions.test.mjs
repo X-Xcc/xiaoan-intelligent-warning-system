@@ -90,6 +90,7 @@ test('business workbench has a distinct deep link and preserves the intake route
     assert.equal(presentation.routePath('command-workbench'), `${base}command/workbench`);
     assert.equal(presentation.viewForPath(`${base}command/workbench`), 'command-workbench');
     assert.equal(presentation.viewForPath(`${base}command`), 'command');
+    assert.equal(presentation.viewForPath(`${base}case`), 'platform');
   }
 });
 

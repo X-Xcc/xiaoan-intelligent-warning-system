@@ -19,41 +19,40 @@ async function load(fetch, timers = {}) {
   return module.namespace;
 }
 
-test('business-token login validates identity and permissions through GET auth/me only', async () => {
+test('anonymous identity is read through GET auth/me without credentials', async () => {
   const calls = [];
   const api = await load(async (url, init) => {
     calls.push({ url, init });
     return Response.json({ user: { openid: 'sample-reviewer', displayName: 'Reviewer', permissions: ['review'] } });
   });
-  const user = await api.authenticateAiReviewer(' secret ');
+  const user = await api.authenticateAiReviewer();
   assert.equal(user.openid, 'sample-reviewer');
   assert.deepEqual(Array.from(user.permissions), ['review']);
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, '/custom/api/auth/me');
   assert.equal(calls[0].init.method, 'GET');
-  assert.equal(new Headers(calls[0].init.headers).get('Authorization'), 'Bearer secret');
+  assert.equal(new Headers(calls[0].init.headers).has('Authorization'), false);
   assert.equal(calls[0].init.redirect, 'error');
   assert.equal(calls[0].init.cache, 'no-store');
   assert.equal(calls[0].init.credentials, 'omit');
   assert.doesNotMatch(fs.readFileSync(path, 'utf8'), /localStorage|sessionStorage|wechat-login|operatorId|X-Admin-Token/);
 });
 
-test('empty tokens never issue a request and role names do not grant review permission', async () => {
+test('anonymous identity needs no token and malformed review drafts never issue requests', async () => {
   let calls = 0;
   const api = await load(async () => {
     calls += 1;
     return Response.json({ user: { openid: 'sample', role: '管理员' } });
   });
-  await assert.rejects(api.authenticateAiReviewer(' '), (error) => error.status === 401);
-  await assert.rejects(api.submitAiReview('', 'sample-1', 'confirmed', 'Checked'), (error) => error.status === 401);
+  await assert.rejects(api.submitAiReview('', 'confirmed', 'Checked'), (error) => error.status === 422);
   assert.equal(calls, 0);
-  assert.deepEqual(Array.from((await api.authenticateAiReviewer('token')).permissions), []);
+  assert.deepEqual(Array.from((await api.authenticateAiReviewer()).permissions), []);
 });
 
 test('invalid identities and permissions cannot become authenticated users', async () => {
   for (const user of [null, {}, { openid: '' }, { openid: 'sample', permissions: 'review' }, { openid: 'sample', permissions: [7] }]) {
     const api = await load(async () => Response.json({ user }));
-    await assert.rejects(api.authenticateAiReviewer('token'), (error) => error.status === 502);
+    await assert.rejects(api.authenticateAiReviewer(), (error) => error.status === 502);
   }
 });
 
@@ -62,15 +61,15 @@ test('reviews send only server-owned identity contract fields and require matchi
   const api = await load(async (url, init) => {
     assert.equal(url, '/custom/api/ai-center/review');
     assert.equal(init.method, 'POST');
-    assert.equal(new Headers(init.headers).get('Authorization'), 'Bearer token');
+    assert.equal(new Headers(init.headers).has('Authorization'), false);
     body = JSON.parse(init.body);
     return Response.json({ ...result, reviewStatus: 'confirmed' });
   });
-  assert.equal((await api.submitAiReview('token', 'sample-1', 'confirmed', ' Checked ')).reviewStatus, 'confirmed');
+  assert.equal((await api.submitAiReview('sample-1', 'confirmed', ' Checked ')).reviewStatus, 'confirmed');
   assert.deepEqual(body, { auditId: 'sample-1', decision: 'confirmed', reason: 'Checked' });
   for (const next of [{}, { ...result, auditId: 'other', reviewStatus: 'confirmed' }, result]) {
     const invalid = await load(async () => Response.json(next));
-    await assert.rejects(invalid.submitAiReview('token', 'sample-1', 'confirmed', 'Checked'), (error) => error.status === 502);
+    await assert.rejects(invalid.submitAiReview('sample-1', 'confirmed', 'Checked'), (error) => error.status === 502);
   }
 });
 

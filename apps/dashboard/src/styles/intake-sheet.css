@@ -20,6 +20,18 @@
 .intake-elements dt { display: flex; align-items: flex-start; flex-wrap: nowrap; gap: 6px; font-size: 13px; color: var(--ui-muted); white-space: nowrap; }
 .intake-elements dt svg { margin-top: 3px; flex-shrink: 0; }
 .intake-elements dd { margin: 0; font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; color: var(--ui-text); }
+.intake-elements > div.intake-attention {
+  display: block;
+  margin: 4px 0;
+  padding: 12px;
+  border: 1px solid #e2b33f;
+  border-left: 4px solid #d59600;
+  border-radius: 4px;
+  background: #fff8df;
+}
+.intake-elements > div.intake-attention dt { margin-bottom: 8px; }
+.intake-elements > div.intake-attention dd { min-width: 0; overflow-wrap: anywhere; word-break: break-word; }
+.intake-elements > div.intake-attention dd { color: #6e4b00; font-weight: 600; }
 .intake-facts .intake-section-heading h2 { font-size: 18px; }
 .intake-facts .intake-elements dt { font-size: 14px; }
 .intake-facts .intake-elements dd { font-size: 16px; line-height: 1.75; }

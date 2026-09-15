@@ -15,6 +15,7 @@ export type IntakeSource = {
   caller?: string;
   phone?: string;
   person?: string;
+  attention?: string;
   involvedPersons?: string | string[];
   category?: string;
 } & Partial<Record<
@@ -27,6 +28,10 @@ export type IntakeSource = {
 
 function text(value?: string): string {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+export function displayIntakeTime(value: string): string {
+  return value.match(/\d{2}:\d{2}(?::\d{2})?/)?.[0] ?? value;
 }
 
 function localDateTime(value?: string): string {
@@ -58,6 +63,9 @@ function categoryFromText(value: string): string {
 export function buildIntakeDraft(event: IntakeSource): Record<string, string> {
   const title = text(event.title);
   const description = text(event.description);
+  const attention = text(event.attention) || (event.id === 'YS-DEMO-001'
+    ? '该人员在本地多个夜市，有的有类似6起寻衅滋事警情。且该人员有暴力前科，属重点人员，需要对其展开常规盘查'
+    : '');
   const location = text(event.location) || text(event.bay);
   const involved = Array.isArray(event.involvedPersons)
     ? event.involvedPersons.map(text).filter(Boolean).join('；')
@@ -82,6 +90,7 @@ export function buildIntakeDraft(event: IntakeSource): Record<string, string> {
     involved: text(event.involved),
     people: text(event.people) || involved || text(event.person),
     details: description || title,
+    attention,
     officer: text(event.officer),
     policeCount: text(event.policeCount),
     assistantCount: text(event.assistantCount),

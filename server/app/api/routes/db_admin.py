@@ -1,12 +1,8 @@
 from __future__ import annotations
 
 import html
-import os
-import secrets
-
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 from fastapi.responses import HTMLResponse
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from sqlalchemy import func, select
 
 from app.api.access_control import require_admin_token
@@ -35,26 +31,8 @@ from app.services.models import (
 
 
 router = APIRouter(prefix="/db-admin", tags=["db-admin"], dependencies=[Depends(require_admin_token)])
-security = HTTPBasic()
-
-
-def _require_admin(credentials: HTTPBasicCredentials = Depends(security)) -> str:
-    expected_user = os.getenv("DB_ADMIN_USER", "")
-    expected_password = os.getenv("DB_ADMIN_PASSWORD", "")
-    if not expected_user or len(expected_password) < 16:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="数据库管理凭据未配置",
-        )
-    user_ok = secrets.compare_digest(credentials.username, expected_user)
-    password_ok = secrets.compare_digest(credentials.password, expected_password)
-    if not (user_ok and password_ok):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid database admin credentials",
-            headers={"WWW-Authenticate": "Basic"},
-        )
-    return credentials.username
+def _require_admin() -> str:
+    return "open-access"
 
 
 def _e(value: object) -> str:

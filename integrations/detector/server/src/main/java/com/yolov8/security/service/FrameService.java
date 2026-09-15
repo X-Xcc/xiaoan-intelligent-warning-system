@@ -42,6 +42,7 @@ public class FrameService {
     /** Multi-camera frame storage: camId -> latest frame bytes (JPEG) */
     private final Map<String, byte[]> latestFrameBytes = new ConcurrentHashMap<>();
     private final Map<String, Long> lastFrameIds = new ConcurrentHashMap<>();
+    private final Map<String, Long> frameCounts = new ConcurrentHashMap<>();
 
     private final AppConfig appConfig;
     private final DemoService demoService;
@@ -77,6 +78,7 @@ public class FrameService {
         }
         latestFrameBytes.put(id, frameBytes);
         lastFrameIds.put(id, System.currentTimeMillis());
+        frameCounts.merge(id, 1L, Long::sum);
     }
 
     /**
@@ -112,25 +114,6 @@ public class FrameService {
      * Returns a map with "cameras" list and "activeCount".
      */
     public Map<String, Object> getCameraStats() {
-        // Demo mode: return virtual camera stats
-        if (appConfig != null && appConfig.isDemoMode() && demoService != null) {
-            Map<String, Object> stats = new LinkedHashMap<>();
-            java.util.List<Map<String, Object>> camList = new java.util.ArrayList<>();
-            java.util.Random rand = new java.util.Random();
-            for (String[] def : DemoService.CAMERA_DEFS) {
-                Map<String, Object> info = new LinkedHashMap<>();
-                info.put("id", def[0]);
-                info.put("name", def[1]);
-                boolean online = rand.nextDouble() > 0.2;
-                info.put("online", online);
-                info.put("personCount", online ? rand.nextInt(5) + 1 : 0);
-                camList.add(info);
-            }
-            stats.put("cameras", camList);
-            stats.put("activeCount", DemoService.CAMERA_DEFS.length);
-            return stats;
-        }
-
         Map<String, Object> stats = new LinkedHashMap<>();
         long now = System.currentTimeMillis();
         java.util.List<Map<String, Object>> camList = new java.util.ArrayList<>();
@@ -139,6 +122,8 @@ public class FrameService {
             info.put("id", entry.getKey());
             Long ts = lastFrameIds.get(entry.getKey());
             info.put("online", ts != null && (now - ts) < frameTtlMs);
+            info.put("frameCount", frameCounts.getOrDefault(entry.getKey(), 0L));
+            info.put("lastFrameAt", ts);
             camList.add(info);
         }
         stats.put("cameras", camList);

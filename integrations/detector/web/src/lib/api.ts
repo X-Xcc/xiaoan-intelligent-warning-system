@@ -1,5 +1,4 @@
 export { API_BASE, getWorkspaceApiUrl, isZeroPort } from './api-config';
-export { clearToken, getToken, setToken } from './auth-token';
 export { apiDownload } from './api-download';
 export { apiDelete, apiFetch, apiGet, apiPatch, apiPost, apiPut, apiUpload } from './api-http';
 export { subscribeSse } from './api-sse';

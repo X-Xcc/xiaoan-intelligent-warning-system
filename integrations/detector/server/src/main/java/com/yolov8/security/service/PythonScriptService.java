@@ -63,11 +63,11 @@ public class PythonScriptService {
             pb.directory(projectRoot);
 
             // dotenv-java uses system properties; pass only the detector's declared keys.
-            for (String name : new String[]{"API_KEY", "CAM_PASSWORD", "DATA_DIR", "WEB_SERVER_URL",
+            for (String name : new String[]{"CAM_PASSWORD", "DATA_DIR", "WEB_SERVER_URL",
                     "CAMERAS_CONFIG_PATH", "YOLOV8_MODEL_PATH", "YOLOV8_DEVICE", "GO2RTC_API",
-                    "GO2RTC_RTSP_HOST", "CICSIC_REVIEW_URL", "CICSIC_REVIEW_API_KEY",
+                    "GO2RTC_RTSP_HOST", "CICSIC_REVIEW_URL",
                     "CICSIC_REVIEW_ENABLED", "CICSIC_REVIEW_TIMEOUT", "THRESHOLDS_PATH"}) {
-                String value = System.getProperty(name);
+                String value = configuredValue(name);
                 if (value != null) pb.environment().putIfAbsent(name, value);
             }
             pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
@@ -82,6 +82,16 @@ public class PythonScriptService {
             log.error("Failed to start detection", e);
             return Map.of("status", "error", "message", e.getMessage());
         }
+    }
+
+    /**
+     * System properties are used by the native launcher for non-secret paths and
+     * switches. Secrets remain environment-only, so they never enter process
+     * arguments or the native process record.
+     */
+    static String configuredValue(String name) {
+        String property = System.getProperty(name);
+        return property != null && !property.isBlank() ? property : System.getenv(name);
     }
 
     /**

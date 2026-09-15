@@ -66,7 +66,26 @@ tmp/
 *.pdf
 *.jpg
 *.jpeg
+!apps/dashboard/public/contact-review-assets/night-market-cam-01.jpg
+!apps/dashboard/public/contact-review-assets/night-market-cam-02.jpg
+!apps/dashboard/public/contact-review-assets/night-market-cam-03.jpg
+!apps/dashboard/public/contact-review-assets/night-market-cam-04.jpg
+!apps/dashboard/public/contact-review-assets/night-market-cam-05.jpg
+!apps/dashboard/public/contact-review-assets/night-market-cam-06.jpg
+!apps/dashboard/public/contact-review-assets/night-market-cam-07.jpg
+!apps/dashboard/public/contact-review-assets/night-market-cam-08.jpg
+!apps/dashboard/public/contact-review-assets/night-market-cam-09.jpg
+!apps/dashboard/public/contact-review-assets/night-market-cam-10.jpg
+!apps/dashboard/public/contact-review-assets/night-market-cam-11.jpg
+!apps/dashboard/public/contact-review-assets/night-market-cam-12.jpg
+!apps/dashboard/public/contact-review-assets/night-market-sequence-01.jpg
+!apps/dashboard/public/contact-review-assets/night-market-sequence-02.jpg
+!apps/dashboard/public/contact-review-assets/night-market-sequence-03.jpg
+!apps/dashboard/public/contact-review-assets/night-market-sequence-04.jpg
+!apps/dashboard/public/contact-review-assets/cr-019-point-3.jpg
+!apps/dashboard/public/contact-review-assets/cr-020-incident.jpg
 *.html
+!apps/dashboard/index.html
 *_text.txt
 source_extract.txt
 *.pyc
@@ -93,6 +112,7 @@ deploy/native/.runtime/
 deploy/native/data/
 deploy/native/logs/
 deploy/native/run/
+integrations/detector/server/deploy/native/.runtime/
 
 # Deployment source assets only; private detector runtime is never source.
 integrations/detector/runtime/

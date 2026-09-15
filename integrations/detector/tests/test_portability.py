@@ -60,7 +60,7 @@ class PortabilityTests(unittest.TestCase):
     def test_deployment_has_no_private_camera_seed(self):
         self.assertEqual(list(ROOT.rglob("cameras.json")), [])
 
-    def test_cicsic_review_uses_scoped_service_key_header(self):
+    def test_cicsic_review_ignores_obsolete_project_service_key(self):
         notifier = load_source("cicsic_notifier")
         calls = []
         client = notifier.CicsicReviewNotifier(
@@ -69,7 +69,7 @@ class PortabilityTests(unittest.TestCase):
             post_func=lambda url, payload, headers, timeout: calls.append(headers),
         )
         client._send({"sourceId": "test"})
-        self.assertEqual(calls, [{"X-Service-Key": "fixture-service-key"}])
+        self.assertEqual(calls, [{}])
         self.assertNotIn("X-API-Key", calls[0])
 
 

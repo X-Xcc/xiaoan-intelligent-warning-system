@@ -13,7 +13,7 @@ MAX_CONFIG_BYTES = 16384
 MAX_JPEG_BYTES = 1_000_000
 MAX_WORKER_LINE = 1_400_000
 MAX_WIDTH, MAX_HEIGHT = 1280, 720
-MAX_FPS = 8
+MAX_FPS = 60
 FIELDS = frozenset(("name", "kind", "host", "port", "username", "password",
                     "rtspPath", "channel", "stream", "go2Mode", "autoStart",
                     "httpScheme", "httpPath", "usbIndex"))
@@ -136,7 +136,7 @@ def validate_config(data: dict, previous: dict | None = None) -> dict:
     result["name"] = result["name"].strip()
     if not result["name"]:
         raise ValueError("\u8bf7\u586b\u5199\u8bbe\u5907\u540d\u79f0")
-    for key, allowed in (("kind", ("go2", "hikvision", "dahua", "rtsp", "usb", "http_snapshot", "http_mjpeg")),
+    for key, allowed in (("kind", ("go2", "hikvision", "dahua", "rtsp", "http_snapshot", "http_mjpeg")),
                          ("stream", ("main", "sub")), ("go2Mode", ("LocalSTA", "LocalAP")),
                          ("httpScheme", ("http", "https"))):
         if result.get(key) not in allowed:
@@ -148,11 +148,7 @@ def validate_config(data: dict, previous: dict | None = None) -> dict:
         raise ValueError("autoStart \u5fc5\u987b\u662f\u5e03\u5c14\u503c")
     if type(result["usbIndex"]) is not int or not 0 <= result["usbIndex"] <= 15:
         raise ValueError("usbIndex must be an integer from 0 to 15")
-    if result["kind"] == "usb":
-        if any(result[key] for key in ("host", "username", "password", "rtspPath", "httpPath")):
-            raise ValueError("USB sources accept only a local device index, not network targets or credentials")
-    else:
-        result["host"] = validate_host(result["host"])
+    result["host"] = validate_host(result["host"])
     if result["kind"] in ("http_snapshot", "http_mjpeg"):
         if result["rtspPath"] or not result["httpPath"]:
             raise ValueError("HTTP sources require an HTTP path and no RTSP path")

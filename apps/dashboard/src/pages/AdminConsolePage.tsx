@@ -6,11 +6,9 @@ import {
   ClipboardCheck,
   Database,
   Eye,
-  KeyRound,
   Network,
   Pause,
   Play,
-  Plus,
   RefreshCw,
   Save,
   ServerCog,
@@ -26,13 +24,11 @@ import {
   Form,
   Input,
   InputNumber,
-  Modal,
   Select,
   Statistic,
   Switch,
   Table,
   Tag,
-  Typography,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -116,17 +112,6 @@ type SystemAudit = {
   resourceType: string;
   resourceId?: string | null;
   detail: Record<string, unknown>;
-  createdAt: string;
-};
-
-type AccessKey = {
-  keyId: string;
-  name: string;
-  keyPrefix: string;
-  scopes: string[];
-  status: string;
-  expiresAt?: string | null;
-  lastUsedAt?: string | null;
   createdAt: string;
 };
 
@@ -223,59 +208,18 @@ function GovernanceSection({ icon, title, extra, children, className = '' }: { i
 }
 
 export function AdminConsolePage({ apiOnline, refresh, navigate }: Props) {
-  const [token, setToken] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const [form] = Form.useForm<{ token: string }>();
-  const login = async ({ token: submitted }: { token: string }) => {
-    setBusy(true);
-    setError('');
-    try {
-      const value = submitted.trim();
-      await createAdminRequest(CORE_API, value)('/runtime-status');
-      form.resetFields();
-      setToken(value);
-    } catch {
-      setError('授权失败，请检查管理令牌和后端连接');
-    } finally {
-      setBusy(false);
-    }
-  };
-  if (!token) return <section className="governance-section">
-    <header className="governance-section-heading"><h2><KeyRound size={20} />管理授权</h2></header>
-    <div className="governance-section-body">
-      {error && <Alert type="error" title={error} showIcon />}
-      <Form form={form} layout="vertical" onFinish={login} style={{ maxWidth: 440 }}>
-        <Form.Item name="token" label="管理令牌" rules={[{ required: true, message: '请输入管理令牌' }]}>
-          <Input.Password autoComplete="off" />
-        </Form.Item>
-        <Button type="primary" htmlType="submit" loading={busy} icon={<KeyRound size={16} />}>验证</Button>
-      </Form>
-    </div>
-  </section>;
-  return <>
-    <Button onClick={() => setToken('')} icon={<KeyRound size={16} />}>退出管理授权</Button>
-    <AuthorizedAdminConsolePage apiOnline={apiOnline} refresh={refresh} navigate={navigate} token={token} />
-  </>;
-}
-
-function AuthorizedAdminConsolePage({ apiOnline, refresh, navigate, token }: Props & { token: string }) {
-  const request = useMemo(() => createAdminRequest(CORE_API, token), [token]);
+  const request = useMemo(() => createAdminRequest(CORE_API), []);
   const { message } = App.useApp();
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [platform, setPlatform] = useState<PlatformSnapshot | null>(null);
   const [runtime, setRuntime] = useState<RuntimeStatus | null>(null);
   const [settings, setSettings] = useState<PlatformSettings>(defaultPlatformSettings);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
-  const [accessKeys, setAccessKeys] = useState<AccessKey[]>([]);
   const [systemAudits, setSystemAudits] = useState<SystemAudit[]>([]);
   const [alarmPushes, setAlarmPushes] = useState<AlarmPush[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingSettings, setSavingSettings] = useState(false);
-  const [creatingKey, setCreatingKey] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
-  const [newSecret, setNewSecret] = useState<string | null>(null);
-  const [accessKeyForm] = Form.useForm<{ name: string; scopes: string[] }>();
   const [platformForm] = Form.useForm<PlatformSettings>();
   const settingsDirty = useRef(false);
   const loadSequence = useRef(0);
@@ -287,7 +231,6 @@ function AuthorizedAdminConsolePage({ apiOnline, refresh, navigate, token }: Pro
       request<PlatformSnapshot>(`${CORE_API}/platform/overview`),
       request<RuntimeStatus>('/runtime-status'),
       request<{ settings: PlatformSettings }>('/platform-settings'),
-      request<{ items: AccessKey[] }>('/access-keys'),
       request<{ items: SystemAudit[] }>('/system-audit-logs'),
       request<{ items: AlarmPush[] }>(`${CORE_API}/events/alarm-pushes`),
     ]);
@@ -300,9 +243,8 @@ function AuthorizedAdminConsolePage({ apiOnline, refresh, navigate, token }: Pro
     const platformPayload = value<PlatformSnapshot>(1);
     const runtimePayload = value<RuntimeStatus>(2);
     const settingsPayload = value<{ settings: PlatformSettings }>(3);
-    const keyPayload = value<{ items: AccessKey[] }>(4);
-    const auditPayload = value<{ items: SystemAudit[] }>(5);
-    const alarmPayload = value<{ items: AlarmPush[] }>(6);
+    const auditPayload = value<{ items: SystemAudit[] }>(4);
+    const alarmPayload = value<{ items: AlarmPush[] }>(5);
     if (admin) setOverview(admin);
     if (platformPayload) setPlatform(platformPayload);
     if (runtimePayload) setRuntime(runtimePayload);
@@ -312,7 +254,6 @@ function AuthorizedAdminConsolePage({ apiOnline, refresh, navigate, token }: Pro
       if (!settingsDirty.current) platformForm.setFieldsValue(next);
     }
     setSettingsLoaded(Boolean(settingsPayload?.settings));
-    if (keyPayload) setAccessKeys(keyPayload.items ?? []);
     if (auditPayload) setSystemAudits(auditPayload.items ?? []);
     if (alarmPayload) setAlarmPushes(alarmPayload.items ?? []);
     if (!admin && !platformPayload && !runtimePayload) message.error('平台治理数据暂不可用');
@@ -401,33 +342,6 @@ function AuthorizedAdminConsolePage({ apiOnline, refresh, navigate, token }: Pro
     }
   };
 
-  const createAccessKey = async () => {
-    try {
-      const values = await accessKeyForm.validateFields();
-      setCreatingKey(true);
-      const payload = await request<AccessKey & { secret: string }>('/access-keys', { method: 'POST', body: JSON.stringify(values) });
-      accessKeyForm.resetFields();
-      setNewSecret(payload.secret);
-      message.success('服务访问密钥已创建');
-      await load();
-    } catch {
-      message.error('服务访问密钥创建失败');
-    } finally {
-      setCreatingKey(false);
-    }
-  };
-
-  const revokeAccessKey = async (item: AccessKey) => {
-    try {
-      await request(`/access-keys/${item.keyId}`, { method: 'PATCH', body: JSON.stringify({ status: 'revoked' }) });
-      message.success(`${item.name}已撤销`);
-      await load();
-      refresh();
-    } catch {
-      message.error('密钥状态更新失败');
-    }
-  };
-
   const acknowledge = async (item: AlarmPush) => {
     try {
       await request(`${CORE_API}/events/alarm-pushes/${item.id}/acknowledge`, { method: 'PATCH' });
@@ -441,9 +355,9 @@ function AuthorizedAdminConsolePage({ apiOnline, refresh, navigate, token }: Pro
 
   const dataDomainColumns: ColumnsType<(typeof dataDomains)[number]> = [
     { title: '主数据域', dataIndex: 'name', width: 230, render: (value: string, item) => <div className="admin-cell-title"><strong>{value}</strong><span>{item.detail}</span></div> },
-    { title: '对象规模', key: 'objects', width: 120, render: (_value, item) => <span>{item.key === 'org' ? `${roles.length || 0} 类` : item.key === 'alarm' ? `${events.length || 0} 条` : '按授权查询'}</span> },
+    { title: '对象规模', key: 'objects', width: 120, render: (_value, item) => <span>{item.key === 'org' ? `${roles.length || 0} 类` : item.key === 'alarm' ? `${events.length || 0} 条` : '按记录查询'}</span> },
     { title: '健康度', key: 'health', width: 90, render: () => <Tag color={apiOnline ? 'green' : 'gold'}>{apiOnline ? '正常' : '待同步'}</Tag> },
-    { title: '治理要求', key: 'governance', width: 110, render: (_value, item) => <span className="admin-table-note">{item.key === 'case' ? '全量留痕' : '分级授权'}</span> },
+    { title: '治理要求', key: 'governance', width: 110, render: (_value, item) => <span className="admin-table-note">{item.key === 'case' ? '全量留痕' : '开放访问'}</span> },
   ];
 
   const agentColumns: ColumnsType<AgentRecord> = [
@@ -458,14 +372,6 @@ function AuthorizedAdminConsolePage({ apiOnline, refresh, navigate, token }: Pro
     { title: '置信度', dataIndex: 'confidence', width: 100, render: (value: number) => <span className="governance-confidence">{value}%</span> },
     { title: '状态', dataIndex: 'status', width: 110, render: (value: string) => <Tag color={statusColor(value)}>{value === 'active' ? '启用' : value === 'paused' ? '暂停' : value}</Tag> },
     { title: '启用', key: 'enabled', width: 90, render: (_value, item) => <Switch aria-label={`${item.name}启用状态`} disabled={!item.skillKey} checked={item.status === 'active'} onChange={(checked: boolean) => updateSkill(item, checked)} /> },
-  ];
-
-  const accessKeyColumns: ColumnsType<AccessKey> = [
-    { title: '名称', dataIndex: 'name', width: 240, render: (value: string, item) => <div className="admin-cell-title"><strong>{value}</strong><span>{item.keyId}</span></div> },
-    { title: '前缀', dataIndex: 'keyPrefix', width: 150, render: (value: string) => <code>{value}</code> },
-    { title: '权限范围', dataIndex: 'scopes', width: 280, render: (value: string[]) => <div className="governance-tag-row">{value?.map((scope) => <Tag key={scope}>{scope}</Tag>)}</div> },
-    { title: '状态', dataIndex: 'status', width: 90, render: (value: string) => <Tag color={statusColor(value)}>{value === 'active' ? '有效' : value === 'revoked' ? '已撤销' : value}</Tag> },
-    { title: '操作', key: 'action', width: 90, render: (_value, item) => <Button type="text" danger disabled={item.status === 'revoked'} onClick={() => revokeAccessKey(item)}>撤销</Button> },
   ];
 
   const overviewView = (
@@ -559,19 +465,7 @@ function AuthorizedAdminConsolePage({ apiOnline, refresh, navigate, token }: Pro
             locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无组织权限记录" /> }}
           />
         </GovernanceSection>
-        <GovernanceSection icon={<KeyRound size={17} />} title="创建服务密钥" className="governance-key-form">
-          <Form form={accessKeyForm} layout="vertical" initialValues={{ scopes: ['source:ingest'] }}>
-            <Form.Item name="name" label="密钥名称" rules={[{ required: true, message: '请输入密钥名称' }]}><Input placeholder="例如：案件系统只读服务" /></Form.Item>
-            <Form.Item name="scopes" label="权限范围" rules={[{ required: true, message: '请选择权限范围' }]}>
-              <Select mode="multiple" options={[{ value: 'source:ingest', label: '数据接入' }, { value: 'data:read', label: '主数据读取' }, { value: 'ai:invoke', label: 'AI 能力调用' }]} />
-            </Form.Item>
-            <Button type="primary" loading={creatingKey} icon={<Plus size={15} />} onClick={createAccessKey}>创建服务密钥</Button>
-          </Form>
-        </GovernanceSection>
       </div>
-      <GovernanceSection icon={<KeyRound size={17} />} title="密钥生命周期" extra={<Tag>{accessKeys.length} 个</Tag>}>
-        <Table rowKey="keyId" size="small" scroll={{ x: 850 }} dataSource={accessKeys} columns={accessKeyColumns} pagination={{ pageSize: 6 }} locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无服务访问密钥" /> }} />
-      </GovernanceSection>
     </div>
   );
 
@@ -630,8 +524,6 @@ function AuthorizedAdminConsolePage({ apiOnline, refresh, navigate, token }: Pro
         <Form form={platformForm} layout="vertical" initialValues={settings}
           onValuesChange={() => { settingsDirty.current = true; }} disabled={loading || !settingsLoaded || savingSettings}>
           <div className="governance-switch-fields">
-            <Form.Item name="adminAuthEnabled" label="管理接口身份校验" valuePropName="checked"><Switch checkedChildren="开启" unCheckedChildren="关闭" /></Form.Item>
-            <Form.Item name="sourceAuthEnabled" label="来源服务凭据校验" valuePropName="checked"><Switch checkedChildren="开启" unCheckedChildren="关闭" /></Form.Item>
           </div>
           <div className="governance-numeric-fields">
             <Form.Item name="publicWriteRateLimitPerMinute" label="公开写入限流"><InputNumber min={1} max={120} addonAfter="次/分钟" /></Form.Item>
@@ -697,10 +589,6 @@ function AuthorizedAdminConsolePage({ apiOnline, refresh, navigate, token }: Pro
         {activeTab === 'audit' && auditView}
         {activeTab === 'settings' && settingsView}
       </div>
-      <Modal title="服务访问密钥已创建" open={Boolean(newSecret)} onCancel={() => setNewSecret(null)} footer={<Button type="primary" onClick={() => setNewSecret(null)}>完成</Button>}>
-        <Typography.Paragraph>该密钥只在本次显示，请立即复制并按权限范围安全保管。</Typography.Paragraph>
-        <Input.TextArea aria-label="新建服务访问密钥" rows={3} readOnly value={newSecret ?? ''} />
-      </Modal>
     </section>
   );
 }

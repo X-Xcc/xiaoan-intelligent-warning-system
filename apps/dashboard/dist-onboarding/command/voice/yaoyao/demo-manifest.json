@@ -1,0 +1,38 @@
+{
+  "voice": "Microsoft Yaoyao",
+  "playbackRate": 1.1,
+  "cues": [
+    {
+      "id": "new-incident",
+      "text": "新警情"
+    },
+    {
+      "id": "route-pushed",
+      "text": "路线已推送"
+    },
+    {
+      "id": "verification-done",
+      "text": "核验完成"
+    },
+    {
+      "id": "linked-four",
+      "text": "已串并4起"
+    },
+    {
+      "id": "anomaly-stay",
+      "text": "异常停留，疑似藏匿"
+    },
+    {
+      "id": "chain-closed",
+      "text": "链条闭环"
+    },
+    {
+      "id": "target-alone",
+      "text": "目标落单，建议盾棍"
+    },
+    {
+      "id": "方案已推送",
+      "text": "方案已推送"
+    }
+  ]
+}

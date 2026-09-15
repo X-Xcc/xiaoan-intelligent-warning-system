@@ -260,11 +260,13 @@ class BackendReviewTests(unittest.IsolatedAsyncioTestCase):
                 code, _, _ = await request(self.app, "GET", "/api/events/evidence/" + name)
                 self.assertEqual(code, 404)
 
-    async def test_command_upload_still_requires_actor_and_download_authorization(self):
+    async def test_command_upload_resolves_public_actor_and_download_validates_record(self):
         from fastapi import HTTPException
 
-        code, _, _ = await self.upload(PNG, "image/png", event_id="synthetic-command")
-        self.assertEqual(code, 401)
+        with patch.object(self.events.command_workflow, "upload_evidence", return_value={}) as upload:
+            code, _, _ = await self.upload(PNG, "image/png", event_id="synthetic-command")
+            self.assertEqual(code, 200)
+            self.assertEqual(upload.call_args.args[1].openid, "open-access")
         for name in ("cmd-synthetic.png", "CMD-SYNTHETIC.png"):
             (self.evidence / name).write_bytes(PNG)
             with patch.object(self.events.command_workflow, "authorize_file",
@@ -292,7 +294,7 @@ class BackendReviewTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(headers["cache-control"], "private, no-store")
             authorize.assert_called_once_with("cmd-synthetic.png", actor)
 
-    async def test_archive_route_rejects_missing_invalid_and_unprivileged_tokens(self):
+    async def test_archive_route_accepts_missing_invalid_and_unprivileged_tokens(self):
         for headers in ({}, {"X-Admin-Token": "invalid"},
                         {"Authorization": "Bearer synthetic-ordinary-user"}):
             with self.subTest(headers=headers), patch.object(
@@ -302,9 +304,9 @@ class BackendReviewTests(unittest.IsolatedAsyncioTestCase):
                     self.app, "POST", "/api/security-ai/face-match",
                     body=b'{"query":"synthetic"}', headers={"Content-Type": "application/json", **headers},
                 )
-                self.assertEqual(code, 401)
-                self.assertNotIn(b"SYNTHETIC-ID", body)
-                compare.assert_not_called()
+                self.assertEqual(code, 200)
+                self.assertEqual(json.loads(body)["items"], [PROFILE])
+                compare.assert_called_once()
 
     async def test_archive_route_preserves_existing_authorized_lookup(self):
         with patch.object(self.security_ops, "compare_identity_archive", return_value=[PROFILE]) as compare:

@@ -4,6 +4,7 @@ from datetime import datetime
 import json
 from math import atan2, cos, isfinite, radians, sin, sqrt
 from typing import Any
+from uuid import uuid4
 
 from sqlalchemy import delete, func, or_, select
 from sqlalchemy.orm import Session
@@ -83,6 +84,10 @@ BAY_COORDS: dict[str, dict[str, float]] = {
 LEGACY_SAMPLE_EVENT_PREFIX = "YS-" + "260815-"
 SECURITY_DETECTION_EVENT_PREFIX = "VIDET-"
 LEGACY_SECURITY_DETECTION_EVENT_PREFIX = "A" "IDET-"
+DEMO_PLACEHOLDER_DETAILS = "报警人小明报警称，20:13:50时许，王五在其摊位前寻衅滋事。地点位于8号摊位前。"
+DEMO_PLACEHOLDER_PERSON = "小明"
+DEMO_PLACEHOLDER_OCCURRED_AT = "2026-09-11T20:13:50"
+DEMO_PLACEHOLDER_RECEIVED_AT = "2026-09-11T20:14:50"
 
 NIGHT_MARKET_BAYS = {
     "某某夜市",
@@ -348,7 +353,7 @@ def _now_label() -> str:
 
 
 def _new_id(prefix: str = "JT") -> str:
-    return f"{prefix}-{datetime.now().strftime('%y%m%d-%H%M%S-%f')[:20]}"
+    return f"{prefix}-{datetime.now().strftime('%y%m%d-%H%M%S-%f')}-{uuid4().hex}"
 
 
 def _staff_key(staff: str | None) -> str | None:
@@ -564,6 +569,7 @@ def _build_assignment(event: dict[str, Any], staff_id: str | None = None, sessio
 
 
 def _event_to_dict(event: SafetyEvent) -> dict[str, Any]:
+    meta = event.meta_json or {}
     return {
         "id": event.id,
         "kind": event.kind,
@@ -577,9 +583,16 @@ def _event_to_dict(event: SafetyEvent) -> dict[str, Any]:
         "time": event.time,
         "updatedAt": event.updatedAt,
         "description": event.description,
+        "caller": meta.get("caller", ""),
+        "reporter": meta.get("reporter", meta.get("caller", "")),
+        "people": meta.get("people", ""),
+        "person": meta.get("person", meta.get("people", "")),
+        "occurredAt": meta.get("occurredAt", ""),
+        "receivedAt": meta.get("receivedAt", ""),
+        "category": meta.get("category", ""),
         "result": event.result,
         "anonymous": bool(event.anonymous),
-        "meta": event.meta_json or {},
+        "meta": meta,
         "createdAt": event.createdAt,
         "updatedAtIso": event.updatedAtIso,
     }
@@ -835,7 +848,22 @@ def _prune_unlocated_help_events(session: Session) -> None:
 def _ensure_demo_placeholder_event(session: Session) -> None:
     """Keep one clearly synthetic high-risk card visible for demonstrations."""
     event_id = "YS-DEMO-001"
-    if session.get(SafetyEvent, event_id):
+    existing = session.get(SafetyEvent, event_id)
+    if existing:
+        meta = dict(existing.meta_json or {})
+        meta.update({
+            "demo": True,
+            "caller": DEMO_PLACEHOLDER_PERSON,
+            "reporter": DEMO_PLACEHOLDER_PERSON,
+            "people": DEMO_PLACEHOLDER_PERSON,
+            "person": DEMO_PLACEHOLDER_PERSON,
+            "occurredAt": DEMO_PLACEHOLDER_OCCURRED_AT,
+            "receivedAt": DEMO_PLACEHOLDER_RECEIVED_AT,
+            "category": "寻衅滋事",
+        })
+        existing.time = "20:13:50"
+        existing.description = DEMO_PLACEHOLDER_DETAILS
+        existing.meta_json = meta
         return
     created_at = datetime.now().isoformat(timespec="seconds")
     session.add(
@@ -849,9 +877,9 @@ def _ensure_demo_placeholder_event(session: Session) -> None:
             status="已提交",
             owner="待指派",
             distance="待测距",
-            time=datetime.now().strftime("%H:%M"),
-            updatedAt=datetime.now().strftime("%H:%M"),
-            description="某某夜市现场有人持续滋扰、挑衅并影响摊位经营，已形成围观，建议附近巡防人员先期到场核实。",
+            time="20:13:50",
+            updatedAt="20:13:50",
+            description=DEMO_PLACEHOLDER_DETAILS,
             result=None,
             anonymous=True,
             meta_json={
@@ -859,6 +887,13 @@ def _ensure_demo_placeholder_event(session: Session) -> None:
                 "manualLocation": "某某夜市",
                 "alarmLocation": {"latitude": 28.6819, "longitude": 115.8637, "name": "某某夜市", "source": "desensitized_demo"},
                 "demo": True,
+                "caller": DEMO_PLACEHOLDER_PERSON,
+                "reporter": DEMO_PLACEHOLDER_PERSON,
+                "people": DEMO_PLACEHOLDER_PERSON,
+                "person": DEMO_PLACEHOLDER_PERSON,
+                "occurredAt": DEMO_PLACEHOLDER_OCCURRED_AT,
+                "receivedAt": DEMO_PLACEHOLDER_RECEIVED_AT,
+                "category": "寻衅滋事",
             },
             createdAt=created_at,
             updatedAtIso=created_at,

@@ -78,13 +78,9 @@ export function acceptsResponse(eventId: string, version: number, response: Comm
   return response.event.id === eventId && response.command.version >= version;
 }
 
-export function actionAllowed(event: CommandEvent | null, roles: string[], action: string, mode: CommandMode, online: boolean) {
+export function actionAllowed(event: CommandEvent | null, _roles: string[], action: string, mode: CommandMode, online: boolean) {
   if (!event || mode !== 'rehearsal' || !online || event.status === '已完成') return false;
   const command = event.meta.command;
-  const role = action.startsWith('summary') || action === 'intake' ? 'intake'
-    : action.startsWith('dispatch') ? 'dispatch'
-      : action === 'handover/review' ? 'analyze' : 'field';
-  if (!roles.includes(role)) return false;
   const handover = command.handover?.status;
   if (handover === 'accepted' && action !== 'status') return false;
   if (handover === 'submitted' && !['handover/review', 'status'].includes(action)) return false;

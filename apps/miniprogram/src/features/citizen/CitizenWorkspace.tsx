@@ -126,7 +126,7 @@ export function CitizenWorkspace({ initialTab, initialPanel, onStaff, onLogout }
       </View></View>}
     {tab === 'mine' && <View><PageHeader title='我的' subtitle='小安智能预警系统 · 个人服务' />
       <View className='mini-surface'>
-        <View className='citizen-profile'><View className='citizen-avatar'><Icon name='user' tone='blue' size={60} /></View><View><Text>{Taro.getStorageSync('yanhuo-shaobing-auth-token') ? '已登录用户' : '访客'}</Text><Text>本机记录 {controller.events.length} 条</Text></View></View>
+        <View className='citizen-profile'><View className='citizen-avatar'><Icon name='user' tone='blue' size={60} /></View><View><Text>本机访客</Text><Text>本机记录 {controller.events.length} 条</Text></View></View>
         <Section title='我的记录'>{[{ name: '求助记录', kind: 'help' as const, icon: 'siren' }, { name: '上报记录', kind: 'report' as const, icon: 'report' }, { name: '线索记录', kind: 'lost' as const, icon: 'search' }].map((item) =>
           <Button className='citizen-menu-row' key={item.name} onClick={() => { controller.setProgressFilter(item.kind); goProgress() }}><Icon name={item.icon} size={38} /><Text>{item.name}</Text><Icon name='chevronRight' size={28} /></Button>)}</Section>
         <Section title='服务与设置'>
@@ -134,7 +134,7 @@ export function CitizenWorkspace({ initialTab, initialPanel, onStaff, onLogout }
           <Button className='citizen-menu-row' onClick={() => openDetail('privacy')}><Icon name='shield' size={38} /><Text>隐私与授权</Text><Icon name='chevronRight' size={28} /></Button>
           <Button className='citizen-menu-row' onClick={() => openDetail('about')}><Icon name='info' size={38} /><Text>关于小安智能预警系统</Text><Icon name='chevronRight' size={28} /></Button>
         </Section>
-        <Button className='mini-secondary mini-block' onClick={onLogout}><Icon name='logout' size={34} /><Text>返回登录页</Text></Button>
+        <Button className='mini-secondary mini-block' onClick={onLogout}><Icon name='logout' size={34} /><Text>结束本次使用</Text></Button>
       </View></View>}
     <Tabbar active={tab} setTab={changeTab} />
     {panel === 'markets' && <BottomSheet title='商圈位置' onClose={() => setPanel(null)}>

@@ -1,7 +1,7 @@
 {
   "scenarioId": "night_market_b1_b4",
   "version": "1.0",
-  "baseTime": "2026-09-05T20:15:00+08:00",
+  "baseTime": "2026-09-05T20:13:50+08:00",
   "title": "XX夜市消费纠纷",
   "sourceMode": "desensitized_demo",
   "intake": {
@@ -23,7 +23,7 @@
     {"eventId": "TEACH-0829-01", "occurredAt": "2026-08-30T20:40:00+08:00", "locationText": "教学夜市A区",
      "relation": "消费纠纷", "similarity": "medium", "basis": ["已记录食品索赔", "已记录威胁砸摊"], "personKeys": ["TEACH-CHEN"],
      "sourceMode": "desensitized_demo"},
-    {"eventId": "TEACH-0902-02", "occurredAt": "2026-09-02T19:20:00+08:00", "locationText": "教学夜市C区",
+    {"eventId": "TEACH-0902-02", "occurredAt": "2026-09-02T20:20:00+08:00", "locationText": "教学夜市C区",
      "relation": "消费纠纷", "similarity": "medium", "basis": ["同类夜市场景", "已记录食品索赔"], "personKeys": ["TEACH-CHEN"],
      "sourceMode": "desensitized_demo"}
   ],

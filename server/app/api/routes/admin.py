@@ -75,7 +75,7 @@ class VoiceBroadcastSettingsIn(BaseModel):
 
 
 class PlatformSettingsIn(BaseModel):
-    adminAuthEnabled: bool = True
+    adminAuthEnabled: bool = False
     sourceAuthEnabled: bool = False
     publicWriteRateLimitPerMinute: int = Field(default=20, ge=1, le=120)
     evidenceUploadLimitMb: int = Field(default=20, ge=1, le=100)

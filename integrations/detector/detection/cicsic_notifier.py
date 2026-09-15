@@ -70,7 +70,6 @@ class CicsicReviewNotifier:
     ):
         self.url = (url or os.environ.get("CICSIC_REVIEW_URL", "")).strip()
         self.enabled = _env_bool("CICSIC_REVIEW_ENABLED") if enabled is None else enabled
-        self.api_key = api_key if api_key is not None else os.environ.get("CICSIC_REVIEW_API_KEY", "")
         self.timeout = timeout if timeout is not None else float(os.environ.get("CICSIC_REVIEW_TIMEOUT", "2.5"))
         self._post_func = post_func or self._post_with_requests
         self._state_lock = threading.Lock()
@@ -110,8 +109,7 @@ class CicsicReviewNotifier:
 
     def _send(self, payload: dict[str, Any]) -> None:
         try:
-            headers = {"X-Service-Key": self.api_key} if self.api_key else {}
-            self._post_func(self.url, payload, headers, self.timeout)
+            self._post_func(self.url, payload, {}, self.timeout)
             logger.info("YOLO 聚集结果已上报 CICSIC: %s", self.url)
         except Exception as exc:
             logger.warning("YOLO 聚集结果上报失败，不影响本地检测: %s", exc)

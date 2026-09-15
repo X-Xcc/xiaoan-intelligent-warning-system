@@ -1,0 +1,115 @@
+.cr-nightmarket-map-section { min-width: 0; container-type: inline-size; }
+.cr-nightmarket-map-section .cr-case-contact { --cr-point: #21856d; --cr-point-bg: #edf7f2; }
+.cr-nightmarket-map-section .cr-case-transit { --cr-point: #5983b4; --cr-point-bg: #f0f5fa; }
+.cr-nightmarket-map-section .cr-case-incident { --cr-point: #cf4847; --cr-point-bg: #fff1f0; }
+.cr-nightmarket-map-section .cr-case-disposal { --cr-point: #a16c17; --cr-point-bg: #fff7e8; }
+.cr-nightmarket-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 12px 14px; border: 1px solid #dfe6ec; background: #f7f9fb; }
+.cr-nightmarket-heading-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.cr-nightmarket-heading-title > svg { color: #317bb2; flex-shrink: 0; }
+.cr-nightmarket-heading h3 { font-size: 15px; }
+.cr-nightmarket-heading-title p { color: #7a8997; font-size: 12px; margin-top: 2px; }
+.cr-nightmarket-heading-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-left: auto; min-width: 0; }
+.cr-nightmarket-heading-actions .ui-icon-button { width: 32px; height: 32px; flex: 0 0 32px; }
+.cr-nightmarket-route-overlap { display: inline-flex; align-items: center; min-height: 24px; padding: 0 8px; border: 1px solid #ffa39e; border-radius: 3px; color: #cf1322; background: #fff1f0; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.cr-nightmarket-legend { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; padding: 9px 14px; border: 1px solid #dfe6ec; border-top: 0; background: white; font-size: 12px; }
+.cr-nightmarket-legend > span { display: inline-flex; align-items: center; gap: 6px; }
+.cr-nightmarket-legend i { width: 8px; height: 8px; border-radius: 50%; background: var(--cr-point); }
+.cr-nightmarket-legend .cr-nightmarket-route-key { width: 22px; height: 0; border-radius: 0; border-top: 3px dashed #367ee0; background: none; }
+.cr-nightmarket-legend .cr-nightmarket-route-key-violet { border-top-color: #8056c7; }
+.cr-nightmarket-legend .cr-nightmarket-route-key-brown { border-top-color: #8b5e3c; }
+.cr-nightmarket-legend .cr-nightmarket-route-key-branch { border-top-style: dotted; border-top-color: #d08a32; }
+.cr-nightmarket-map-viewport { display: grid; grid-template-columns: 190px minmax(0, 1fr); min-width: 0; border: 1px solid #dfe6ec; border-top: 0; background: #edf1f2; }
+.cr-nightmarket-timeline { min-width: 0; padding: 16px 12px; border-right: 1px solid #dfe6ec; background: #fcfdfd; }
+.cr-nightmarket-timeline h4 { font-size: 13px; margin-bottom: 12px; }
+.cr-nightmarket-timeline ol { list-style: none; margin: 0; padding: 0; }
+.cr-nightmarket-timeline li { position: relative; padding-bottom: 12px; }
+.cr-nightmarket-timeline li:not(:last-child)::after { content: ""; position: absolute; width: 1px; left: 17px; top: 43px; bottom: 0; background: #e0e7ec; }
+.cr-nightmarket-timeline button { display: flex; align-items: flex-start; gap: 8px; width: 100%; padding: 7px 4px; text-align: left; border: 1px solid transparent; border-radius: 3px; background: transparent; }
+.cr-nightmarket-timeline button:hover { background: var(--cr-point-bg); }
+.cr-nightmarket-timeline button[aria-pressed=true] { border-color: color-mix(in srgb, var(--cr-point), white 75%); background: var(--cr-point-bg); }
+.cr-nightmarket-step-number { display: grid; place-items: center; width: 24px; height: 24px; flex: 0 0 24px; border-radius: 50%; color: white; background: var(--cr-point); font-size: 11px; }
+.cr-nightmarket-step-detail { min-width: 0; }
+.cr-nightmarket-step-detail strong { display: block; color: var(--cr-point); font-size: 12px; overflow-wrap: anywhere; }
+.cr-nightmarket-step-detail small { display: flex; flex-wrap: wrap; gap: 0 6px; margin-top: 3px; color: #778796; font-size: 11px; font-variant-numeric: tabular-nums; }
+.cr-nightmarket-timeline .cr-nightmarket-timeline-summary { margin-top: 8px; padding-top: 12px; border-top: 1px solid #e1e7ec; color: #778796; font-size: 11px; }
+.cr-gait-map { position: relative; align-self: start; min-width: 0; width: 100%; aspect-ratio: 1200 / 780; overflow: hidden; background: #edf0ee; container-type: inline-size; }
+.cr-nightmarket-map-surface { position: absolute; inset: 0; }
+.cr-nightmarket-basemap { display: block; width: 100%; height: 100%; object-fit: contain; }
+.cr-gait-route-line { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.cr-gait-route-line * { vector-effect: non-scaling-stroke; }
+.cr-nightmarket-boundary { stroke: #389981; fill: #159e741c; stroke-width: 1.5; stroke-dasharray: 5 5; }
+.cr-nightmarket-route-halo { fill: none; stroke: white; stroke-width: 7; stroke-linejoin: round; }
+.cr-nightmarket-route { fill: none; stroke: #367ee0; stroke-width: 3.5; stroke-dasharray: 8 5; stroke-linejoin: round; }
+.cr-nightmarket-route-violet { stroke: #8056c7; }
+.cr-nightmarket-route-brown { stroke: #8b5e3c; }
+.cr-nightmarket-map-section[data-source-record-id="CR-020"] .cr-nightmarket-route-overlap { border-color: #d4c2b4; color: #754d30; background: #fff; }
+.cr-nightmarket-route-branch-halo { stroke-width: 6; }
+.cr-nightmarket-route-branch { stroke-width: 3; stroke-dasharray: 3 5; opacity: .86; }
+.cr-nightmarket-anchor.cr-case-contact, .cr-nightmarket-anchor.cr-case-transit, .cr-nightmarket-anchor.cr-case-disposal { --cr-marker: #21856d; --cr-marker-text: white; }
+.cr-nightmarket-anchor.cr-case-incident { --cr-marker: #cf1322; --cr-marker-text: white; }
+.cr-nightmarket-anchor { position: absolute; z-index: 2; display: grid; place-items: center; width: 30px; height: 30px; transform: translate(-50%, -50%); border: 2px solid white; border-radius: 50%; padding: 0; color: var(--cr-marker-text); background: var(--cr-marker); box-shadow: 0 1px 5px #253f4933; font-weight: 600; font-size: 12px; }
+.cr-nightmarket-anchor[aria-pressed=true] { box-shadow: 0 0 0 4px color-mix(in srgb, var(--cr-marker), transparent 76%), 0 1px 5px #253f4933; }
+.cr-nightmarket-anchor:hover { outline: 2px solid color-mix(in srgb, var(--cr-marker), white 30%); }
+.cr-nightmarket-place-label { position: absolute; left: 36px; top: -1px; width: max-content; white-space: nowrap; padding: 3px 7px; border-left: 3px solid var(--cr-point); border-radius: 3px; color: var(--cr-point); background: white; box-shadow: 0 1px 6px #253f491a; font-size: 12px; font-weight: 600; line-height: 20px; }
+.cr-nightmarket-place-label::before { content: ""; position: absolute; left: -10px; top: 13px; width: 7px; height: 1px; background: var(--cr-point); }
+.cr-nightmarket-anchor.cr-case-contact .cr-nightmarket-place-label { top: -35px; left: 50%; transform: translateX(-50%); }
+.cr-nightmarket-anchor.cr-case-contact .cr-nightmarket-place-label::before { width: 1px; height: 7px; left: 50%; top: 100%; }
+.cr-nightmarket-north { position: absolute; right: 12px; top: 12px; display: grid; justify-items: center; gap: 2px; color: #576d7a; background: #fffffff0; padding: 5px 7px; font-size: 11px; }
+.cr-nightmarket-map-key { position: absolute; left: 12px; bottom: 10px; padding: 3px 6px; color: #677b89; background: #fffffff0; font-size: 10px; }
+.cr-nightmarket-photo-strip { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; padding-top: 10px; }
+.cr-nightmarket-photo-marker { position: relative; min-width: 0; }
+.cr-gait-point { position: relative; display: block; width: 100%; padding: 0; overflow: hidden; text-align: left; border: 1px solid #dce4e9; border-radius: 4px; color: #42607b; background: white; }
+.cr-gait-point[aria-pressed=true] { border-color: var(--cr-point); box-shadow: 0 0 0 2px color-mix(in srgb, var(--cr-point), transparent 83%); }
+.cr-gait-point > img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: contain; background: #e6ebef; }
+.cr-gait-point .cr-nightmarket-photo-label { position: absolute; top: 5px; left: 5px; max-width: calc(100% - 46px); padding: 1px 4px; border-radius: 2px; color: white; background: var(--cr-point); font-size: 11px; line-height: 18px; overflow-wrap: anywhere; }
+.cr-nightmarket-photo-title { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 4px; min-height: 32px; padding: 4px 6px; font-size: 11px; }
+.cr-nightmarket-photo-title > svg, .cr-nightmarket-photo-title > strong { flex-shrink: 0; }
+.cr-nightmarket-photo-title time { margin-left: auto; color: #718395; font-size: 11px; font-variant-numeric: tabular-nums; }
+.cr-nightmarket-photo-zoom { position: absolute; right: 5px; top: 5px; z-index: 1; display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 3px; color: white; background: #223b50e8; }
+.cr-nightmarket-photo-zoom:hover { background: #365870; }
+.cr-nightmarket-map-footer { margin-top: 10px; color: #7b8c9d; font-size: 11px; line-height: 1.7; }
+.cr-gait-photo-error { display: grid; place-content: center; justify-items: center; gap: 5px; width: 100%; aspect-ratio: 16 / 9; color: #7b899b; background: #e9eef3; font-size: 12px; }
+.cr-nightmarket-map-error, .cr-nightmarket-empty { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; min-height: 160px; height: 100%; padding: 20px; color: #7f8f9e; }
+.cr-gait-image-modal { top: 28px; max-width: calc(100vw - 24px); }
+.cr-gait-photo-preview { margin: 0; }
+.cr-gait-photo-preview > img { display: block; width: 100%; max-height: 65dvh; object-fit: contain; background: #f1f4f6; }
+.cr-gait-photo-preview figcaption { display: grid; gap: 6px; padding-top: 14px; color: #7b899b; font-size: 12px; overflow-wrap: anywhere; }
+.cr-gait-photo-preview strong { color: #405a73; font-size: 13px; }
+@container (max-width: 820px) {
+  .cr-nightmarket-map-viewport { grid-template-columns: minmax(0, 1fr); }
+  .cr-nightmarket-timeline { padding: 10px; border-right: 0; border-bottom: 1px solid #dfe6ec; }
+  .cr-nightmarket-timeline h4 { margin-bottom: 8px; }
+  .cr-nightmarket-timeline ol { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
+  .cr-nightmarket-timeline li { padding-bottom: 0; }
+  .cr-nightmarket-timeline li::after { display: none; }
+  .cr-nightmarket-timeline button { display: block; height: 100%; padding: 6px; }
+  .cr-nightmarket-step-number { margin-bottom: 5px; }
+  .cr-nightmarket-step-detail { display: block; }
+  .cr-nightmarket-step-detail small { gap: 2px 6px; }
+  .cr-nightmarket-timeline .cr-nightmarket-timeline-summary { display: none; }
+  .cr-nightmarket-photo-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@container (max-width: 580px) {
+  .cr-nightmarket-anchor { width: 26px; height: 26px; font-size: 11px; }
+  .cr-nightmarket-place-label { left: 29px; padding: 2px 5px; font-size: 11px; }
+  .cr-nightmarket-anchor.cr-case-contact .cr-nightmarket-place-label { top: -33px; }
+  .cr-nightmarket-anchor.cr-case-disposal .cr-nightmarket-place-label { left: 50%; top: 27px; transform: translateX(-50%); }
+  .cr-nightmarket-anchor.cr-case-disposal .cr-nightmarket-place-label::before { left: 50%; top: -7px; width: 1px; height: 7px; }
+  .cr-nightmarket-north { top: 6px; right: 6px; padding: 3px 5px; }
+  .cr-nightmarket-map-key { bottom: 6px; left: 6px; font-size: 10px; }
+}
+@container (max-width: 520px) {
+  .cr-nightmarket-heading { padding: 10px; }
+  .cr-nightmarket-legend { gap: 6px 12px; padding: 8px 10px; font-size: 11px; }
+  .cr-nightmarket-timeline ol { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .cr-nightmarket-step-detail strong { font-size: 11px; }
+  .cr-nightmarket-step-detail small { font-size: 10px; }
+  .cr-nightmarket-photo-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container (max-width: 300px) {
+  .cr-nightmarket-timeline ol { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cr-nightmarket-photo-strip { grid-template-columns: minmax(0, 1fr); }
+  .cr-nightmarket-place-label { font-size: 10px; }
+  .cr-nightmarket-anchor.cr-case-disposal .cr-nightmarket-place-label { top: 24px; }
+  .cr-nightmarket-map-key { font-size: 9px; }
+}
