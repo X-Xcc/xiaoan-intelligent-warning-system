@@ -13,7 +13,7 @@ function load(relativePath) {
   const { outputFiles } = buildSync({
     entryPoints: [fileURLToPath(new URL(relativePath, import.meta.url))],
     bundle: true, write: false, format: 'cjs', platform: 'node',
-    packages: 'external', jsx: 'automatic', loader: { '.css': 'empty' },
+    packages: 'bundle', external: ['react', 'react-dom'], jsx: 'automatic', loader: { '.css': 'empty' },
     define: { 'import.meta.env.BASE_URL': '"/"' },
   });
   const module = { exports: {} };

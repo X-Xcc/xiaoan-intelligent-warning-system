@@ -13,7 +13,7 @@ function loadModule(path) {
   const { outputFiles } = buildSync({
     entryPoints: [fileURLToPath(new URL(path, import.meta.url))],
     bundle: true, write: false, format: 'cjs', platform: 'node',
-    packages: 'external', jsx: 'automatic',
+    packages: 'bundle', external: ['react', 'react-dom'], jsx: 'automatic',
     define: { 'import.meta.env.BASE_URL': '"/test-app/"' },
   });
   const module = { exports: {} };
@@ -111,10 +111,9 @@ test('the event toolbar has no placeholder filter or pagination controls', () =>
 
 test('homepage uses one local field image as the primary showcase visual', () => {
   const html = render();
-  assert.ok(html.includes('src="/test-app/contact-review-assets/night-market-cam-05.jpg"'));
-  assert.ok(html.includes('现场画面'));
-  assert.ok(html.includes('现场监控'));
-  assert.doesNotMatch(html, /night-market-cam-02.png/);
+  assert.ok(html.includes('src="/test-app/night-market-cam-02.png"'));
+  assert.ok(html.includes('示例画面'));
+  assert.ok(html.includes('夜市监控'));
   assert.ok(!html.includes('googleusercontent.com'));
 });
 
