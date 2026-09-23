@@ -5,6 +5,7 @@ import json
 from math import atan2, cos, isfinite, radians, sin, sqrt
 from typing import Any
 from uuid import uuid4
+from weakref import WeakSet
 
 from sqlalchemy import delete, func, or_, select
 from sqlalchemy.orm import Session
@@ -18,6 +19,7 @@ STATUS_FLOW = ["已提交", "已派单", "已接收", "已到达", "处理中", 
 SECURITY_SYNC_ACTIONS = set(ACTION_TITLES)
 ACTIVE_TASK_STATUSES = {"已派单", "已接收", "已到达", "处理中"}
 AUDIT_DETAILS_MARKER = "\n[CICSIC_AUDIT_DETAILS]"
+_initialized_stores: WeakSet = WeakSet()
 
 STAFF_ROSTER: dict[str, dict[str, Any]] = {
     "wang": {
@@ -902,8 +904,17 @@ def _ensure_demo_placeholder_event(session: Session) -> None:
 
 
 def init_db() -> None:
+    with DB_LOCK:
+        if SessionLocal in _initialized_stores:
+            return
+        _initialize_db()
+        # Failed initialization must remain retryable; do not retain retired stores.
+        _initialized_stores.add(SessionLocal)
+
+
+def _initialize_db() -> None:
     init_database()
-    with DB_LOCK, SessionLocal() as session:
+    with SessionLocal() as session:
         _seed_staff(session)
         _prune_legacy_sample_events(session)
         _prune_unlocated_help_events(session)
@@ -1177,8 +1188,19 @@ def list_events(kind: str | None = None) -> list[dict[str, Any]]:
         project_events = [event for event in events if _is_night_market_event(event)]
         if project_events:
             events = project_events
+        timelines: dict[str, list[dict[str, Any]]] = {event["id"]: [] for event in events}
+        event_ids = list(timelines)
+        # Bound SQL parameters while avoiding one audit query for every event.
+        for start in range(0, len(event_ids), 500):
+            logs = session.scalars(
+                select(EventAuditLog)
+                .where(EventAuditLog.eventId.in_(event_ids[start:start + 500]))
+                .order_by(EventAuditLog.createdAt.asc(), EventAuditLog.id.asc())
+            ).all()
+            for log in logs:
+                timelines[log.eventId].append(_log_to_dict(log))
         for event in events:
-            event["timeline"] = _event_logs(session, event["id"])
+            event["timeline"] = timelines[event["id"]]
     return events
 
 

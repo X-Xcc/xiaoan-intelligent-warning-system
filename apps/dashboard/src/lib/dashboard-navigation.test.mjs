@@ -13,7 +13,7 @@ function navigation() {
     jsx: 'automatic',
     define: { 'import.meta.env': JSON.stringify({ VITE_API_BASE_URL: '/api' }) },
   });
-  vm.runInNewContext(code, { module, exports: module.exports, require: () => ({}) });
+  vm.runInNewContext(code, { module, exports: module.exports, require: () => ({ lazy: load => ({ load }) }) });
   return Array.from(module.exports.systemNavItems, item => item.view);
 }
 
@@ -26,7 +26,7 @@ function navigationItems() {
     jsx: 'automatic',
     define: { 'import.meta.env': JSON.stringify({ VITE_API_BASE_URL: '/api' }) },
   });
-  vm.runInNewContext(code, { module, exports: module.exports, require: () => ({}) });
+  vm.runInNewContext(code, { module, exports: module.exports, require: () => ({ lazy: load => ({ load }) }) });
   return Array.from(module.exports.systemNavItems);
 }
 

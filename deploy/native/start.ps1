@@ -8,7 +8,8 @@ param(
     [switch]$EnableCameras,
     [switch]$Force,
     [switch]$OpenBrowser,
-    [switch]$NoWatchdog
+    [switch]$NoWatchdog,
+    [switch]$NoCameras
 )
 
 . (Join-Path $PSScriptRoot 'common.ps1')
@@ -22,8 +23,7 @@ function Ensure-NativeConfiguration {
     }
     foreach ($item in @(
         @('API_PORT', '8010'), @('DETECTOR_PORT', '5000'), @('POSTGRES_PORT', '5433'),
-        @('CICSIC_BRIDGE_AUTOSTART', 'false'), @('DETECTOR_AUTOSTART', 'false'),
-        @('GO2RTC_AUTOSTART', 'false'), @('DETECTOR_RETENTION_DAYS', '0')
+        @('DETECTOR_RETENTION_DAYS', '0')
     )) { Add-NativeSetting (Join-Path $Native '.env') $item[0] $item[1] }
 }
 
@@ -163,18 +163,19 @@ try {
 
     # Native startup is intentionally real-camera-only. The switch remains for
     # compatibility with existing launchers and is forwarded to the watchdog.
+    $autostartValue = if ($NoCameras) { 'false' } else { 'true' }
     foreach ($name in @('CICSIC_BRIDGE_AUTOSTART', 'DETECTOR_AUTOSTART', 'GO2RTC_AUTOSTART')) {
-        Set-NativeSettingValue (Join-Path $native '.env') $name 'true'
+        Set-NativeSettingValue (Join-Path $native '.env') $name $autostartValue
     }
 
     . (Join-Path $PSScriptRoot 'services.ps1')
-    $context = Get-NativeServiceContext -RequireRealCamera
+    $context = Get-NativeServiceContext -RequireRealCamera:(-not $NoCameras)
     Write-Host '[3/5] Starting database, API, detector, and dashboard...'
-    Start-NativeServiceStack -Context $context -RequireRealCamera
+    Start-NativeServiceStack -Context $context -RequireRealCamera:(-not $NoCameras)
     Wait-NativeHttp $context.WebUrl
-    Wait-NativeRealCameraReadiness $context.ApiBase $context.DetectorBase
+    if (-not $NoCameras) { Wait-NativeRealCameraReadiness $context.ApiBase $context.DetectorBase }
 
-    if (-not $NoWatchdog) {
+    if (-not $NoWatchdog -and -not $NoCameras) {
         if (-not $preExistingOwned['watchdog'] -or $Force) {
             $cleanupNames += 'watchdog'
         }
@@ -183,11 +184,15 @@ try {
         if (-not (Test-NativeOwnedChild 'watchdog')) {
             throw 'Native watchdog could not be confirmed as project-owned.'
         }
-    } elseif ($OpenBrowser) {
+    } elseif ($OpenBrowser -and -not $NoCameras) {
         throw 'OpenBrowser requires the native watchdog unless NoWatchdog is removed.'
     }
 
-    Write-Host '[5/5] Real camera readiness confirmed.'
+    if ($NoCameras) {
+        Write-Host '[5/5] Dashboard and API readiness confirmed; camera capture is disabled.'
+    } else {
+        Write-Host '[5/5] Real camera readiness confirmed.'
+    }
     Write-Host "READY: native real camera stack http://127.0.0.1:$($context.Settings['WEB_PORT'])"
     Write-Host "Detector: $($context.DetectorBase)"
     if ($OpenBrowser) { Open-NativeDashboard $context.WebUrl }

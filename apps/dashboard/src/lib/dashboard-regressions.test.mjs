@@ -72,7 +72,8 @@ test('partial live responses do not invent business metrics or availability', as
   const value = normalizeLiveOverview({ stats: { today_events: 0 } });
   assert.equal(value.stats.today_events, 0);
   assert.equal(value.stats.training_records, undefined);
-  assert.deepEqual(plain(value.ai_copilot.agents), []);
+  assert.equal(value.ai_copilot.agents, undefined);
+  assert.equal(value.ai_copilot.mcp_connectors, undefined);
   assert.deepEqual(plain(value.businessSystems), []);
 });
 

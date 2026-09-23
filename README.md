@@ -2,6 +2,32 @@
 
 这是小安智能预警系统的完整 Windows 原生部署仓库。它不需要 Docker Desktop。系统会在目标 Windows 电脑上分别启动 PostgreSQL、后端 API、管理网页和视频检测服务。
 
+## 项目地图
+
+先按下面的入口找文件，不需要在整个仓库里搜索：
+
+| 需要找什么 | 入口 |
+| --- | --- |
+| 管理网页（React + Vite） | [`apps/dashboard`](apps/dashboard) |
+| 微信小程序（Taro） | [`apps/miniprogram`](apps/miniprogram) |
+| 业务 API（FastAPI） | [`server`](server) |
+| 视频检测与摄像头服务（Python + Java） | [`integrations/detector`](integrations/detector) |
+| Windows 原生安装、启动、恢复 | [`deploy/native`](deploy/native) |
+| Linux/Nginx/系统服务部署模板 | [`deploy/production`](deploy/production) |
+| 自动化检查和设备工具 | [`tools`](tools) |
+| 开发服务器和部署辅助脚本 | [`scripts`](scripts) |
+| 部署边界与数据恢复说明 | [`docs/deployment-full-replica.md`](docs/deployment-full-replica.md) |
+
+### 最常用的几个入口
+
+- 新电脑首次安装：`install-prerequisites.cmd`，然后按需要运行 `restore.cmd` 或 `一键启动稳定版.cmd`。
+- 停止本项目服务：`一键停止.cmd`。
+- 前端开发：`npm run dashboard:dev`。
+- 前端测试：`npm run test:dashboard`。
+- 后端开发：`npm run server:dev`。
+
+`apps/dashboard/public`、`server/models` 和 `integrations/detector/server/bin` 中的资源是源码运行所需的公开运行时资源；`node_modules`、`dist`、Java `target`、Python 虚拟环境、数据库、日志和本地配置均由安装或构建过程生成，不应提交。
+
 > 本版本已取消项目内登录、管理令牌和角色访问限制，所有能连接服务的人都可以访问及操作功能。接处警及 AI 审核以 `open-access` 公共身份留痕，免登录审计不能用于识别真实操作者。请勿将服务暴露到公网；设备密码、第三方服务密钥和浏览器摄像头权限仍然需要。
 
 当前电脑应用已构建的免登录更新：右键 `apply-open-access.cmd`，选择“以管理员身份运行”。脚本会校验待更新文件和进程，替换检测服务并重启，不删除业务数据。Windows 管理员权限用于读取原有加密设备目录，与项目登录无关；更新前已停止的摄像头需在设备页面重新连接。此脚本需要本机已准备好的暂存构建，不适用于刚下载的源码目录。

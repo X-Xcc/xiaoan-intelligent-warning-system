@@ -18,5 +18,7 @@ runs/
 detection/datasets/
 server/data/
 server/data_empty/
-server/bin/
+server/bin/*
+!server/bin/go2rtc.exe
+!server/bin/go2rtc.yaml
 server/detection/

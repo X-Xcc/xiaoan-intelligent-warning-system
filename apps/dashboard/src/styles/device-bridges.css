@@ -102,6 +102,8 @@
 .bridge-video-page .bridge-login { color: var(--monitor-text); }
 .bridge-focus-modal .ant-modal-title { padding-right: 32px; overflow-wrap: anywhere; }
 .bridge-focus-modal .bridge-preview { max-height: 75dvh; }
+.night-market-still-label { position: absolute; top: 8px; left: 8px; padding: 3px 6px; max-width: calc(100% - 16px); color: #f5df9b; background: #20282df2; border-radius: 3px; font-size: 10px; line-height: 1.4; }
+.night-market-still.compact .bridge-preview-empty { gap: 4px; padding: 8px; }
 
 @media (max-width: 1280px) {
   .bridge-main-grid { grid-template-columns: minmax(0, 1fr); }

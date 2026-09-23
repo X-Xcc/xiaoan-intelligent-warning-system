@@ -48,7 +48,7 @@ def file_mapping(server: Path, detector: Path) -> dict[str, Path]:
         "evidence": server / "data/event-evidence",
         "bridge": server / ".secrets/device-bridges",
         "detections": server / "security-data",
-        "detector-data": detector / "data",
+        "detector-data": detector / "server/data",
         "detector-config": detector / "runtime",
         "detector-models": detector / "models",
         "detector-results": detector / "results",

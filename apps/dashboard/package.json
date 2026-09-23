@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test": "node --experimental-vm-modules --test src/lib/*.test.mjs",
     "predev": "node scripts/prepare-pose-assets.mjs",
     "dev": "vite --host 0.0.0.0",
     "prebuild": "node scripts/prepare-pose-assets.mjs",
@@ -24,6 +25,8 @@
     "@types/react-dom": "^19.2.3",
     "@types/web": "^0.0.354",
     "@vitejs/plugin-react": "^4.7.0",
+    "esbuild": "0.25.12",
+    "postcss": "^8.5.25",
     "typescript": "^7.0.2",
     "vite": "^6.4.3"
   }

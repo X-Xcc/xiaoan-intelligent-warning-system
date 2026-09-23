@@ -13,6 +13,9 @@ server/.venv-runtime/
 # Node
 node_modules/
 dist/
+/apps/dashboard/dist-onboarding/
+/apps/dashboard/dist-sync-check/
+/apps/dashboard/dist-webrtc/
 .turbo/
 
 # Local env
@@ -122,6 +125,7 @@ integrations/detector/runtime/
 !integrations/detector/**/*.jpeg
 !integrations/detector/server/bin/
 !integrations/detector/server/bin/go2rtc.exe
+!integrations/detector/server/bin/go2rtc.yaml
 !docs/
 docs/*
 !docs/deployment-full-replica.md

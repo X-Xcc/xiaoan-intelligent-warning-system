@@ -39,7 +39,7 @@ function Start-NativeApiService {
     $env:DATABASE_URL = "postgresql://xiaoan:$($Context.Settings['POSTGRES_PASSWORD'])@127.0.0.1:$($Context.Settings['POSTGRES_PORT'])/xiaoan"
     $env:CICSIC_BRIDGE_DATA_DIR = Join-Path $Context.Root 'server/.secrets/device-bridges'
     $env:CICSIC_EVIDENCE_DIR = Join-Path $Context.Root 'server/data/event-evidence'
-    $env:SECURITY_MODEL_PATH = Join-Path $Context.Root 'server/models/yolov8-pose.pt'
+    $env:SECURITY_MODEL_PATH = Join-Path $Context.Root 'server/models/yolov8n-pose.pt'
     $env:SECURITY_VIDEO_BASE_URL = $Context.DetectorBase
     $serverPath = [IO.Path]::GetFullPath((Join-Path $Context.Root 'server'))
     Start-NativeChild 'api' $Context.ApiPython @('-m', 'uvicorn', 'app.main:app', '--app-dir', $serverPath, '--host', '127.0.0.1', '--port', $Context.Settings['API_PORT']) $Context.Root | Out-Null
@@ -96,7 +96,11 @@ function Start-NativeServiceStack {
     if ($mustHaveRealCamera) {
         $Context.RequireRealCamera = $true
     }
-    Start-NativeDetectorService $Context
+    if ($mustHaveRealCamera) {
+        Start-NativeDetectorService $Context
+    } else {
+        Write-Host 'Camera capture is disabled; skipping detector service.'
+    }
     Start-NativeWebService $Context
     if ($mustHaveRealCamera) { Wait-NativeRealCameraReadiness $Context.ApiBase $Context.DetectorBase }
 }

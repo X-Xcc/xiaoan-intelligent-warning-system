@@ -13,9 +13,7 @@ export function normalizeLiveOverview(payload: PlatformOverview): PlatformOvervi
     dataCatalog: { ...payload.dataCatalog, domains: payload.dataCatalog?.domains ?? [] },
     ai_copilot: {
       ...payload.ai_copilot,
-      agents: payload.ai_copilot?.agents ?? [],
       skills: payload.ai_copilot?.skills ?? [],
-      mcp_connectors: payload.ai_copilot?.mcp_connectors ?? [],
     },
     aiCenter: payload.aiCenter ?? {},
     eventChain: payload.eventChain ?? [],
