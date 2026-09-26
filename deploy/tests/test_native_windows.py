@@ -8,7 +8,7 @@ NATIVE = ROOT / "deploy" / "native"
 
 
 class NativeDeploymentTests(unittest.TestCase):
-    def test_one_click_start_is_the_only_start_entry_and_forwards_arguments(self):
+    def test_stable_start_and_compatibility_entry_forward_arguments_and_exit_code(self):
         stable_start = ROOT / "\u4e00\u952e\u542f\u52a8\u7a33\u5b9a\u7248.cmd"
         self.assertTrue(stable_start.is_file(), f"Missing one-click entry: {stable_start.name}")
         text = stable_start.read_text(encoding="utf-8-sig")
@@ -19,8 +19,60 @@ class NativeDeploymentTests(unittest.TestCase):
         self.assertIn("-Force -EnableCameras -OpenBrowser %*", text)
         self.assertIn('set "result=%errorlevel%"', text)
         self.assertIn("exit /b %result%", text)
-        for legacy in (ROOT / "start.cmd", ROOT / "\u4e00\u952e\u542f\u52a8.cmd"):
-            self.assertFalse(legacy.exists(), f"Legacy start entry must be removed: {legacy.name}")
+        compatibility = ROOT / "\u4e00\u952e\u542f\u52a8.cmd"
+        self.assertTrue(compatibility.is_file())
+        wrapper = compatibility.read_text(encoding="utf-8-sig")
+        self.assertIn(f'call "%~dp0{stable_start.name}" %*', wrapper)
+        self.assertNotIn('call "%~dp0start.cmd"', wrapper)
+
+    def test_compatibility_start_calls_only_fixture_and_preserves_arguments_and_exit_code(self):
+        import os
+        import subprocess
+        import tempfile
+
+        if os.name != "nt":
+            self.skipTest("Windows command interpreter required")
+        compatibility = ROOT / "\u4e00\u952e\u542f\u52a8.cmd"
+        stable_name = "\u4e00\u952e\u542f\u52a8\u7a33\u5b9a\u7248.cmd"
+        with tempfile.TemporaryDirectory(prefix="native launcher fixture ") as directory:
+            root = Path(directory)
+            (root / compatibility.name).write_bytes(compatibility.read_bytes())
+            (root / stable_name).write_text(
+                '@echo off\n'
+                'echo ARG1:%~1\n'
+                'echo ARG2:%~2\n'
+                'echo ARG3:%~3\n'
+                'exit /b %FIXTURE_EXIT_CODE%\n',
+                encoding="ascii",
+            )
+            # The harness selects an explicit code page; no real startup script is copied.
+            harness = root / "harness.cmd"
+            harness.write_text(
+                '@echo off\n'
+                'chcp %FIXTURE_CODE_PAGE% >nul\n'
+                'call "%FIXTURE_WRAPPER%" -NoWatchdog "argument with spaces" -SkipBuild\n'
+                'set "result=%errorlevel%"\n'
+                'chcp\n'
+                'exit /b %result%\n',
+                encoding="ascii",
+            )
+            for code_page in (936, 65001):
+                for exit_code in (0, 37):
+                    with self.subTest(code_page=code_page, exit_code=exit_code):
+                        result = subprocess.run(
+                            ["cmd.exe", "/d", "/c", str(harness)],
+                            cwd=root,
+                            env=dict(
+                                os.environ, FIXTURE_WRAPPER=str(root / compatibility.name),
+                                FIXTURE_EXIT_CODE=str(exit_code), FIXTURE_CODE_PAGE=str(code_page),
+                            ),
+                            capture_output=True, timeout=10, check=False,
+                        )
+                        self.assertEqual(result.returncode, exit_code, result.stdout + result.stderr)
+                        self.assertIn(b"ARG1:-NoWatchdog", result.stdout)
+                        self.assertIn(b"ARG2:argument with spaces", result.stdout)
+                        self.assertIn(b"ARG3:-SkipBuild", result.stdout)
+                        self.assertIn(str(code_page).encode(), result.stdout)
 
     def test_one_click_stop_forwards_arguments_and_preserves_exit_code(self):
         path = ROOT / "\u4e00\u952e\u505c\u6b62.cmd"
@@ -283,6 +335,11 @@ Write-Output ('POSTGRES_LOOKUPS:' + $global:NativePostgresBinLookups)
             r"Eclipse Adoptium/*/bin/java.exe", r"JAVA_HOME", r".jdks/*/bin/java.exe",
         ):
             self.assertIn(required, text)
+
+    def test_api_uses_the_public_pose_model_filename(self):
+        text = (NATIVE / "services.ps1").read_text(encoding="utf-8-sig")
+        self.assertIn("server/models/yolov8n-pose.pt", text)
+        self.assertNotIn("server/models/yolov8-pose.pt", text)
 
     def test_detector_build_clears_stale_classes_before_packaging(self):
         text = (NATIVE / "start.ps1").read_text(encoding="utf-8-sig")

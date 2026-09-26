@@ -145,6 +145,7 @@ function PreviewSource({ device, available, authorized, compact }: PreviewProps)
 
 function ContinuousVideo(props: PreviewProps) {
   const video = useRef<HTMLVideoElement>(null);
+  const startupTimer = useRef<number | null>(null);
   const [playback, setPlayback] = useState<VideoPlayback>({ stream: null, fps: null, bufferMs: null, dropped: 0, error: '' });
   const [playing, setPlaying] = useState(false);
   const [fallback, setFallback] = useState(false);
@@ -154,8 +155,14 @@ function ContinuousVideo(props: PreviewProps) {
   useEffect(() => {
     setFallback(false);
     if (!active) return;
-    const timer = window.setTimeout(() => setFallback(true), WEBRTC_FALLBACK_DELAY_MS);
-    return () => window.clearTimeout(timer);
+    startupTimer.current = window.setTimeout(() => {
+      startupTimer.current = null;
+      setFallback(true);
+    }, WEBRTC_FALLBACK_DELAY_MS);
+    return () => {
+      if (startupTimer.current !== null) window.clearTimeout(startupTimer.current);
+      startupTimer.current = null;
+    };
   }, [active, key]);
   useEffect(() => {
     setPlaying(false);
@@ -178,7 +185,11 @@ function ContinuousVideo(props: PreviewProps) {
     data-playback-fps={playback.fps?.toFixed(1)} data-buffer-ms={playback.bufferMs?.toFixed(1)}
     data-dropped-frames={playback.dropped}>
     <video ref={video} autoPlay muted playsInline aria-label={`${props.device?.name}实时视频`}
-      onPlaying={() => setPlaying(true)} onWaiting={() => setPlaying(false)} />
+      onPlaying={() => {
+        if (startupTimer.current !== null) window.clearTimeout(startupTimer.current);
+        startupTimer.current = null;
+        setPlaying(true);
+      }} onWaiting={() => setPlaying(false)} />
     {!live && <div className="bridge-preview-empty" role="status"><CameraOff size={20} />
       <span>{!active ? '视频未连接' : playback.error || '正在连接实时视频'}</span></div>}
     {live && <span className="bridge-preview-live">

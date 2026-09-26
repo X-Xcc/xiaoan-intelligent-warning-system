@@ -28,10 +28,13 @@ function dashboard(initialPath = '/platform') {
     removeEventListener(name) { listeners.delete(name); },
     dispatchEvent(event) { listeners.get(event.type)?.(event); },
     setInterval() { return 1; }, clearInterval() {}, scrollTo() {},
+    setTimeout() { return 1; }, clearTimeout() {},
     matchMedia: () => ({ matches: true, addEventListener() {}, removeEventListener() {} }),
   };
   const jsx = (type, props) => typeof type === 'function' ? type(props) : { type, props };
   const react = {
+    lazy: load => ({ load }),
+    Suspense: ({ children }) => children,
     useState(initial) {
       const index = cursor++;
       if (!(index in slots)) slots[index] = typeof initial === 'function' ? initial() : initial;
@@ -62,7 +65,7 @@ function dashboard(initialPath = '/platform') {
       define: { 'import.meta.env': JSON.stringify({ VITE_API_BASE_URL: '/api', BASE_URL: '/' }) },
     });
     vm.runInNewContext(code, {
-      module, exports: module.exports, window,
+      module, exports: module.exports, window, AbortController,
       URLSearchParams, PopStateEvent: class { constructor(type) { this.type = type; } },
       fetch: async () => ({ ok: true, json: async () => ({ stats: {}, events: [] }) }),
       require(name) {

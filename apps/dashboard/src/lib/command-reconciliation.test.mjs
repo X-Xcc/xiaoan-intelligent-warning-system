@@ -83,7 +83,7 @@ test('the business route and busy controls are integrated without replacing the 
   assert.match(dashboard, /view === 'command-workbench'[\s\S]*?<CommandWorkbench onBack=\{\(\) => navigate\('command'\)\}/);
   assert.match(dashboard, /view === 'command'[\s\S]*?<CommandOperationsPage overview=/);
   assert.match(dashboard, /const standalonePage = view === 'command-workbench' && new URLSearchParams\(window\.location\.search\)\.get\('surface'\) === 'display'\s*\? <CommandWorkbench \/>/);
-  assert.match(dashboard, /\{standalonePage \?\? <main className="platform-control-shell">/);
+  assert.match(dashboard, /\{standalonePage \? <Suspense fallback=\{<PageLoading \/>\}>\{standalonePage\}<\/Suspense> : <main className="platform-control-shell">/);
   assert.match(dashboard, /<\/main>\}\s*<XiaoanAssistant/);
   assert.match(workbench, /<CommandControls value=\{control\} onChange=\{updateControl\} disabled=\{busy\}/);
   assert.ok(workbench.includes('if (display || busy || control.paused || control.reveal >= 3) return;'),

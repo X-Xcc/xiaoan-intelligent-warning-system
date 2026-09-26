@@ -151,10 +151,13 @@ test('bridge inventory omits the demo readiness banner but retains actionable er
   assert.match(page, /hasFreshFrame\(selected, bridge\.now\)/);
 });
 
-test('video wall never uses local placeholder media for empty slots', () => {
+test('video wall limits explicit sample stills to unbound slots, outside real previews', () => {
   const page = read('../pages/VideoLinkagePage.tsx');
   const preview = read('../components/BridgePreview.tsx');
   assert.doesNotMatch(page, /placeholderSrc|slotPlaceholder|night-market-cam-/);
+  assert.match(page, /const still = id === null \? scene\.assetPath : undefined/);
+  assert.match(page, /const selectedStill = bindings\[selectedChannel\] === null \? selectedScene\.assetPath : undefined/);
+  assert.match(page, /<NightMarketStill/);
   assert.doesNotMatch(preview, /placeholderSrc|night-market-cam-/);
   assert.match(preview, /data-preview-state=\{showImage \? 'live' : 'unavailable'\}/);
   assert.match(preview, /onError=/);

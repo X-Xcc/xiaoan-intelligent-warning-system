@@ -1,0 +1,110 @@
+.crowd-demo { max-width: 1660px; margin: 0 auto; padding: 26px 32px; color: #eef2f6; letter-spacing: 0; }
+.crowd-demo button, .crowd-demo input { font: inherit; }
+.crowd-demo-heading, .crowd-demo-title, .crowd-demo-actions { display: flex; align-items: center; gap: 16px; }
+.crowd-demo-heading { justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; }
+.crowd-eyebrow { font-size: 12px; color: #aebac7; }
+.crowd-demo h1 { margin: 6px 0 0; font-size: 27px; line-height: 1.3; }
+.crowd-demo h2, .crowd-demo h3, .crowd-demo h4, .crowd-demo p { margin: 0; }
+.crowd-demo button { cursor: pointer; }
+.crowd-icon { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; flex: 0 0 36px; border: 1px solid #414950; border-radius: 4px; color: #e2eaf3; background: #282d33; }
+.crowd-icon:hover { background: #3b444d; }
+.crowd-demo button:focus-visible, .crowd-demo input:focus-visible { outline: 2px solid #7eafff; outline-offset: 3px; }
+.crowd-export { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #6995d8; border-radius: 4px; background: #244c81; color: white; min-height: 36px; padding: 7px 12px; }
+.crowd-export:disabled { opacity: .6; cursor: wait; }
+.crowd-demo-layout { display: grid; grid-template-columns: minmax(0, 1fr) 326px; gap: 24px; align-items: start; }
+.crowd-demo-main { min-width: 0; }
+.crowd-scene-heading { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 12px; color: #aebac7; margin-bottom: 12px; }
+.crowd-scene-heading span:first-child { color: #edf2f8; }
+.crowd-scene-heading i { display: inline-block; height: 6px; width: 6px; margin-right: 8px; background: #f2bd62; border-radius: 50%; }
+.crowd-demo-scene { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #101416; overflow: hidden; }
+.crowd-demo-scene > img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.crowd-roi { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.crowd-roi polygon { fill: rgba(245, 171, 62, .035); stroke: #ffc45f; stroke-width: 2px; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.crowd-person-box { position: absolute; border: 1px solid #6af2b4; box-shadow: 0 0 0 1px #0b261e44; pointer-events: none; }
+.crowd-person-box-distant { border-color: #6af2b4b8; box-shadow: none; }
+.crowd-person-box span { position: absolute; left: -1px; top: -13px; font-size: 9px; line-height: 12px; padding: 0 3px; background: #73eab4; color: #09291d; }
+.crowd-scene-status { position: absolute; top: 12px; left: 12px; display: flex; flex-direction: column; gap: 6px; }
+.crowd-scene-status > span { display: flex; align-items: center; gap: 7px; padding: 7px 10px; border: 1px solid #6587a4; background: #18232aeb; color: #c5e4ff; font-size: 13px; }
+.crowd-scene-status > span.elevated { color: #ffd07b; border-color: #ba853a; background: #2b2116e8; }
+.crowd-scene-status small { width: fit-content; padding: 4px 8px; background: #12181edb; font-size: 11px; }
+.crowd-scene-watermark { position: absolute; bottom: 10px; right: 12px; color: #f1d598; background: #14191ee8; padding: 5px 8px; font-size: 11px; }
+.crowd-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); background: #22272c; border-bottom: 1px solid #41464d; }
+.crowd-metrics article { padding: 20px; min-width: 0; }
+.crowd-metrics article + article { border-left: 1px solid #41464d; }
+.crowd-metrics article > div { display: flex; gap: 8px; align-items: center; font-size: 13px; color: #d6dee8; }
+.crowd-metrics article > div > svg { color: #89b6ef; }
+.crowd-metrics article:nth-child(2) > div > svg { color: #72d7c3; }
+.crowd-metrics article:nth-child(3) > div > svg { color: #f2c272; }
+.crowd-metrics small { font-size: 10px; color: #e5c583; margin-left: auto; white-space: nowrap; }
+.crowd-metrics strong { display: block; font-size: 34px; font-variant-numeric: tabular-nums; margin: 12px 0 10px; line-height: 1.2; white-space: nowrap; }
+.crowd-metrics strong > span { font-size: 12px; font-weight: 400; color: #aebac7; margin-left: 8px; }
+.crowd-metrics p { font-size: 11px; color: #aebac7; display: flex; gap: 5px; flex-wrap: wrap; justify-content: space-between; }
+.crowd-playback { padding: 14px 0; display: flex; align-items: center; gap: 10px; }
+.crowd-playback-time { font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.crowd-playback input[type=range] { min-width: 40px; flex: 1; accent-color: #8bb7f5; }
+.crowd-box-toggle { display: flex; align-items: center; gap: 5px; white-space: nowrap; font-size: 12px; }
+.crowd-box-toggle input { accent-color: #8bb7f5; }
+.crowd-analysis { border-left: 1px solid #41474f; padding-left: 24px; }
+.crowd-analysis > header { display: flex; align-items: center; gap: 8px; padding-bottom: 17px; border-bottom: 1px solid #41474f; }
+.crowd-analysis > header > svg { color: #94bfff; }
+.crowd-analysis h2 { font-size: 17px; }
+.crowd-analysis > header > span { font-size: 11px; margin-left: auto; color: #e7c07b; }
+.crowd-risk-summary { padding: 20px 0; border-bottom: 1px solid #41474f; }
+.crowd-risk-summary h3 { color: #f3bf6b; font-size: 23px; margin: 8px 0; }
+.crowd-risk-summary p { color: #c3cdd9; font-size: 13px; line-height: 1.8; margin-bottom: 16px; }
+.crowd-risk-summary > div { display: flex; justify-content: space-between; gap: 10px; margin-top: 9px; font-size: 12px; }
+.crowd-risk-summary > div > span { color: #a9b6c5; }
+.crowd-risk-summary strong { font-weight: 500; }
+.crowd-review { padding: 20px 0; border-bottom: 1px solid #41474f; }
+.crowd-analysis section > h3 { font-size: 14px; }
+.crowd-review article { display: flex; gap: 12px; margin-top: 18px; }
+.crowd-step { color: #93b5e3; font-size: 12px; padding-top: 2px; }
+.crowd-review h4 { font-size: 13px; display: flex; align-items: center; gap: 10px; }
+.crowd-review h4 svg { color: #72d7b2; }
+.crowd-review p { color: #c0cad6; font-size: 12px; line-height: 1.8; margin: 5px 0; }
+.crowd-review small { color: #9baabb; font-size: 11px; }
+.crowd-trend { padding: 20px 0; }
+.crowd-trend h3 { display: flex; justify-content: space-between; gap: 8px; }
+.crowd-trend h3 span { font-size: 10px; color: #a9b6c5; font-weight: 400; }
+.crowd-bars { height: 72px; display: flex; align-items: end; gap: 5px; margin-top: 12px; border-bottom: 1px solid #515963; }
+.crowd-bars > div { flex: 1; background: #3a434e; border-radius: 2px 2px 0 0; }
+.crowd-bars > div.active { background: #79a8de; }
+.crowd-bars > div.active:nth-last-child(-n+5) { background: #e1b567; }
+.crowd-trend-axis { display: flex; justify-content: space-between; font-size: 10px; color: #a9b6c5; margin-top: 8px; }
+.crowd-suggestion { padding: 14px 0; display: flex; gap: 10px; border-top: 1px solid #41474f; }
+.crowd-suggestion > svg { flex-shrink: 0; color: #73ceb3; }
+.crowd-suggestion h3 { font-size: 13px; }
+.crowd-suggestion p { font-size: 12px; line-height: 1.9; color: #bfcbd7; margin-top: 6px; }
+.crowd-analysis footer { font-size: 10px; color: #99a8ba; line-height: 1.8; padding-top: 8px; }
+.crowd-demo-error { color: #ffb8aa; margin-top: 12px !important; }
+@media (max-width: 1200px) {
+  .crowd-demo { padding: 22px; }
+  .crowd-demo-layout { grid-template-columns: minmax(0, 1fr) 290px; gap: 18px; }
+  .crowd-analysis { padding-left: 18px; }
+  .crowd-metrics article { padding: 16px 12px; }
+  .crowd-metrics strong { font-size: 28px; }
+}
+@media (max-width: 950px) {
+  .crowd-demo-layout { grid-template-columns: minmax(0, 1fr); }
+  .crowd-analysis { border-left: 0; padding-left: 0; }
+}
+@media (max-width: 540px) {
+  .crowd-demo { padding: 18px 12px; }
+  .crowd-demo h1 { font-size: 21px; }
+  .crowd-demo-title { gap: 9px; }
+  .crowd-demo-actions { gap: 8px; width: 100%; flex-wrap: wrap; }
+  .crowd-metrics article { padding: 13px 8px; }
+  .crowd-metrics article > div { font-size: 12px; gap: 5px; }
+  .crowd-metrics article > div > svg, .crowd-metrics small { display: none; }
+  .crowd-metrics strong { font-size: 25px; }
+  .crowd-metrics strong > span { display: block; margin: 6px 0 0; font-size: 10px; }
+  .crowd-metrics p { font-size: 10px; }
+  .crowd-playback { flex-wrap: wrap; gap: 8px; }
+  .crowd-playback input[type=range] { min-width: 100px; }
+  .crowd-box-toggle { margin-left: auto; }
+  .crowd-person-box span { display: none; }
+  .crowd-scene-status { top: 7px; left: 7px; gap: 4px; }
+  .crowd-scene-status > span { font-size: 11px; padding: 4px 6px; }
+  .crowd-scene-status small { font-size: 10px; }
+  .crowd-scene-watermark { font-size: 9px; bottom: 6px; right: 6px; }
+}

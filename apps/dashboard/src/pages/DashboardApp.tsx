@@ -21,27 +21,26 @@ import {
   Workflow,
   X,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Tooltip } from 'antd';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Spin, Tooltip } from 'antd';
 import { appBasePath, routePath, viewForPath, type PlatformView } from '../lib/presentation';
 import { trainingEntryPath } from '../lib/training-navigation';
 import { normalizeLiveOverview } from '../lib/platform-overview';
-import { CommandOperationsPage as CommandWorkbench } from './CommandOperationsPage';
-import { AdminConsolePage } from './AdminConsolePage';
-import { DeviceBridgesPage } from './DeviceBridgesPage';
 import { PublicSecurityPlatformPage } from './PublicSecurityPlatformPage';
-import { VideoLinkagePage } from './VideoLinkagePage';
-import { NightMarketCommandPage } from './NightMarketCommandPage';
-import { OfficerTrainingPage } from './OfficerTrainingPage';
-import { ContactReviewPage } from './ContactReviewPage';
-import { DutySituationPage } from './DutySituationPage';
 import { XiaoanVoiceControls, useXiaoanVoice } from '../components/XiaoanVoice';
 import { XiaoanAssistant } from '../components/XiaoanAssistant';
-import {
-  AICenterPage,
-  CommunityPolicingPage,
-  CommandOperationsPage,
-} from './PoliceDomainPages';
+
+const CommandWorkbench = lazy(() => import('./CommandOperationsPage').then(module => ({ default: module.CommandOperationsPage })));
+const AdminConsolePage = lazy(() => import('./AdminConsolePage').then(module => ({ default: module.AdminConsolePage })));
+const DeviceBridgesPage = lazy(() => import('./DeviceBridgesPage').then(module => ({ default: module.DeviceBridgesPage })));
+const VideoLinkagePage = lazy(() => import('./VideoLinkagePage').then(module => ({ default: module.VideoLinkagePage })));
+const NightMarketCommandPage = lazy(() => import('./NightMarketCommandPage').then(module => ({ default: module.NightMarketCommandPage })));
+const OfficerTrainingPage = lazy(() => import('./OfficerTrainingPage').then(module => ({ default: module.OfficerTrainingPage })));
+const ContactReviewPage = lazy(() => import('./ContactReviewPage').then(module => ({ default: module.ContactReviewPage })));
+const DutySituationPage = lazy(() => import('./DutySituationPage').then(module => ({ default: module.DutySituationPage })));
+const AICenterPage = lazy(() => import('./PoliceDomainPages').then(module => ({ default: module.AICenterPage })));
+const CommunityPolicingPage = lazy(() => import('./PoliceDomainPages').then(module => ({ default: module.CommunityPolicingPage })));
+const CommandOperationsPage = lazy(() => import('./PoliceDomainPages').then(module => ({ default: module.CommandOperationsPage })));
 
 export type { PlatformView } from '../lib/presentation';
 
@@ -200,6 +199,12 @@ function pathView(): PlatformView {
   return viewForPath(window.location.pathname);
 }
 
+function PageLoading() {
+  return <div role="status" aria-busy="true" style={{ minHeight: 160, padding: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+    <Spin size="small" /><span>正在加载工作区...</span>
+  </div>;
+}
+
 function ShellNav({ view, navigate, open, close }: { view: PlatformView; navigate: (next: PlatformView) => void; open: boolean; close: () => void }) {
   const sections = ['业务工作台', '平台能力'] as const;
   return <>
@@ -239,31 +244,49 @@ export function DashboardApp() {
   const [clock, setClock] = useState(() => new Date());
   const menuRef = useRef<HTMLButtonElement>(null);
   const hasLiveData = useRef(false);
-
-  const loadOverview = useCallback(async () => {
-    setRefreshing(true);
-    try {
-      const response = await fetch(`${API_BASE}/platform/overview`);
-      if (!response.ok) throw new Error(`平台接口返回 ${response.status}`);
-      const payload = (await response.json()) as PlatformOverview;
-      setOverview(normalizeLiveOverview(payload));
-      setApiOnline(true);
-      hasLiveData.current = true;
-      setLastSync(new Date());
-    } catch {
-      setApiOnline(false);
-    } finally {
-      setRefreshing(false);
-    }
-  }, []);
+  const refreshOverview = useRef<() => Promise<void>>(async () => {});
+  const loadOverview = useCallback(() => refreshOverview.current(), []);
 
   useEffect(() => {
+    let active = true;
+    let pending: Promise<void> | null = null;
+    let controller: AbortController | undefined;
+    let deadline: number | undefined;
+    refreshOverview.current = () => {
+      if (!active) return Promise.resolve();
+      if (pending) return pending;
+      const request = new AbortController();
+      controller = request;
+      deadline = window.setTimeout(() => request.abort(), 15000);
+      setRefreshing(true);
+      pending = fetch(`${API_BASE}/platform/overview`, { signal: request.signal })
+        .then(async response => {
+          if (!response.ok) throw new Error(`平台接口返回 ${response.status}`);
+          const payload = (await response.json()) as PlatformOverview;
+          if (!active || request.signal.aborted) return;
+          setOverview(normalizeLiveOverview(payload));
+          setApiOnline(true);
+          hasLiveData.current = true;
+          setLastSync(new Date());
+        })
+        .catch(() => { if (active) setApiOnline(false); })
+        .finally(() => {
+          window.clearTimeout(deadline);
+          pending = null;
+          if (active) setRefreshing(false);
+        });
+      return pending;
+    };
     void loadOverview();
     const interval = window.setInterval(() => void loadOverview(), 30000);
     const clockInterval = window.setInterval(() => setClock(new Date()), 1000);
     const onPopState = () => { setView(pathView()); setMobileNavOpen(false); };
     window.addEventListener('popstate', onPopState);
     return () => {
+      active = false;
+      refreshOverview.current = async () => {};
+      controller?.abort();
+      window.clearTimeout(deadline);
       window.clearInterval(interval);
       window.clearInterval(clockInterval);
       window.removeEventListener('popstate', onPopState);
@@ -352,7 +375,7 @@ export function DashboardApp() {
                 : <AdminConsolePage apiOnline={apiOnline} refresh={loadOverview} navigate={navigate} />;
 
   return <>
-    {standalonePage ?? <main className="platform-control-shell">
+    {standalonePage ? <Suspense fallback={<PageLoading />}>{standalonePage}</Suspense> : <main className="platform-control-shell">
     <a className="skip-link" href="#workspace-content">跳转到工作区</a>
     <ShellNav view={navView} navigate={navigateFromSidebar} open={mobileNavOpen} close={() => { setMobileNavOpen(false); menuRef.current?.focus(); }} />
     <div className="platform-control-main">
@@ -370,7 +393,7 @@ export function DashboardApp() {
           <span className="platform-control-user" title="市公安局 · 指挥中心"><span>值</span><b>值班席</b></span>
         </div>
           </header>
-      <div id="workspace-content" tabIndex={-1} className="platform-control-content">{page}</div>
+      <div id="workspace-content" tabIndex={-1} className="platform-control-content"><Suspense fallback={<PageLoading />}>{page}</Suspense></div>
       <footer className="platform-control-footer"><span><ShieldCheck size={14} />高风险 AI 建议需人工确认</span><span><Database size={14} />操作留痕 · 开放访问</span><span>最近同步 {lastSync ? lastSync.toLocaleTimeString('zh-CN', { hour12: false }) : '准备中'}</span></footer>
     </div>
   </main>}

@@ -111,11 +111,13 @@ test('retired placeholder props and image state cannot make an unbound slot live
   assert.ok(nodes.some((node) => node.props?.role === 'status'));
 });
 
-test('wall uses real previews without placeholder sources and preserves open access and errors', () => {
+test('wall keeps real previews separate from sample stills and preserves open access and errors', () => {
   const page = read('../pages/VideoLinkagePage.tsx');
   assert.doesNotMatch(page, /placeholderSrc|night-market-cam-/);
   assert.match(page, /<BridgePreview device=\{camera\}/);
   assert.match(page, /<BridgePreview device=\{selected\}/);
+  assert.match(page, /still \? <NightMarketStill/);
+  assert.match(page, /selectedStill \? <NightMarketStill/);
   assert.match(page, /monitoring-service/);
   assert.match(page, /bridge-video-alert/);
   assert.doesNotMatch(page, /BridgeLogin|bridge\.authRequired|bridge\.lock/);

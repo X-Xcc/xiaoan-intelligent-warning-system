@@ -4,7 +4,7 @@ from __future__ import annotations
 import argparse
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
-from pathlib import Path, PurePosixPath
+from pathlib import Path, PureWindowsPath
 from urllib.parse import unquote, urlsplit
 
 
@@ -12,13 +12,34 @@ class ApplicationHandler(SimpleHTTPRequestHandler):
     root: Path
 
     def translate_path(self, path: str) -> str:
-        parts = [part for part in PurePosixPath(unquote(urlsplit(path).path)).parts if part not in ("/", ".", "..")]
-        requested = self.root.joinpath(*parts).resolve()
+        decoded = unquote(urlsplit(path).path)
+        parts = [part for part in decoded.split("/") if part]
+        # Reject Windows path syntax before resolving anything, including UNC shares.
+        if decoded.startswith("//") or any(
+            "\\" in part or ":" in part or "\0" in part
+            or part != part.rstrip(" .") or PureWindowsPath(part).is_reserved()
+            for part in parts
+        ):
+            raise PermissionError("Invalid public path")
+        root = self.root.resolve()
+        requested = root.joinpath(*parts).resolve()
+        if not requested.is_relative_to(root):
+            raise PermissionError("Path outside public directory")
         if requested.is_file():
             return str(requested)
-        if Path(urlsplit(path).path).suffix:
+        if Path(decoded).suffix:
             return str(requested)
-        return str(self.root / "index.html")
+        index = (root / "index.html").resolve()
+        if not index.is_relative_to(root):
+            raise PermissionError("Index outside public directory")
+        return str(index)
+
+    def send_head(self):
+        try:
+            return super().send_head()
+        except (OSError, ValueError, RuntimeError):
+            self.send_error(HTTPStatus.FORBIDDEN, "Invalid public path")
+            return None
 
     def log_message(self, _format: str, *_args) -> None:
         return

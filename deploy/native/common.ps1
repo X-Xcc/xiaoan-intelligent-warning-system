@@ -545,6 +545,16 @@ function Stop-NativeWatchdogProcess {
     Remove-Item -LiteralPath (Join-Path (Get-NativeDirectory) 'run/watchdog.json') -Force -ErrorAction SilentlyContinue
 }
 
+function Open-NativeDashboard {
+    [CmdletBinding()]
+    param([string]$Url)
+    try {
+        Start-Process -FilePath $Url | Out-Null
+    } catch {
+        Write-Warning "Services are ready, but the browser could not open. Visit $Url manually."
+    }
+}
+
 function Start-NativeChild {
     param([string]$Name, [string]$FilePath, [string[]]$Arguments, [string]$WorkingDirectory)
     $normalizedFilePath = [IO.Path]::GetFullPath((Resolve-Path -LiteralPath $FilePath).Path)

@@ -12,6 +12,48 @@ import restore_payload
 
 
 class RestorePayloadTests(unittest.TestCase):
+    def file_fixture(self, root):
+        payload, setup = root / "payload", root / "setup"
+        server, detector = root / "server", root / "detector"
+        payload.mkdir()
+        setup.mkdir()
+        (payload / "snapshot.json").write_text(json.dumps({"version": 1}))
+        (payload / "database.dump").write_bytes(b"synthetic-dump-not-restored")
+        (payload / "runtime.json").write_text("{}")
+        (payload / "detector-data").mkdir()
+        (payload / "detector-data/fixture.bin").write_bytes(b"detector-fixture")
+        return payload, setup, server, detector
+
+    def test_detector_files_restore_to_the_native_runtime_data_directory(self):
+        services = (Path(__file__).parents[1] / "native/services.ps1").read_text(
+            encoding="utf-8-sig"
+        )
+        self.assertIn("$env:DATA_DIR = Join-Path $Context.Detector 'server/data'", services)
+        with tempfile.TemporaryDirectory() as directory:
+            payload, setup, server, detector = self.file_fixture(Path(directory))
+            restore_payload.install_files(payload, setup, server, detector)
+            restored = detector / "server/data/fixture.bin"
+            self.assertTrue(restored.is_file(), "Restore must populate runtime DATA_DIR")
+            self.assertEqual(restored.read_bytes(), b"detector-fixture")
+            self.assertFalse((detector / "data").exists())
+            self.assertEqual(restore_payload.verify_files(payload, server, detector)["files"], 1)
+            restored.write_bytes(b"tampered-fixture")
+            with self.assertRaises(ValueError):
+                restore_payload.verify_files(payload, server, detector)
+
+    def test_existing_detector_runtime_data_rejects_restore_before_any_copy(self):
+        with tempfile.TemporaryDirectory() as directory:
+            payload, setup, server, detector = self.file_fixture(Path(directory))
+            existing = detector / "server/data/fixture.bin"
+            existing.parent.mkdir(parents=True)
+            existing.write_bytes(b"keep-existing-detector-data")
+            with self.assertRaisesRegex(ValueError, "not empty"):
+                restore_payload.install_files(payload, setup, server, detector)
+            self.assertEqual(existing.read_bytes(), b"keep-existing-detector-data")
+            self.assertFalse(server.exists())
+            self.assertEqual(list(setup.iterdir()), [])
+            self.assertFalse((detector / "data").exists())
+
     def test_accounts_does_not_require_setup_or_connect_detector(self):
         # Stub only the database/account boundary; do not import the live API.
         database, models, accounts, sqlalchemy = (MagicMock() for _ in range(4))
