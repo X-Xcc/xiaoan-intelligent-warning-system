@@ -101,6 +101,9 @@ project.private.config.json
 .deployment-verification.json
 .docx-requirements.txt
 
+# Local presentation editing helpers with machine-specific source paths
+tools/strengthen_fire_sentinel_ppt.py
+
 # Private full-system transfer and restored credentials
 *.xiaoan
 *.transfer-key

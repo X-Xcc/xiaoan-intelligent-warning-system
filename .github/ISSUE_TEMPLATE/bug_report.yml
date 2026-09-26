@@ -1,0 +1,35 @@
+name: Bug 报告
+description: 报告可复现的功能问题或部署问题
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请不要在 Issue 中粘贴设备密码、访问令牌、业务数据、真实图片或视频。
+  - type: textarea
+    id: summary
+    attributes:
+      label: 问题描述
+      description: 请说明实际发生了什么，以及预期行为是什么。
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤
+      description: 请按顺序列出最小复现步骤。
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: 环境
+      description: 例如 Windows 11、Node.js 22、浏览器版本或部署方式。
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 脱敏日志
+      description: 只粘贴已删除密钥、账号、地址和业务数据的日志。
+
