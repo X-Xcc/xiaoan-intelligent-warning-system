@@ -32,4 +32,3 @@ body:
     attributes:
       label: 脱敏日志
       description: 只粘贴已删除密钥、账号、地址和业务数据的日志。
-
