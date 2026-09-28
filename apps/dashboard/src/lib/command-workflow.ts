@@ -27,7 +27,7 @@ export type Handover = {
   rejectionReason?: string; acceptedBy?: string; submittedBy?: string; auditId?: string;
 };
 export type AiPipeline = {
-  input: { source: string; mediaName: string; capturedAt: string; location: string; status: string };
+  input: { source: string; mediaName: string; capturedAt: string; location: string; status: string; mediaUrl?: string; mediaNote?: string };
   detection: { model: string; status: string; personCount?: number; confidence?: number | null; signals: string[]; limitations?: string };
   review: { method: string; status: string; conclusion: string; basis: string[] };
   risk: { level: string; score?: number | null; basis: string[]; humanReviewRequired: boolean };

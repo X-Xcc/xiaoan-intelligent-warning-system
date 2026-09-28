@@ -41,6 +41,8 @@ export function CommandStageView({ snapshot, stage, reveal = 3, route, display =
           <b>{node.label}</b><strong>{statusLabel(node.status)}</strong><small>{node.detail}</small>
         </div>)}
       </div>
+      {stage === 'b1' && pipeline.input.mediaUrl && <figure className="command-ai-source"><img src={`${appBasePath}${pipeline.input.mediaUrl}`} alt="夜市现场示意画面" />
+        <figcaption>{pipeline.input.source} · {pipeline.input.mediaName} · {pipeline.input.mediaNote || '演示素材'}</figcaption></figure>}
       <div className="command-ai-detail"><div><b>初筛证据</b><span>{pipeline.detection.signals.join('；')}</span></div>
         <div><b>风险依据</b><span>{pipeline.risk.basis.join('；')}</span></div>
         <div className="command-ai-limit"><b>边界</b><span>{pipeline.detection.limitations || '仅作为辅助线索，需人工确认。'}</span></div></div>

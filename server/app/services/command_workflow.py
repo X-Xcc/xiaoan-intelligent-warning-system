@@ -375,6 +375,15 @@ def _mutate(session, row, command, action, data, actor, child_id):
             riskTags=[_text(v, "风险标签", maximum=100) for v in data.get("riskTags", [])],
             reviewStatus="confirmed", confirmedBy=actor.openid, confirmedAt=stamp,
             confirmationNote=data.get("note", ""), generationMethod="manual")
+        if command.get("aiPipeline"):
+            command["aiPipeline"]["review"].update(
+                status="confirmed", method="human",
+                conclusion="指挥席已将AI初筛线索与报警文本合并复核",
+                basis=["检测结果已回传管理台", "报警文本已由指挥席确认", "未将初筛结果直接作为案件结论"])
+            command["aiPipeline"]["risk"].update(
+                level="高风险待派单" if command["summary"].get("riskTags") else "人工复核通过",
+                humanReviewRequired=False,
+                basis=[*command["summary"].get("riskTags", []), *command["summary"].get("dangerFactors", [])])
         command.pop("dispatch", None)
         command["stage"] = "B1_SUMMARY_CONFIRMED"
         row.title = command["summary"]["category"]

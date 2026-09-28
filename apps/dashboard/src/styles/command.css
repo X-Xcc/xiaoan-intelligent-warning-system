@@ -68,6 +68,9 @@
 .command-ai-detail b { color: #4d6d66; font-size: 11px; }
 .command-ai-detail span { color: #5f7274; font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
 .command-ai-detail .command-ai-limit { grid-column: 1 / -1; }
+.command-ai-source { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 10px; align-items: center; margin: 14px 0 0; padding-top: 12px; border-top: 1px solid #dce8e5; }
+.command-ai-source img { width: 180px; height: 96px; object-fit: cover; background: #e8efee; }
+.command-ai-source figcaption { color: #5f7274; font-size: 10px; line-height: 1.6; }
 .command-stage h3 { font-size: 16px; line-height: 1.5; }
 .command-b1 { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
 .command-intake, .command-facts { padding: 22px 0; }
@@ -171,6 +174,9 @@
 .command-stage-display .command-ai-detail > div { border-color: #3d76a0; }
 .command-stage-display .command-ai-detail b { color: #d4e8f6; font-size: 14px; }
 .command-stage-display .command-ai-detail span { color: #c3dced; font-size: 14px; }
+.command-stage-display .command-ai-source { border-color: #3d76a0; }
+.command-stage-display .command-ai-source img { width: 260px; height: 138px; }
+.command-stage-display .command-ai-source figcaption { color: #c3dced; font-size: 13px; }
 .command-stage-display .command-b1, .command-stage-display .command-b2, .command-stage-display .command-b3, .command-stage-display .command-b4 { flex: 1; padding-top: 22px; }
 .command-stage-display h3 { font-size: 27px; }
 .command-stage-display .command-transcript { font-size: 29px; line-height: 2; }
@@ -230,6 +236,8 @@
   .command-ai-step:nth-child(3)::after, .command-ai-step:nth-child(6)::after { display: none; }
   .command-ai-detail { grid-template-columns: minmax(0, 1fr); }
   .command-ai-detail .command-ai-limit { grid-column: auto; }
+  .command-ai-source { grid-template-columns: minmax(0, 1fr); }
+  .command-ai-source img { width: 100%; height: 150px; }
   .command-b3, .command-b4, .command-related-list, .command-form { grid-template-columns: minmax(0, 1fr); }
   .command-person { border-right: 0; border-bottom: 1px solid #dce4e7; padding-bottom: 20px; }
   .command-transcript { font-size: 17px; }

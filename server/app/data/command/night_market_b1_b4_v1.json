@@ -10,7 +10,9 @@
       "mediaName": "image199.png",
       "capturedAt": "2026-09-05T20:13:42+08:00",
       "location": "XX夜市B区7号",
-      "status": "verified_local"
+      "status": "verified_local",
+      "mediaUrl": "/contact-review-assets/night-market-cam-02.jpg",
+      "mediaNote": "夜市现场示意画面；YOLO结果来自独立留存的image199.png单图推理记录。"
     },
     "detection": {
       "model": "YOLOv8n-pose",
