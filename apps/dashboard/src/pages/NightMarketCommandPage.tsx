@@ -436,6 +436,13 @@ function CommandPage({
   const selected = filtered.find((event) => event.id === selectedId) ?? filtered[0];
   const nightMarkets = overview.night_markets?.length ? overview.night_markets : fallbackMarkets;
   const selectedMarket = nightMarkets.find((market) => market.id === selectedMarketId) ?? nightMarkets[0];
+  const eventChain = selected ? [
+    { label: '发现', detail: selected.source, state: 'done' },
+    { label: '初筛', detail: selected.source === 'AI视频预警' ? 'AI视频预警已生成' : '群众 / 商户线索已登记', state: selected.source === 'AI视频预警' ? 'done' : 'manual' },
+    { label: '人工确认', detail: selected.status === '已提交' ? '等待指挥席确认' : '已进入处置流程', state: selected.status === '已提交' ? 'pending' : 'done' },
+    { label: '派单', detail: selected.owner === '待指派' || selected.owner === '待派单' ? '等待警力确认' : `已分派给 ${selected.owner}`, state: selected.owner === '待指派' || selected.owner === '待派单' ? 'pending' : 'done' },
+    { label: '闭环', detail: selected.status === '已完成' ? '已完成并可复盘' : '处置完成后归档', state: selected.status === '已完成' ? 'done' : 'pending' },
+  ] : [];
   const mapIncidents = useMemo(() => nightMarkets.map((market) => ({
     id: market.id,
     incidentNo: market.id,
@@ -582,6 +589,14 @@ function CommandPage({
               <p className="progress-label">
                 {selected.status} · 负责人 {selected.owner} · {selected.updatedAt}
               </p>
+              <section className="event-chain-card" aria-label="事件处理链路">
+                <div className="event-chain-heading"><span>事件处理链</span><small>沿用现有事件状态与来源字段</small></div>
+                <div className="event-chain-steps">
+                  {eventChain.map((step, index) => <div className={`event-chain-step ${step.state}`} key={step.label}>
+                    <span>{String(index + 1).padStart(2, '0')}</span><strong>{step.label}</strong><small>{step.detail}</small>
+                  </div>)}
+                </div>
+              </section>
               <div className="property-grid">
                 <Property label="位置" value={selected.bay} />
                 <Property label="距离" value={selected.distance} />
