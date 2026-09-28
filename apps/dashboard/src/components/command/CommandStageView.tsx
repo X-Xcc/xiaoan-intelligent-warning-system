@@ -10,6 +10,19 @@ export function CommandStageView({ snapshot, stage, reveal = 3, route, display =
   const visible = (index: number) => reveal >= index ? 'command-reveal' : 'command-unrevealed';
   const location = command.intake;
   const currentRoute = route ?? command.dispatch;
+  const pipeline = command.aiPipeline;
+  const pipelineFocus = stage === 'b1' ? 'detection' : stage === 'b2' ? 'dispatch' : stage === 'b3' ? 'review' : 'close';
+  const pipelineNodes = pipeline ? [
+    { id: 'input', label: '现场输入', status: pipeline.input.status, detail: pipeline.input.mediaName },
+    { id: 'detection', label: 'AI 初筛', status: pipeline.detection.status,
+      detail: `${pipeline.detection.model} · ${pipeline.detection.personCount ?? '—'}人框 · ${pipeline.detection.confidence ? `${(pipeline.detection.confidence * 100).toFixed(1)}%` : '置信度未提供'}` },
+    { id: 'review', label: '人工复核', status: pipeline.review.status, detail: pipeline.review.conclusion },
+    { id: 'risk', label: '风险分级', status: pipeline.risk.humanReviewRequired ? 'pending' : 'confirmed', detail: pipeline.risk.level },
+    { id: 'dispatch', label: '人工派单', status: command.dispatch?.dispatchedAt ? 'confirmed' : command.dispatch?.reviewStatus === 'confirmed' ? 'module_trial' : 'pending',
+      detail: command.dispatch?.dispatchedAt ? '已下达派警' : '等待指挥席确认' },
+    { id: 'close', label: '处置归档', status: event.status === '已完成' ? 'confirmed' : ['已到达', '处理中'].includes(event.status) ? 'module_trial' : 'pending', detail: event.status },
+  ] : [];
+  const statusLabel = (status: string) => ({ verified_local: '本地已验证', module_trial: '模块试用', confirmed: '已完成', pending: '待人工确认', not_connected: '待联调', failed: '失败' }[status] || status);
   const titles = { b1: '接警工单', b2: '导航派警', b3: '盘查核验', b4: '物证同步', handover: '研判移交' };
   return <article className={`command-stage ${display ? 'command-stage-display' : ''}`} data-stage={stage}>
     <header className="command-stage-heading">
@@ -20,6 +33,18 @@ export function CommandStageView({ snapshot, stage, reveal = 3, route, display =
       </span>
     </header>
     <div className="command-event-strip"><span>{event.id}</span><span>{event.status}</span><span>{event.bay}</span></div>
+    {pipeline && <section className="command-ai-pipeline" aria-label="AI事件处理链">
+      <header><div><span className="command-ai-kicker">TECHNICAL CHAIN</span><h3>同一事件 · AI 识别到处置</h3></div><span className="command-ai-watermark">结果可追溯 · 人工确认不跳步</span></header>
+      <div className="command-ai-flow">
+        {pipelineNodes.map((node, index) => <div key={node.id} className={`command-ai-step command-ai-${node.status} ${pipelineFocus === node.id ? 'command-ai-active' : ''}`}>
+          <span className="command-ai-index">{String(index + 1).padStart(2, '0')}</span>
+          <b>{node.label}</b><strong>{statusLabel(node.status)}</strong><small>{node.detail}</small>
+        </div>)}
+      </div>
+      <div className="command-ai-detail"><div><b>初筛证据</b><span>{pipeline.detection.signals.join('；')}</span></div>
+        <div><b>风险依据</b><span>{pipeline.risk.basis.join('；')}</span></div>
+        <div className="command-ai-limit"><b>边界</b><span>{pipeline.detection.limitations || '仅作为辅助线索，需人工确认。'}</span></div></div>
+    </section>}
     {stage === 'b1' && <div className="command-b1">
       <section className={`command-intake ${visible(0)}`}>
         <div className="command-section-heading"><PhoneCall size={22} /><h3>报警文本登记</h3><span>{location.speakerName || '报警人未登记'}</span></div>

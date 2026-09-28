@@ -5,6 +5,7 @@ export const commandScenario = fixture;
 export function playbackSnapshot(): CommandResponse {
   const command: CommandContext = {
     version: 0, stage: 'B1_INTAKE', updatedAt: fixture.baseTime, sourceMode: 'desensitized_demo',
+    aiPipeline: fixture.aiPipeline,
     intake: { ...fixture.intake, locationVersion: 1, coordinates: {
       latitude: fixture.intake.latitude, longitude: fixture.intake.longitude,
     } },
@@ -17,7 +18,7 @@ export function playbackSnapshot(): CommandResponse {
       resultStatus: 'pending', basis: fixture.person.basis, dataTime: fixture.baseTime },
     evidenceIndex: fixture.materials.map((item) => ({ ...item, evidenceId: `TEACH-${item.key}` })),
   };
-  return { command, event: { id: '教学回放 / 未创建业务事件', title: fixture.title,
+  return { command, event: { id: 'CMD-DEMO-NM-20260905-001', title: fixture.title,
     bay: fixture.intake.locationText, status: '未提交', owner: '教学案例',
     description: fixture.intake.transcript, meta: { command }, timeline: [] } };
 }

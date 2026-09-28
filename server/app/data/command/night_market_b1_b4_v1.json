@@ -4,6 +4,35 @@
   "baseTime": "2026-09-05T20:13:50+08:00",
   "title": "XX夜市消费纠纷",
   "sourceMode": "desensitized_demo",
+  "aiPipeline": {
+    "input": {
+      "source": "夜市现场图片",
+      "mediaName": "image199.png",
+      "capturedAt": "2026-09-05T20:13:42+08:00",
+      "location": "XX夜市B区7号",
+      "status": "verified_local"
+    },
+    "detection": {
+      "model": "YOLOv8n-pose",
+      "status": "verified_local",
+      "personCount": 24,
+      "confidence": 0.8931,
+      "signals": ["检测到24个行人目标框", "单张图片推理完成"],
+      "limitations": "仅代表单张图片的行人检测；不能据此判断冲突、密度趋势、滞留或身份。"
+    },
+    "review": {
+      "method": "human",
+      "status": "pending",
+      "conclusion": "等待指挥席结合现场语义与报警文本复核",
+      "basis": ["检测结果已回传管理台", "尚未接入Qwen-VL复核", "需要人工确认是否存在风险行为"]
+    },
+    "risk": {
+      "level": "需人工复核",
+      "score": null,
+      "basis": ["报警文本包含威胁砸摊", "现场有人围观", "AI初筛不能单独生成案件结论"],
+      "humanReviewRequired": true
+    }
+  },
   "intake": {
     "speakerName": "张老板",
     "transcript": "我是张老板，在XX夜市B区7号。有人说食品有问题，要求赔偿，还威胁要砸摊。现场有人围观，请你们来处理。",

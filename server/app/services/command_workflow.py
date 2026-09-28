@@ -203,6 +203,7 @@ def _intake_context(data, source_mode, fixture=None):
     return {"version": 1, "updatedAt": now(), "stage": "B1_SUMMARY_PENDING_REVIEW",
             "sourceMode": source_mode, "scenarioId": fixture["scenarioId"] if fixture else None,
             "scenarioVersion": fixture["version"] if fixture else None,
+            "aiPipeline": deepcopy(fixture.get("aiPipeline")) if fixture else None,
             "intake": intake, "intakeHistory": [], "summary": _summary(transcript, 1),
             "relatedAlerts": fixture["relatedAlerts"] if fixture else [],
             "evidenceIndex": [], "handoverHistory": [], "verificationHistory": []}

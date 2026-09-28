@@ -26,12 +26,19 @@ export type Handover = {
   handoverId: string; version: number; status: string; summary: string; evidenceIds: string[];
   rejectionReason?: string; acceptedBy?: string; submittedBy?: string; auditId?: string;
 };
+export type AiPipeline = {
+  input: { source: string; mediaName: string; capturedAt: string; location: string; status: string };
+  detection: { model: string; status: string; personCount?: number; confidence?: number | null; signals: string[]; limitations?: string };
+  review: { method: string; status: string; conclusion: string; basis: string[] };
+  risk: { level: string; score?: number | null; basis: string[]; humanReviewRequired: boolean };
+};
 export type RelatedAlert = {
   eventId: string; occurredAt: string; locationText: string; basis: string[]; relation: string;
 };
 export type CommandContext = {
   version: number; stage: string; updatedAt: string; sourceMode: 'live' | 'desensitized_demo';
   runKey?: string; scenarioId?: string; lastAuditId?: string;
+  aiPipeline?: AiPipeline | null;
   intake: {
     transcript: string; locationText: string; speakerName?: string; contactMasked?: string;
     transcriptSource: string; locationSource: string; locationVersion: number; coordinates?: Point | null;
