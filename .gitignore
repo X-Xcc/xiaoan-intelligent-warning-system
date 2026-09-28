@@ -132,3 +132,4 @@ integrations/detector/runtime/
 !docs/
 docs/*
 !docs/deployment-full-replica.md
+!docs/presentation-chain-baseline.md
