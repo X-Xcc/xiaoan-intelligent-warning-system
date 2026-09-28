@@ -688,6 +688,19 @@
 .nightmarket-page .event-chain-step.manual { border-color: #7b9ebd; }
 .nightmarket-page .event-chain-step.pending { border-color: #d1a34b; }
 .nightmarket-page .event-chain-step.pending > span, .nightmarket-page .event-chain-step.pending strong { color: #9b6c12; }
+.nightmarket-page .ppt-presentation-card { margin: 0 0 18px; padding: 15px; border: 1px solid #a9c7e3; border-radius: 8px; background: linear-gradient(135deg, #f4f8ff, #f8fbff); }
+.nightmarket-page .ppt-presentation-heading { display: flex; justify-content: space-between; gap: 10px; align-items: start; margin-bottom: 12px; }
+.nightmarket-page .ppt-presentation-heading > div { display: grid; gap: 4px; }
+.nightmarket-page .ppt-presentation-heading strong { color: #274c73; font-size: 13px; }
+.nightmarket-page .ppt-presentation-heading > span { color: #55799a; font-size: 10px; white-space: nowrap; }
+.nightmarket-page .ppt-presentation-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.nightmarket-page .ppt-presentation-grid > div { display: grid; gap: 4px; min-width: 0; padding: 9px; border: 1px solid #d2e0ef; border-radius: 5px; background: #fff; }
+.nightmarket-page .ppt-presentation-grid small { color: #6b849b; font-size: 10px; }
+.nightmarket-page .ppt-presentation-grid b { color: #2e4d67; font-size: 11px; overflow-wrap: anywhere; }
+.nightmarket-page .ppt-presentation-grid span { color: #698094; font-size: 10px; line-height: 1.4; }
+.nightmarket-page .ppt-presentation-evidence { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.nightmarket-page .ppt-presentation-evidence > span { color: #6b849b; font-size: 10px; margin-right: 3px; }
+.nightmarket-page .ppt-presentation-evidence em { padding: 3px 6px; border-radius: 999px; color: #416887; background: #eaf3fc; font-size: 10px; font-style: normal; }
 
 .nightmarket-page .progress-label {
   margin: 10px 0 0;
@@ -895,6 +908,7 @@
   }
   .nightmarket-page .event-chain-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .nightmarket-page .event-chain-step:nth-child(3)::after { display: none; }
+  .nightmarket-page .ppt-presentation-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
   .nightmarket-page .status-actions {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1015,6 +1029,7 @@
   }
   .nightmarket-page .event-chain-steps { grid-template-columns: minmax(0, 1fr); }
   .nightmarket-page .event-chain-step::after { display: none; }
+  .nightmarket-page .ppt-presentation-grid { grid-template-columns: minmax(0, 1fr); }
 
   .nightmarket-page .queue-panel {
     padding-top: 0;

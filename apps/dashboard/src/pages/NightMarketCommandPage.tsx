@@ -44,6 +44,18 @@ type SafetyEvent = {
   updatedAt: string;
   description: string;
   result?: string | null;
+  presentation?: {
+    label: string;
+    input: string;
+    model: string;
+    detection: string;
+    confidence: string;
+    review: string;
+    risk: string;
+    dispatch: string;
+    closure: string;
+    evidence: string[];
+  };
   meta?: {
     alarmLocation?: GeoPoint;
     reporterLocation?: GeoPoint;
@@ -150,7 +162,7 @@ const fallback: Overview = {
   stats: { today_events: 5, pending_orders: 4, online_staff: 18, avg_response_minutes: 2.1, completion_rate: 20, urgent_events: 2 },
   night_markets: fallbackMarkets,
   events: [
-    { id: 'YS-DEMO-001', title: '寻衅滋事', bay: '某某夜市', level: '高风险', source: '群众报警', status: '已提交', owner: '待指派', distance: '待测距', time: '20:13:50', updatedAt: '20:14:50', description: '报警人小明报警称，20:13:50时许，王五在其摊位前寻衅滋事。地点位于8号摊位前。' },
+    { id: 'YS-DEMO-001', title: '寻衅滋事', bay: '某某夜市', level: '高风险', source: '群众报警', status: '已提交', owner: '待指派', distance: '待测距', time: '20:13:50', updatedAt: '20:14:50', description: '报警人小明报警称，20:13:50时许，王五在其摊位前寻衅滋事。地点位于8号摊位前。', presentation: { label: 'PPT演示数据 · 夜市B区7号', input: '夜市现场画面 + 商户报警', model: 'YOLOv8n-pose', detection: '24 个行人目标框', confidence: '89.3%', review: '人工复核通过', risk: '高风险 · 78分', dispatch: '135快反组 · 3分钟到入口', closure: '待派单，处置后归档', evidence: ['现场画面', '报警文本', '派单记录'] } },
     { id: 'YS-260815-001', title: '烧烤摊前多人推搡', bay: '三号门夜食街', level: '中风险', source: 'AI视频预警', status: '已接收', owner: '李敏', distance: '180m', time: '20:33:50', updatedAt: '20:35:50', description: 'AI识别到摊位前多人聚集推搡，疑似酒后消费纠纷升级，请附近巡防组先期劝阻。' },
     { id: 'YS-260815-002', title: '商户一键求助：疑似街霸滋扰', bay: '主街烧烤区', level: '高风险', source: '夜市平安码', status: '已到达', owner: '王队', distance: '90m', time: '20:47:50', updatedAt: '20:50:50', description: '商户通过夜市平安码上报，两名醉酒人员拍打桌椅、威胁摊主，现场有围观聚集风险。' },
     { id: 'YS-260815-003', title: '粉色手机疑似扒窃', bay: '三号门夜食街', level: '低风险', source: '群众报警', status: '已完成', owner: '研判组', distance: '指挥室', time: '20:13:50', updatedAt: '20:31:50', description: '群众报警称手机在夜市三号门附近遗失，研判组通过轨迹比对锁定疑似扒窃人员。', result: '已完成视频轨迹复盘，嫌疑目标交由处置组跟进。' },
@@ -597,6 +609,18 @@ function CommandPage({
                   </div>)}
                 </div>
               </section>
+              {selected.presentation && <section className="ppt-presentation-card" aria-label="PPT演示数据">
+                <div className="ppt-presentation-heading"><div><span className="panel-kicker">PPT DEMO / MOCK DATA</span><strong>{selected.presentation.label}</strong></div><span>仅用于截图呈现</span></div>
+                <div className="ppt-presentation-grid">
+                  <div><small>输入</small><b>{selected.presentation.input}</b></div>
+                  <div><small>AI 初筛</small><b>{selected.presentation.model}</b><span>{selected.presentation.detection} · 置信度 {selected.presentation.confidence}</span></div>
+                  <div><small>人工复核</small><b>{selected.presentation.review}</b></div>
+                  <div><small>风险分级</small><b>{selected.presentation.risk}</b></div>
+                  <div><small>派单建议</small><b>{selected.presentation.dispatch}</b></div>
+                  <div><small>处置归档</small><b>{selected.presentation.closure}</b></div>
+                </div>
+                <div className="ppt-presentation-evidence"><span>证据链</span>{selected.presentation.evidence.map((item) => <em key={item}>{item}</em>)}</div>
+              </section>}
               <div className="property-grid">
                 <Property label="位置" value={selected.bay} />
                 <Property label="距离" value={selected.distance} />
