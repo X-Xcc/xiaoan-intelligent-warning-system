@@ -131,6 +131,9 @@
 .command-actions { padding: 24px 0; border-bottom: 1px solid #dce4e7; }
 .command-actions > header { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 20px; align-items: center; }
 .command-actions > header > span { color: #697a80; font-size: 12px; }
+.command-ai-action-note { display: grid; grid-template-columns: auto auto; gap: 5px 10px; margin-bottom: 16px; padding: 11px 13px; border-left: 3px solid #14766a; background: #edf8f4; color: #315b53; font-size: 12px; }
+.command-ai-action-note span { color: #14766a; font-weight: 600; }
+.command-ai-action-note p { grid-column: 1 / -1; color: #637975; line-height: 1.6; }
 .command-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: end; gap: 16px; }
 .command-form label, .command-transfer label, .command-field-status label { display: grid; gap: 8px; font-size: 13px; }
 .command-form-wide, .command-button-row { grid-column: 1 / -1; }

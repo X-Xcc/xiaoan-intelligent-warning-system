@@ -371,7 +371,10 @@ function CommandActions({ snapshot, stage, roles, token, busy, online, staff, pe
       <Button icon={<Check size={16} />} disabled={!allowed('status') || (event.status === '处理中' && (!result.trim() || command.handover?.status !== 'accepted'))}
         onClick={() => void perform('status', { status: nextStatus[event.status], result })}>{event.status === '处理中' ? '提交结果并完成现场任务' : nextStatus[event.status] === '已接收' ? '接收任务' : nextStatus[event.status] === '已到达' ? '确认到场' : '开始处置'}</Button>
     </div>}
-    {stage === 'b1' && <div className="command-form">
+    {stage === 'b1' && <>
+      {command.aiPipeline && <div className="command-ai-action-note"><b>AI 初筛联动</b><span>{command.aiPipeline.review.status === 'confirmed' ? '已完成人工复核' : '等待人工复核'}</span>
+        <p>确认警情摘要会同时记录 AI 初筛复核结论；初筛结果只作为辅助线索，不直接生成案件结论。</p></div>}
+      <div className="command-form">
       <label className="command-form-wide">接警文本<Input.TextArea value={text} onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setText(e.target.value)} rows={3} /></label>
       <label>报警地点<Input value={bay} onChange={(e: ChangeEvent<HTMLInputElement>) => setBay(e.target.value)} maxLength={80} /></label>
       <label>坐标（可留空）<div className="command-coordinate"><Input aria-label="纬度" value={lat} onChange={(e: ChangeEvent<HTMLInputElement>) => setLat(e.target.value)} placeholder="纬度" />
@@ -386,7 +389,8 @@ function CommandActions({ snapshot, stage, roles, token, busy, online, staff, pe
         || command.summary.reviewStatus === 'confirmed'} onClick={() => void perform('summary/confirm', {
           summaryVersion: command.summary.version, text: summary, category, dangerFactors: [danger], riskTags: command.summary.riskTags,
         })}>确认警情摘要</Button>
-    </div>}
+      </div>
+    </>}
     {stage === 'b2' && <div className="command-form">
       <label>处警负责人<Select aria-label="处警负责人" value={staffId} onChange={setStaffId} disabled={busy || Boolean(command.dispatch?.dispatchedAt)}
         options={staff.map((item) => ({ value: item.id, label: item.name }))} /></label>
