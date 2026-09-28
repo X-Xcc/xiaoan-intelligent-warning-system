@@ -162,8 +162,8 @@ const defaultPresentation: NonNullable<SafetyEvent['presentation']> = {
 };
 
 const fallback: Overview = {
-  project: '夜市智防',
-  subtitle: '夜市商圈数智安全指挥舱',
+  project: '小安智能预警系统',
+  subtitle: '夜市商圈智能预警与协同处置工作台',
   stats: { today_events: 5, pending_orders: 4, online_staff: 18, avg_response_minutes: 2.1, completion_rate: 20, urgent_events: 2 },
   night_markets: fallbackMarkets,
   events: [
@@ -220,7 +220,7 @@ export function NightMarketCommandPage({ onBack }: { onBack?: () => void }) {
 
   useEffect(() => {
     const previousTitle = document.title;
-    document.title = '夜市智防 | 指挥态势';
+    document.title = '小安智能预警系统 | 夜市指挥态势';
     loadOverview();
     const timer = window.setInterval(loadOverview, 20000);
     const onPop = () => setView('command');
@@ -262,17 +262,17 @@ export function NightMarketCommandPage({ onBack }: { onBack?: () => void }) {
                   <ShieldCheck size={19} />
                 </span>
                 <span>
-                  <strong>夜市智防</strong>
-                  <small>返回项目入口</small>
+                  <strong>小安智能预警系统</strong>
+                  <small>智能预警工作台</small>
                 </span>
               </button>
               <div className="desktop-nav">
                 {systemNavItems.map((item) => (
                   <button className={view === item.view ? 'active' : ''} key={item.view} aria-current={view === item.view ? 'page' : undefined} onClick={() => navigate(item.view)}>
-                    指挥态势
+                    预警指挥
                   </button>
                 ))}
-                <button onClick={() => navigate('admin')}>视频监控</button>
+                <button onClick={() => navigate('admin')}>视频联动</button>
               </div>
               <div className="nav-actions">
                   <span className="sync-chip online" role="status">
@@ -290,11 +290,11 @@ export function NightMarketCommandPage({ onBack }: { onBack?: () => void }) {
             <div className="mobile-nav-panel">
               {systemNavItems.map((item) => (
                 <button className={view === item.view ? 'active' : ''} key={item.view} onClick={() => navigate(item.view)}>
-                  指挥态势
+                  预警指挥
                   <ArrowRight size={15} />
                 </button>
               ))}
-              <button onClick={() => navigate('admin')}>视频监控<ArrowRight size={15} /></button>
+              <button onClick={() => navigate('admin')}>视频联动<ArrowRight size={15} /></button>
             </div>
           )}
         </>
@@ -530,9 +530,9 @@ function CommandPage({
     <section className="workspace-page">
       <div className="workspace-heading">
         <div>
-          <span className="section-kicker">指挥中心 / 南昌市</span>
-          <h1>夜市指挥态势</h1>
-          <p>{nightMarkets.length} 个夜市 · {overview.stats.online_staff} 名在线巡防人员 · {overview.stats.pending_orders} 起待处置事件</p>
+          <span className="section-kicker">小安智能预警系统 / 南昌市</span>
+          <h1>夜市预警指挥态势</h1>
+          <p>{nightMarkets.length} 个重点夜市 · {overview.stats.online_staff} 名在线巡防人员 · {overview.stats.pending_orders} 起待处置事件</p>
         </div>
         <div className="heading-actions">
           <button className="quiet-button" onClick={refresh} disabled={refreshing}>
@@ -555,7 +555,7 @@ function CommandPage({
 
       <div className="command-grid">
         <section className="glass-panel queue-panel">
-          <PanelTitle kicker="QUEUE" title="事件工单" icon={<ListFilter size={18} />} />
+          <PanelTitle kicker="EVENT QUEUE" title="事件工单" icon={<ListFilter size={18} />} />
           <label className="queue-filter"><span>事件状态</span><select value={filter} onChange={(event) => setFilter(event.target.value)}>{['全部', ...statusFlow].map((item) => <option key={item} value={item}>{item}</option>)}</select><span>{filtered.length} 起</span></label>
           <div className="event-list">
             {filtered.map((event) => (
@@ -575,7 +575,7 @@ function CommandPage({
         </section>
 
         <section className="glass-panel map-panel">
-          <PanelTitle kicker="MAP" title="夜市分布" icon={<span className="map-live"><MapPin size={14} />{nightMarkets.length} 个夜市</span>} />
+          <PanelTitle kicker="SITUATION MAP" title="辖区夜市态势" icon={<span className="map-live"><MapPin size={14} />{nightMarkets.length} 个夜市</span>} />
           <label className="market-select"><span>当前夜市</span><select value={selectedMarket?.id} onChange={(event) => setSelectedMarketId(event.target.value)}>{nightMarkets.map((market) => <option key={market.id} value={market.id}>{market.district} · {market.name}</option>)}</select></label>
           <div className="map-stage">
             <PoliceJurisdictionAmapMap
@@ -729,7 +729,7 @@ function AdminPage({ overview, apiOnline, refresh }: { overview: Overview; apiOn
       <div className="workspace-heading">
         <div>
           <span className="section-kicker">Backend Console / System Control</span>
-          <h1>夜市智防后端管理</h1>
+          <h1>小安智能预警系统 · 后端管理</h1>
           <p>服务健康、事件库、智能协同和审计状态集中查看。</p>
         </div>
         <div className="heading-actions">

@@ -1140,3 +1140,506 @@
     animation: none;
   }
 }
+
+/* 小安智能预警系统视觉对齐：沿用平台浅色工作台、蓝色主色和告警色阶。 */
+.nightmarket-page {
+  --ops-bg: var(--ui-bg);
+  --ops-surface: var(--ui-surface);
+  --ops-raised: var(--ui-subtle);
+  --ops-border: var(--ui-line);
+  --ops-text: var(--ui-text);
+  --ops-muted: var(--ui-muted);
+  --ops-blue: var(--ui-primary);
+  --ops-green: var(--ui-success);
+  --ops-amber: var(--ui-warning);
+  --ops-red: var(--ui-danger);
+  color-scheme: light;
+  background: var(--ui-bg);
+}
+
+.nightmarket-page .topbar-wrap {
+  padding-inline: 28px;
+  border-bottom-color: var(--ui-line);
+  background: #fff;
+}
+
+.nightmarket-page .glass-nav {
+  min-height: 64px;
+  max-width: 1680px;
+}
+
+.nightmarket-page .brand-lockup {
+  color: var(--ui-text);
+}
+
+.nightmarket-page .brand-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  color: var(--ui-primary);
+  background: var(--ui-primary-soft);
+}
+
+.nightmarket-page .brand-lockup strong {
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.nightmarket-page .brand-lockup small {
+  display: block;
+  margin-top: 2px;
+  color: var(--ui-muted);
+  font-size: 11px;
+}
+
+.nightmarket-page .desktop-nav {
+  gap: 2px;
+}
+
+.nightmarket-page .desktop-nav button {
+  min-height: 40px;
+  padding-inline: 14px;
+  border-radius: 6px;
+  color: #68758a;
+}
+
+.nightmarket-page .desktop-nav button:hover {
+  color: var(--ui-text);
+  background: #f5f7fa;
+}
+
+.nightmarket-page .desktop-nav button.active {
+  color: var(--ui-primary);
+  background: var(--ui-primary-soft);
+}
+
+.nightmarket-page .desktop-nav button.active::after {
+  display: none;
+}
+
+.nightmarket-page .sync-chip {
+  padding: 5px 9px;
+  border: 1px solid #d0ebdd;
+  border-radius: 999px;
+  color: #0d7751;
+  background: #eef9f3;
+}
+
+.nightmarket-page .icon-button {
+  border-color: #d8dee8;
+  border-radius: 6px;
+  color: var(--ui-muted);
+  background: #fff;
+}
+
+.nightmarket-page .icon-button:hover {
+  border-color: #9eb4e5;
+  color: var(--ui-primary);
+  background: #f8faff;
+}
+
+.nightmarket-page .page-frame {
+  max-width: 1680px;
+  padding: 28px;
+}
+
+.nightmarket-page .workspace-heading {
+  margin-bottom: 20px;
+}
+
+.nightmarket-page .section-kicker,
+.nightmarket-page .panel-kicker {
+  color: var(--ui-muted);
+  font-size: 11px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.nightmarket-page .workspace-heading h1 {
+  color: var(--ui-text);
+  font-size: 24px;
+  font-weight: 650;
+}
+
+.nightmarket-page .workspace-heading p {
+  color: var(--ui-muted);
+}
+
+.nightmarket-page .quiet-button,
+.nightmarket-page .nav-to-button {
+  border-color: #d8dee8;
+  border-radius: 6px;
+  color: var(--ui-text);
+  background: #fff;
+}
+
+.nightmarket-page .quiet-button:hover,
+.nightmarket-page .nav-to-button:hover {
+  border-color: #9eb4e5;
+  color: var(--ui-primary);
+  background: #f8faff;
+}
+
+.nightmarket-page .live-pill {
+  color: var(--ui-muted);
+}
+
+.nightmarket-page .live-pill > span {
+  background: var(--ui-success);
+}
+
+.nightmarket-page .metric-grid {
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 0;
+  border: 0;
+}
+
+.nightmarket-page .metric-card {
+  min-height: 106px;
+  padding: 16px;
+  border: 1px solid var(--ui-line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(31 41 55 / 3%);
+}
+
+.nightmarket-page .metric-card:first-child,
+.nightmarket-page .metric-card:last-child {
+  padding-inline: 16px;
+}
+
+.nightmarket-page .metric-card:not(:last-child) {
+  border-right: 1px solid var(--ui-line);
+}
+
+.nightmarket-page .metric-icon {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--ui-primary);
+  background: var(--ui-primary-soft);
+}
+
+.nightmarket-page .metric-card.danger .metric-icon {
+  color: #b02b35;
+  background: #fff1f1;
+}
+
+.nightmarket-page .metric-card.orange .metric-icon {
+  color: #ac761d;
+  background: #fff5df;
+}
+
+.nightmarket-page .metric-card.green .metric-icon {
+  color: #13815d;
+  background: #eaf7f0;
+}
+
+.nightmarket-page .metric-label,
+.nightmarket-page .metric-card > small {
+  color: var(--ui-muted);
+}
+
+.nightmarket-page .metric-card > strong {
+  color: var(--ui-text);
+  font-size: 26px;
+  font-weight: 650;
+}
+
+.nightmarket-page .command-grid {
+  gap: 16px;
+}
+
+.nightmarket-page .glass-panel {
+  border: 1px solid var(--ui-line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(31 41 55 / 3%);
+}
+
+.nightmarket-page .queue-panel,
+.nightmarket-page .detail-panel {
+  padding: 16px;
+}
+
+.nightmarket-page .map-panel {
+  padding: 16px;
+  border: 1px solid var(--ui-line);
+}
+
+.nightmarket-page .panel-heading {
+  min-height: 44px;
+}
+
+.nightmarket-page .panel-heading h2 {
+  color: var(--ui-text);
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.nightmarket-page .queue-filter,
+.nightmarket-page .market-select {
+  min-height: 36px;
+  margin: 14px 0 12px;
+  color: var(--ui-muted);
+}
+
+.nightmarket-page .queue-filter select,
+.nightmarket-page .market-select select {
+  min-height: 36px;
+  border-color: #d8dee8;
+  border-radius: 6px;
+  color: var(--ui-text);
+  background: #fff;
+}
+
+.nightmarket-page .event-list {
+  gap: 8px;
+}
+
+.nightmarket-page .event-list-item {
+  min-height: 104px;
+  padding: 12px;
+  border: 1px solid #edf0f4;
+  border-radius: 7px;
+  background: #fff;
+}
+
+.nightmarket-page .event-list-item:hover {
+  border-color: #cfdaf0;
+  background: #fbfcff;
+}
+
+.nightmarket-page .event-list-item.selected {
+  border-color: #b9cbed;
+  background: var(--ui-primary-soft);
+}
+
+.nightmarket-page .event-list-main strong {
+  color: var(--ui-text);
+}
+
+.nightmarket-page .event-list-main small {
+  color: var(--ui-muted);
+}
+
+.nightmarket-page .status-badge {
+  min-height: 24px;
+  border-color: #d8e3f7;
+  border-radius: 4px;
+  color: #335eab;
+  background: #f1f5ff;
+}
+
+.nightmarket-page .status-badge.danger {
+  border-color: #f5d6d8;
+  color: #b02b35;
+  background: #fff1f1;
+}
+
+.nightmarket-page .status-badge.warn {
+  border-color: #f0e1ba;
+  color: #915d13;
+  background: #fff8e9;
+}
+
+.nightmarket-page .status-badge.safe {
+  border-color: #d0ebdd;
+  color: #0d7751;
+  background: #eef9f3;
+}
+
+.nightmarket-page .map-live {
+  color: var(--ui-muted);
+}
+
+.nightmarket-page .map-stage,
+.nightmarket-page .amap-shell {
+  border-color: #d8dee8;
+  border-radius: 7px;
+  background: #eef2f6;
+}
+
+.nightmarket-page .amap-placeholder {
+  color: #778398;
+}
+
+.nightmarket-page .amap-placeholder::before {
+  border-color: #b9c5d4;
+  color: #8a98aa;
+}
+
+.nightmarket-page .amap-selected {
+  border-color: #d8dee8;
+  border-radius: 6px;
+  color: var(--ui-text);
+  background: rgb(255 255 255 / 95%);
+  box-shadow: 0 4px 12px rgb(31 41 55 / 10%);
+}
+
+.nightmarket-page .amap-selected strong {
+  color: var(--ui-text);
+}
+
+.nightmarket-page .amap-selected span,
+.nightmarket-page .map-footnote {
+  color: var(--ui-muted);
+}
+
+.nightmarket-page .detail-panel h2 {
+  color: var(--ui-text);
+  font-size: 20px;
+}
+
+.nightmarket-page .detail-subtitle,
+.nightmarket-page .progress-label,
+.nightmarket-page .mono-id {
+  color: var(--ui-muted);
+}
+
+.nightmarket-page .detail-progress {
+  background: #e8edf4;
+}
+
+.nightmarket-page .detail-progress > span {
+  background: var(--ui-primary);
+}
+
+.nightmarket-page .event-chain-card {
+  border-color: #dfe5ee;
+  background: #fbfcfe;
+}
+
+.nightmarket-page .event-chain-heading span,
+.nightmarket-page .event-chain-step strong {
+  color: var(--ui-text);
+}
+
+.nightmarket-page .event-chain-heading small,
+.nightmarket-page .event-chain-step small,
+.nightmarket-page .event-chain-step > span {
+  color: var(--ui-muted);
+}
+
+.nightmarket-page .event-chain-step.done {
+  border-color: #36a77f;
+}
+
+.nightmarket-page .event-chain-step.done > span,
+.nightmarket-page .event-chain-step.done strong {
+  color: #0d7751;
+}
+
+.nightmarket-page .event-chain-step.manual {
+  border-color: #7d9fe0;
+}
+
+.nightmarket-page .event-chain-step.pending {
+  border-color: #d9a546;
+}
+
+.nightmarket-page .event-chain-step.pending > span,
+.nightmarket-page .event-chain-step.pending strong {
+  color: #915d13;
+}
+
+.nightmarket-page .ppt-presentation-card {
+  border-color: #bdd2f2;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #f4f8ff, #fbfdff);
+}
+
+.nightmarket-page .property-grid,
+.nightmarket-page .dispatch-card {
+  border-color: var(--ui-line);
+}
+
+.nightmarket-page .property > span,
+.nightmarket-page .dispatch-card > span,
+.nightmarket-page .field-label,
+.nightmarket-page .dispatch-card p {
+  color: var(--ui-muted);
+}
+
+.nightmarket-page .property > strong,
+.nightmarket-page .dispatch-card strong {
+  color: var(--ui-text);
+}
+
+.nightmarket-page .dispatch-actions button,
+.nightmarket-page .status-actions button {
+  border-color: #d8dee8;
+  border-radius: 6px;
+  color: var(--ui-text);
+  background: #fff;
+}
+
+.nightmarket-page .dispatch-actions button:hover,
+.nightmarket-page .status-actions button:hover {
+  border-color: #9eb4e5;
+  color: var(--ui-primary);
+  background: #f8faff;
+}
+
+.nightmarket-page .dispatch-actions button.active {
+  border-color: #b9cbed;
+  color: var(--ui-primary);
+  background: var(--ui-primary-soft);
+}
+
+.nightmarket-page .detail-description {
+  border-left-color: #9eb4e5;
+  color: var(--ui-muted);
+}
+
+.nightmarket-page .status-actions .primary-small {
+  border-color: var(--ui-primary);
+  color: #fff;
+  background: var(--ui-primary);
+}
+
+.nightmarket-page .status-actions .primary-small:hover {
+  color: #fff;
+  background: #1947b6;
+}
+
+.nightmarket-page .toast {
+  border-color: #cce8d9;
+  border-radius: 7px;
+  color: #0d7751;
+  background: #f3fbf6;
+  box-shadow: 0 8px 24px rgb(31 41 55 / 12%);
+}
+
+.nightmarket-page .toast.error {
+  border-color: #f0c8cb;
+  color: #b02b35;
+  background: #fff5f5;
+}
+
+@media (max-width: 767px) {
+  .nightmarket-page .mobile-nav-panel {
+    top: 72px;
+    border-color: var(--ui-line);
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 8px 24px rgb(31 41 55 / 12%);
+  }
+
+  .nightmarket-page .mobile-nav-panel button {
+    color: var(--ui-text);
+  }
+
+  .nightmarket-page .mobile-nav-panel button.active {
+    color: var(--ui-primary);
+    background: var(--ui-primary-soft);
+  }
+
+  .nightmarket-page .queue-panel,
+  .nightmarket-page .map-panel,
+  .nightmarket-page .detail-panel {
+    border-bottom-color: var(--ui-line);
+  }
+}
