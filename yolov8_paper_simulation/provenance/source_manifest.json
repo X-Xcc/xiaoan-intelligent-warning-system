@@ -1,0 +1,56 @@
+[
+  {
+    "original_path": "D:\\Dev\\yolov8_security\\runs\\detect\\action\\results.csv",
+    "snapshot": "provenance\\action\\results.csv",
+    "sha256": "26951cccbc6979326b4f3b212dc777bce11dcfd4115610025208a103ff3d1d8c",
+    "bytes": 12576
+  },
+  {
+    "original_path": "D:\\Dev\\yolov8_security\\runs\\detect\\action\\args.yaml",
+    "snapshot": "provenance\\action\\args.yaml",
+    "sha256": "5ebf0446ad01664e92f4440de2a87dc8289411d9fd2dd0e331f893bbf5f47483",
+    "bytes": 1877
+  },
+  {
+    "original_path": "D:\\Dev\\yolov8_security\\runs\\detect\\action\\BoxPR_curve.png",
+    "snapshot": "provenance\\action\\BoxPR_curve.png",
+    "sha256": "58f2b26b703c6b55c79e1752bb506d78a32712a006c32f05bca638459f4f972b",
+    "bytes": 88521
+  },
+  {
+    "original_path": "D:\\Dev\\yolov8_security\\runs\\detect\\action\\confusion_matrix.png",
+    "snapshot": "provenance\\action\\confusion_matrix.png",
+    "sha256": "d235062fff6c9f448d68c3f93e2d7e40f5514c41399475226dd8c894c41e08ac",
+    "bytes": 102216
+  },
+  {
+    "original_path": "D:\\Dev\\yolov8_security\\runs\\detect\\action300\\results.csv",
+    "snapshot": "provenance\\action300\\results.csv",
+    "sha256": "56e94af747666ccde0419843359e250b7c7267d9febda157a8a95bfa01be14d2",
+    "bytes": 8992
+  },
+  {
+    "original_path": "D:\\Dev\\yolov8_security\\runs\\detect\\action300\\args.yaml",
+    "snapshot": "provenance\\action300\\args.yaml",
+    "sha256": "916376c88054c8112659b6551a9db611421b6435d8bef607d27fe95c87519bb1",
+    "bytes": 1883
+  },
+  {
+    "original_path": "D:\\Dev\\yolov8_security\\runs\\detect\\action_final_300\\args.yaml",
+    "snapshot": "provenance\\action_final_300\\args.yaml",
+    "sha256": "6b1044148cc6b93558d31de68561cc056fe950d2a636e468c712c493d1df25c8",
+    "bytes": 1945
+  },
+  {
+    "original_path": "D:\\Dev\\yolov8_security\\runs\\detect\\action_final_300\\BoxPR_curve.png",
+    "snapshot": "provenance\\action_final_300\\BoxPR_curve.png",
+    "sha256": "9c9345ba1d7fbe4090f0feb3541ac995ffe4e349cebb16f4685b4166e6c8099d",
+    "bytes": 86823
+  },
+  {
+    "original_path": "D:\\Dev\\yolov8_security\\runs\\detect\\action_final_300\\confusion_matrix.png",
+    "snapshot": "provenance\\action_final_300\\confusion_matrix.png",
+    "sha256": "686f30737593019a8a1d68f3d5e93715d9db913b8e63b35c022841cbb5c93a4d",
+    "bytes": 101609
+  }
+]

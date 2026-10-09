@@ -1,0 +1,291 @@
+{
+  "status": "PASS",
+  "checks_passed": 102,
+  "checks": [
+    "Exactly 1000 Monte Carlo rows with unique identifiers",
+    "baseline: probability domains",
+    "baseline: false-alarm share denominator",
+    "trained_yolo: probability domains",
+    "trained_yolo: false-alarm share denominator",
+    "original_qwen: probability domains",
+    "original_qwen: false-alarm share denominator",
+    "trained_qwen: probability domains",
+    "trained_qwen: false-alarm share denominator",
+    "original Qwen propagation formula",
+    "original Qwen conditional recall tradeoff",
+    "trained Qwen propagation formula",
+    "trained Qwen conditional recall tradeoff",
+    "baseline: CSV summary reproducible from raw draws",
+    "trained_yolo: CSV summary reproducible from raw draws",
+    "original_qwen: CSV summary reproducible from raw draws",
+    "trained_qwen: CSV summary reproducible from raw draws",
+    "trained_yolo: gain quantiles",
+    "original_qwen: gain quantiles",
+    "trained_qwen: gain quantiles",
+    "6000 simulated trajectory rows, 1000 epochs per scenario/metric",
+    "mAP50:95 <= mAP50 for each simulated epoch",
+    "4200 distinct one-target synthetic scenes",
+    "initial: confusion counts recomputed from predictions",
+    "initial: source GT support conserved",
+    "initial: unmatched background does not produce a TN",
+    "final: confusion counts recomputed from predictions",
+    "final: source GT support conserved",
+    "final: unmatched background does not produce a TN",
+    "Source snapshot hash: provenance\\action\\results.csv",
+    "Source snapshot hash: provenance\\action\\args.yaml",
+    "Source snapshot hash: provenance\\action\\BoxPR_curve.png",
+    "Source snapshot hash: provenance\\action\\confusion_matrix.png",
+    "Source snapshot hash: provenance\\action300\\results.csv",
+    "Source snapshot hash: provenance\\action300\\args.yaml",
+    "Source snapshot hash: provenance\\action_final_300\\args.yaml",
+    "Source snapshot hash: provenance\\action_final_300\\BoxPR_curve.png",
+    "Source snapshot hash: provenance\\action_final_300\\confusion_matrix.png",
+    "300 dpi: 01_multipanel_paper.png",
+    "White background: 01_multipanel_paper.png",
+    "PDF pair exists: 01_multipanel_paper.png",
+    "300 dpi: 02_training_convergence.png",
+    "White background: 02_training_convergence.png",
+    "PDF pair exists: 02_training_convergence.png",
+    "300 dpi: 03_precision_recall.png",
+    "White background: 03_precision_recall.png",
+    "PDF pair exists: 03_precision_recall.png",
+    "300 dpi: 04_confusion_matrices.png",
+    "White background: 04_confusion_matrices.png",
+    "PDF pair exists: 04_confusion_matrices.png",
+    "300 dpi: 05_model_forest.png",
+    "White background: 05_model_forest.png",
+    "PDF pair exists: 05_model_forest.png",
+    "300 dpi: 06_monte_carlo_ecdf.png",
+    "White background: 06_monte_carlo_ecdf.png",
+    "PDF pair exists: 06_monte_carlo_ecdf.png",
+    "300 dpi: 07_training_gain.png",
+    "White background: 07_training_gain.png",
+    "PDF pair exists: 07_training_gain.png",
+    "300 dpi: confusion_matrices.png",
+    "White background: confusion_matrices.png",
+    "PDF pair exists: confusion_matrices.png",
+    "300 dpi: model_forest.png",
+    "White background: model_forest.png",
+    "PDF pair exists: model_forest.png",
+    "300 dpi: monte_carlo_ecdf.png",
+    "White background: monte_carlo_ecdf.png",
+    "PDF pair exists: monte_carlo_ecdf.png",
+    "300 dpi: precision_recall.png",
+    "White background: precision_recall.png",
+    "PDF pair exists: precision_recall.png",
+    "300 dpi: training_convergence.png",
+    "White background: training_convergence.png",
+    "PDF pair exists: training_convergence.png",
+    "300 dpi: training_gain.png",
+    "White background: training_gain.png",
+    "PDF pair exists: training_gain.png",
+    "300 dpi: S1_observed_convergence.png",
+    "White background: S1_observed_convergence.png",
+    "PDF pair exists: S1_observed_convergence.png",
+    "300 dpi: S2_observed_PR_originals.png",
+    "White background: S2_observed_PR_originals.png",
+    "PDF pair exists: S2_observed_PR_originals.png",
+    "300 dpi: S3_observed_confusion.png",
+    "White background: S3_observed_confusion.png",
+    "PDF pair exists: S3_observed_confusion.png",
+    "300 dpi: S4_assumption_sensitivity.png",
+    "White background: S4_assumption_sensitivity.png",
+    "PDF pair exists: S4_assumption_sensitivity.png",
+    "300 dpi: table_01_parameters.png",
+    "White background: table_01_parameters.png",
+    "Pure grayscale table: table_01_parameters.png",
+    "PDF pair exists: table_01_parameters.png",
+    "300 dpi: table_02_simulation_summary.png",
+    "White background: table_02_simulation_summary.png",
+    "Pure grayscale table: table_02_simulation_summary.png",
+    "PDF pair exists: table_02_simulation_summary.png",
+    "300 dpi: table_03_retention_tradeoff.png",
+    "White background: table_03_retention_tradeoff.png",
+    "Pure grayscale table: table_03_retention_tradeoff.png",
+    "PDF pair exists: table_03_retention_tradeoff.png",
+    "All primary figures and training-gain comparison delivered"
+  ],
+  "images": [
+    {
+      "path": "figures\\01_multipanel_paper.png",
+      "width": 2160,
+      "height": 3060,
+      "dpi": [
+        299.9994,
+        299.9994
+      ]
+    },
+    {
+      "path": "figures\\02_training_convergence.png",
+      "width": 2160,
+      "height": 1050,
+      "dpi": [
+        299.9994,
+        299.9994
+      ]
+    },
+    {
+      "path": "figures\\03_precision_recall.png",
+      "width": 2160,
+      "height": 1200,
+      "dpi": [
+        299.9994,
+        299.9994
+      ]
+    },
+    {
+      "path": "figures\\04_confusion_matrices.png",
+      "width": 2160,
+      "height": 1350,
+      "dpi": [
+        299.9994,
+        299.9994
+      ]
+    },
+    {
+      "path": "figures\\05_model_forest.png",
+      "width": 2160,
+      "height": 1140,
+      "dpi": [
+        299.9994,
+        299.9994
+      ]
+    },
+    {
+      "path": "figures\\06_monte_carlo_ecdf.png",
+      "width": 2160,
+      "height": 1140,
+      "dpi": [
+        299.9994,
+        299.9994
+      ]
+    },
+    {
+      "path": "figures\\07_training_gain.png",
+      "width": 2160,
+      "height": 1350,
+      "dpi": [
+        299.9994,
+        299.9994
+      ]
+    },
+    {
+      "path": "figures\\ppt\\confusion_matrices.png",
+      "width": 3840,
+      "height": 2160,
+      "dpi": [
+        299.9994,
+        299.9994
+      ]
+    },
+    {
+      "path": "figures\\ppt\\model_forest.png",
+      "width": 3840,
+      "height": 2160,
+      "dpi": [
+        299.9994,
+        299.9994
+      ]
+    },
+    {
+      "path": "figures\\ppt\\monte_carlo_ecdf.png",
+      "width": 3840,
+      "height": 2160,
+      "dpi": [
+        299.9994,
+        299.9994
+      ]
+    },
+    {
+      "path": "figures\\ppt\\precision_recall.png",
+      "width": 3840,
+      "height": 2160,
+      "dpi": [
+        299.9994,
+        299.9994
+      ]
+    },
+    {
+      "path": "figures\\ppt\\training_convergence.png",
+      "width": 3840,
+      "height": 2160,
+      "dpi": [
+        299.9994,
+        299.9994
+      ]
+    },
+    {
+      "path": "figures\\ppt\\training_gain.png",
+      "width": 3840,
+      "height": 2160,
+      "dpi": [
+        299.9994,
+        299.9994
+      ]
+    },
+    {
+      "path": "figures\\S1_observed_convergence.png",
+      "width": 2160,
+      "height": 1080,
+      "dpi": [
+        299.9994,
+        299.9994
+      ]
+    },
+    {
+      "path": "figures\\S2_observed_PR_originals.png",
+      "width": 2700,
+      "height": 1170,
+      "dpi": [
+        299.9994,
+        299.9994
+      ]
+    },
+    {
+      "path": "figures\\S3_observed_confusion.png",
+      "width": 2160,
+      "height": 1350,
+      "dpi": [
+        299.9994,
+        299.9994
+      ]
+    },
+    {
+      "path": "figures\\S4_assumption_sensitivity.png",
+      "width": 2160,
+      "height": 1110,
+      "dpi": [
+        299.9994,
+        299.9994
+      ]
+    },
+    {
+      "path": "tables\\table_01_parameters.png",
+      "width": 2160,
+      "height": 1200,
+      "dpi": [
+        299.9994,
+        299.9994
+      ]
+    },
+    {
+      "path": "tables\\table_02_simulation_summary.png",
+      "width": 2160,
+      "height": 870,
+      "dpi": [
+        299.9994,
+        299.9994
+      ]
+    },
+    {
+      "path": "tables\\table_03_retention_tradeoff.png",
+      "width": 2160,
+      "height": 870,
+      "dpi": [
+        299.9994,
+        299.9994
+      ]
+    }
+  ],
+  "note": "Numerical/source/DPI/grayscale checks. Visual layout separately inspected on exported PNGs."
+}

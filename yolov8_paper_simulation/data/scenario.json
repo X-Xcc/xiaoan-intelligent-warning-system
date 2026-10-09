@@ -1,0 +1,18 @@
+{
+  "status": "ALL PRIMARY FIGURES ARE SIMULATED; NOT A 1000-EPOCH TRAINING RUN",
+  "seed": 20260928,
+  "scenario_images": 42000,
+  "scenario_train_images": 33600,
+  "scenario_val_images": 4200,
+  "scenario_test_images": 4200,
+  "image_count_status": "Assumed scenario; no images generated or model trained",
+  "synthetic_evaluation_scenes": 4200,
+  "one_target_per_scene": true,
+  "simulated_epochs": 1000,
+  "monte_carlo_draws": 1000,
+  "source_objects": 81,
+  "source_predictions_for_precision": 82,
+  "synthetic_operating_confidence": 0.5,
+  "synthetic_matching_iou": 0.5,
+  "experiment_separation": "Convergence is an AR(1) metric surrogate; PR/CM share one synthetic prediction experiment; MC uses only original small-sample evidence."
+}

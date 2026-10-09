@@ -1,0 +1,7 @@
+transformers>=4.49,<5
+peft>=0.21
+accelerate>=1.0
+datasets>=3.0
+qwen-vl-utils>=0.0.8
+bitsandbytes>=0.50
+modelscope>=1.30

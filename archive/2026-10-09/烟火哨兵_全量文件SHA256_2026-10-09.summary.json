@@ -1,0 +1,14 @@
+{
+  "root": "D:\\烟火哨兵_项目总资料",
+  "generated_at_utc": "2026-10-09T03:13:50.505901+00:00",
+  "excluded_directories": [
+    ".git"
+  ],
+  "file_count": 134291,
+  "total_bytes": 39138232674,
+  "manifest": "C:\\Users\\xx\\Documents\\Codex\\2026-10-09\\new-chat\\outputs\\manifests\\烟火哨兵_全量文件SHA256_2026-10-09.csv",
+  "manifest_sha256": "e79a5856e843a240ae9bc883d68d59466742ede6b3afadca32ba901cbcdd9e02",
+  "non_ok_count": 0,
+  "non_ok_files": [],
+  "duration_seconds": 156.86
+}

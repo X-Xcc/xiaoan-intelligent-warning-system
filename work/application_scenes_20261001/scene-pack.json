@@ -1,0 +1,227 @@
+{
+  "version": 2,
+  "packs": [
+    {
+      "id": "night-market-safety-applications",
+      "title": "烟火哨兵应用场景演绎",
+      "summary": "Conceptual application environments with blank device slots for later exact screenshot compositing.",
+      "families": [
+        {
+          "id": "A01",
+          "title": "群众求助｜真实页面叠屏",
+          "category": "Night market / public safety service",
+          "sceneArchetype": "resident mobile reporting",
+          "placeholders": [
+            "{subject}",
+            "{channel_use}"
+          ],
+          "summary": "群众可以使用移动端提供线索，但本镜不展示提交成功",
+          "businessGoal": "评委理解群众端的入口和夜市使用环境",
+          "scene": "A single cinematic photorealistic 16:9 image for a Chinese student innovation competition film about night-market public safety. A conceptual application-scene dramatization, not evidence of actual deployment. Sophisticated practical lighting, amber everyday street life contrasted with restrained steel-blue technology, realistic people and natural depth, not a futuristic science-fiction city. No text, Chinese characters, letters, digits, logos, watermark, readable shop signs, police insignia, identifiable institution, alert labels, facial detection rectangles, performance numbers, real private records or invented app UI. All visible device screens must be completely blank matte charcoal with clean straight rectangular geometry for later compositing supplied real screenshots. Leave lower 12% uncluttered for deterministic disclosure and subtitles. Do not portray a specific real student or identifiable real person. No conflict, arrests, disaster, urgency or exaggerated capability. Close foreground view of an anonymous resident hand holding a modern generic smartphone upright in the left third, phone display precisely front-facing toward camera and screen unoccluded, straight on, approximately 430x800 pixels in a 2048x1152 image. Thumb stays away from display, no finger pressing a button. Blank dark display with simple rounded corners and no notch covering useful area. Warm lively but softly defocused Chinese night-market stalls behind on the right, people small and unrecognizable, clean right-middle negative space for a later line icon. Natural realistic hand anatomy, high-end documentary-commercial photography.",
+          "sceneShape": "左侧手机正面竖屏；原R06等比contain，不能隐藏未设置位置",
+          "subjectPlacement": "左侧手机正面竖屏；原R06等比contain，不能隐藏未设置位置",
+          "subjectSlot": {
+            "slotType": [
+              "app_screen",
+              "service"
+            ],
+            "placement": "左侧手机正面竖屏；原R06等比contain，不能隐藏未设置位置",
+            "scale": "foreground",
+            "interaction": "群众可以使用移动端提供线索，但本镜不展示提交成功",
+            "fallbackIfService": "preserve blank device slot for exact later supplied screenshot",
+            "fallbackIfDigital": "preserve blank device slot, do not generate interface",
+            "preserve": [
+              "真实原页面仅后期叠加",
+              "不虚构已部署",
+              "不修改真实团队素材"
+            ]
+          },
+          "focus": "群众可以使用移动端提供线索，但本镜不展示提交成功",
+          "decision": "S09 30—34秒的备选演绎镜头",
+          "elements": [
+            "夜市环境",
+            "留白",
+            "实际光线"
+          ],
+          "constraints": [
+            "A single cinematic photorealistic 16:9 image for a Chinese student innovation competition film about night-market public safety. A conceptual application-scene dramatization, not evidence of actual deployment. Sophisticated practical lighting, amber everyday street life contrasted with restrained steel-blue technology, realistic people and natural depth, not a futuristic science-fiction city. No text, Chinese characters, letters, digits, logos, watermark, readable shop signs, police insignia, identifiable institution, alert labels, facial detection rectangles, performance numbers, real private records or invented app UI. All visible device screens must be completely blank matte charcoal with clean straight rectangular geometry for later compositing supplied real screenshots. Leave lower 12% uncluttered for deterministic disclosure and subtitles. Do not portray a specific real student or identifiable real person. No conflict, arrests, disaster, urgency or exaggerated capability.",
+            "不能生成点击成功、定位完成或自动拨打110"
+          ],
+          "avoid": "generated text, fake app interfaces, branding, fake achievements, police badges, altered real people"
+        },
+        {
+          "id": "A02",
+          "title": "协同研判｜真实大屏叠屏",
+          "category": "Night market / public safety service",
+          "sceneArchetype": "human verification workstation",
+          "placeholders": [
+            "{subject}",
+            "{channel_use}"
+          ],
+          "summary": "人员查看平台并做判断，不是AI自动认定",
+          "businessGoal": "让评委直观理解人员与平台协作",
+          "scene": "A single cinematic photorealistic 16:9 image for a Chinese student innovation competition film about night-market public safety. A conceptual application-scene dramatization, not evidence of actual deployment. Sophisticated practical lighting, amber everyday street life contrasted with restrained steel-blue technology, realistic people and natural depth, not a futuristic science-fiction city. No text, Chinese characters, letters, digits, logos, watermark, readable shop signs, police insignia, identifiable institution, alert labels, facial detection rectangles, performance numbers, real private records or invented app UI. All visible device screens must be completely blank matte charcoal with clean straight rectangular geometry for later compositing supplied real screenshots. Leave lower 12% uncluttered for deterministic disclosure and subtitles. Do not portray a specific real student or identifiable real person. No conflict, arrests, disaster, urgency or exaggerated capability. A contemporary modest public-safety coordination office without any institutional identity. One anonymous analyst wearing a plain navy shirt seated in the lower-left foreground, seen from side-back, calmly looking toward a large single desktop monitor on the right. The monitor screen faces directly toward the camera and is nearly rectangular with minimal perspective, a clean blank charcoal 16:9 display occupying about 52 percent of image width, its lower edge above bottom 20 percent. Practical blue screen-edge light and a warm desk lamp. Human-led work, not a futuristic command spaceship, no wall of fake data screens. Elegant over-the-shoulder photographic composition with monitor readable after post-composition.",
+          "sceneShape": "右侧正面16:9空白屏；原R04整页适配，保留演示标识",
+          "subjectPlacement": "右侧正面16:9空白屏；原R04整页适配，保留演示标识",
+          "subjectSlot": {
+            "slotType": [
+              "app_screen",
+              "service"
+            ],
+            "placement": "右侧正面16:9空白屏；原R04整页适配，保留演示标识",
+            "scale": "foreground",
+            "interaction": "人员查看平台并做判断，不是AI自动认定",
+            "fallbackIfService": "preserve blank device slot for exact later supplied screenshot",
+            "fallbackIfDigital": "preserve blank device slot, do not generate interface",
+            "preserve": [
+              "真实原页面仅后期叠加",
+              "不虚构已部署",
+              "不修改真实团队素材"
+            ]
+          },
+          "focus": "人员查看平台并做判断，不是AI自动认定",
+          "decision": "S06 17—21秒的短引入备选，仍保留原图阅读窗口",
+          "elements": [
+            "夜市环境",
+            "留白",
+            "实际光线"
+          ],
+          "constraints": [
+            "A single cinematic photorealistic 16:9 image for a Chinese student innovation competition film about night-market public safety. A conceptual application-scene dramatization, not evidence of actual deployment. Sophisticated practical lighting, amber everyday street life contrasted with restrained steel-blue technology, realistic people and natural depth, not a futuristic science-fiction city. No text, Chinese characters, letters, digits, logos, watermark, readable shop signs, police insignia, identifiable institution, alert labels, facial detection rectangles, performance numbers, real private records or invented app UI. All visible device screens must be completely blank matte charcoal with clean straight rectangular geometry for later compositing supplied real screenshots. Leave lower 12% uncluttered for deterministic disclosure and subtitles. Do not portray a specific real student or identifiable real person. No conflict, arrests, disaster, urgency or exaggerated capability.",
+            "不能把生成工作人员当作真实合作单位或团队成员"
+          ],
+          "avoid": "generated text, fake app interfaces, branding, fake achievements, police badges, altered real people"
+        },
+        {
+          "id": "A03",
+          "title": "夜市巡查｜平板协同",
+          "category": "Night market / public safety service",
+          "sceneArchetype": "on-site collaborative patrol",
+          "placeholders": [
+            "{subject}",
+            "{channel_use}"
+          ],
+          "summary": "现场人员与平台协同，非已部署巡逻记录",
+          "businessGoal": "展示现场与平台协同的使用设想",
+          "scene": "A single cinematic photorealistic 16:9 image for a Chinese student innovation competition film about night-market public safety. A conceptual application-scene dramatization, not evidence of actual deployment. Sophisticated practical lighting, amber everyday street life contrasted with restrained steel-blue technology, realistic people and natural depth, not a futuristic science-fiction city. No text, Chinese characters, letters, digits, logos, watermark, readable shop signs, police insignia, identifiable institution, alert labels, facial detection rectangles, performance numbers, real private records or invented app UI. All visible device screens must be completely blank matte charcoal with clean straight rectangular geometry for later compositing supplied real screenshots. Leave lower 12% uncluttered for deterministic disclosure and subtitles. Do not portray a specific real student or identifiable real person. No conflict, arrests, disaster, urgency or exaggerated capability. Night-market lane at blue hour with warm vendor practical lights. Two anonymous community venue staff in plain unbranded navy jackets, one in left midground holding a slim generic tablet at chest height and discussing calmly with the colleague. Both at natural eye level, neither resembles police, no uniforms or badges. Tablet blank charcoal, screen subtly turned toward camera with clean geometry, hands outside main display. Staff occupy left half, softly defocused living market on right with balanced open space for later explanatory graphics. Respectful everyday interaction, natural documentary photography, no aggressive surveillance aesthetic, no route arrows generated.",
+          "sceneShape": "左侧平板可叠原页面或保持空白；流程文字在画面外",
+          "subjectPlacement": "左侧平板可叠原页面或保持空白；流程文字在画面外",
+          "subjectSlot": {
+            "slotType": [
+              "app_screen",
+              "service"
+            ],
+            "placement": "左侧平板可叠原页面或保持空白；流程文字在画面外",
+            "scale": "foreground",
+            "interaction": "现场人员与平台协同，非已部署巡逻记录",
+            "fallbackIfService": "preserve blank device slot for exact later supplied screenshot",
+            "fallbackIfDigital": "preserve blank device slot, do not generate interface",
+            "preserve": [
+              "真实原页面仅后期叠加",
+              "不虚构已部署",
+              "不修改真实团队素材"
+            ]
+          },
+          "focus": "现场人员与平台协同，非已部署巡逻记录",
+          "decision": "S10 34—38秒的备选场景，不能挤掉响应边界",
+          "elements": [
+            "夜市环境",
+            "留白",
+            "实际光线"
+          ],
+          "constraints": [
+            "A single cinematic photorealistic 16:9 image for a Chinese student innovation competition film about night-market public safety. A conceptual application-scene dramatization, not evidence of actual deployment. Sophisticated practical lighting, amber everyday street life contrasted with restrained steel-blue technology, realistic people and natural depth, not a futuristic science-fiction city. No text, Chinese characters, letters, digits, logos, watermark, readable shop signs, police insignia, identifiable institution, alert labels, facial detection rectangles, performance numbers, real private records or invented app UI. All visible device screens must be completely blank matte charcoal with clean straight rectangular geometry for later compositing supplied real screenshots. Leave lower 12% uncluttered for deterministic disclosure and subtitles. Do not portray a specific real student or identifiable real person. No conflict, arrests, disaster, urgency or exaggerated capability.",
+            "不生成警方徽记、真实定位记录或到场承诺"
+          ],
+          "avoid": "generated text, fake app interfaces, branding, fake achievements, police badges, altered real people"
+        },
+        {
+          "id": "A04",
+          "title": "夜市俯视｜图传视角设想",
+          "category": "Night market / public safety service",
+          "sceneArchetype": "aerial situational view",
+          "placeholders": [
+            "{subject}",
+            "{channel_use}"
+          ],
+          "summary": "图传视角的空间感，不认证无人机实战",
+          "businessGoal": "用空间视角解释远近场景关系",
+          "scene": "A single cinematic photorealistic 16:9 image for a Chinese student innovation competition film about night-market public safety. A conceptual application-scene dramatization, not evidence of actual deployment. Sophisticated practical lighting, amber everyday street life contrasted with restrained steel-blue technology, realistic people and natural depth, not a futuristic science-fiction city. No text, Chinese characters, letters, digits, logos, watermark, readable shop signs, police insignia, identifiable institution, alert labels, facial detection rectangles, performance numbers, real private records or invented app UI. All visible device screens must be completely blank matte charcoal with clean straight rectangular geometry for later compositing supplied real screenshots. Leave lower 12% uncluttered for deterministic disclosure and subtitles. Do not portray a specific real student or identifiable real person. No conflict, arrests, disaster, urgency or exaggerated capability. A believable elevated oblique view of a modest Chinese night-market block at blue hour, warm orange stall lamps, narrow walkable aisles and small unidentifiable visitors, practical tents and low-rise buildings, restrained atmospheric depth, detailed but not impossibly huge crowds. Cinematic photographic view as if from an elevated camera. Strong foreground-to-background perspective, main stalls concentrated center-right with uncluttered darker left edge for later abstract graphics. Do not show an actual drone, robot, police vehicle, surveillance HUD, camera controls, targeting brackets, map labels, trajectories or operational overlays. No readable signboards. This is an imagined view for explaining a possible image-transmission perspective, not an actual flight record.",
+          "sceneShape": "仅供画面外图传示意；不在场景内绘制真实轨迹",
+          "subjectPlacement": "仅供画面外图传示意；不在场景内绘制真实轨迹",
+          "subjectSlot": {
+            "slotType": [
+              "app_screen",
+              "service"
+            ],
+            "placement": "仅供画面外图传示意；不在场景内绘制真实轨迹",
+            "scale": "foreground",
+            "interaction": "图传视角的空间感，不认证无人机实战",
+            "fallbackIfService": "preserve blank device slot for exact later supplied screenshot",
+            "fallbackIfDigital": "preserve blank device slot, do not generate interface",
+            "preserve": [
+              "真实原页面仅后期叠加",
+              "不虚构已部署",
+              "不修改真实团队素材"
+            ]
+          },
+          "focus": "图传视角的空间感，不认证无人机实战",
+          "decision": "机制段备选插镜，不替换R07真实联调证据",
+          "elements": [
+            "夜市环境",
+            "留白",
+            "实际光线"
+          ],
+          "constraints": [
+            "A single cinematic photorealistic 16:9 image for a Chinese student innovation competition film about night-market public safety. A conceptual application-scene dramatization, not evidence of actual deployment. Sophisticated practical lighting, amber everyday street life contrasted with restrained steel-blue technology, realistic people and natural depth, not a futuristic science-fiction city. No text, Chinese characters, letters, digits, logos, watermark, readable shop signs, police insignia, identifiable institution, alert labels, facial detection rectangles, performance numbers, real private records or invented app UI. All visible device screens must be completely blank matte charcoal with clean straight rectangular geometry for later compositing supplied real screenshots. Leave lower 12% uncluttered for deterministic disclosure and subtitles. Do not portray a specific real student or identifiable real person. No conflict, arrests, disaster, urgency or exaggerated capability.",
+            "没有真实图传链路日志时必须标注场景演绎"
+          ],
+          "avoid": "generated text, fake app interfaces, branding, fake achievements, police badges, altered real people"
+        },
+        {
+          "id": "A05",
+          "title": "商户沟通｜需求与上报",
+          "category": "Night market / public safety service",
+          "sceneArchetype": "merchant service consultation",
+          "placeholders": [
+            "{subject}",
+            "{channel_use}"
+          ],
+          "summary": "需求沟通和上报使用设想，不取代真实R02/R11调研",
+          "businessGoal": "让使用场景回到夜市商户的需求",
+          "scene": "A single cinematic photorealistic 16:9 image for a Chinese student innovation competition film about night-market public safety. A conceptual application-scene dramatization, not evidence of actual deployment. Sophisticated practical lighting, amber everyday street life contrasted with restrained steel-blue technology, realistic people and natural depth, not a futuristic science-fiction city. No text, Chinese characters, letters, digits, logos, watermark, readable shop signs, police insignia, identifiable institution, alert labels, facial detection rectangles, performance numbers, real private records or invented app UI. All visible device screens must be completely blank matte charcoal with clean straight rectangular geometry for later compositing supplied real screenshots. Leave lower 12% uncluttered for deterministic disclosure and subtitles. Do not portray a specific real student or identifiable real person. No conflict, arrests, disaster, urgency or exaggerated capability. A natural quiet consultation at a Chinese night-market food stall, one anonymous merchant and one anonymous venue staff member in plain clothes talking calmly across a clean counter. Medium-wide eye-level composition, warm steam from food in background, realistic small-scale stall, no emergency. A simple generic smartphone with completely blank charcoal screen rests upright on a small stand near the left foreground, front face clean and unobstructed for optional later screenshot compositing. People are secondary to the interaction, not identifiable portraits. Right-middle negative space for later explanation. Rich tactile everyday materials, realistic practical amber light with restrained navy shadows, documentary-commercial photography.",
+          "sceneShape": "前景手机可叠原R06；人物不对应真实走访成员",
+          "subjectPlacement": "前景手机可叠原R06；人物不对应真实走访成员",
+          "subjectSlot": {
+            "slotType": [
+              "app_screen",
+              "service"
+            ],
+            "placement": "前景手机可叠原R06；人物不对应真实走访成员",
+            "scale": "foreground",
+            "interaction": "需求沟通和上报使用设想，不取代真实R02/R11调研",
+            "fallbackIfService": "preserve blank device slot for exact later supplied screenshot",
+            "fallbackIfDigital": "preserve blank device slot, do not generate interface",
+            "preserve": [
+              "真实原页面仅后期叠加",
+              "不虚构已部署",
+              "不修改真实团队素材"
+            ]
+          },
+          "focus": "需求沟通和上报使用设想，不取代真实R02/R11调研",
+          "decision": "补充场景库；默认保留现有真实调研镜头",
+          "elements": [
+            "夜市环境",
+            "留白",
+            "实际光线"
+          ],
+          "constraints": [
+            "A single cinematic photorealistic 16:9 image for a Chinese student innovation competition film about night-market public safety. A conceptual application-scene dramatization, not evidence of actual deployment. Sophisticated practical lighting, amber everyday street life contrasted with restrained steel-blue technology, realistic people and natural depth, not a futuristic science-fiction city. No text, Chinese characters, letters, digits, logos, watermark, readable shop signs, police insignia, identifiable institution, alert labels, facial detection rectangles, performance numbers, real private records or invented app UI. All visible device screens must be completely blank matte charcoal with clean straight rectangular geometry for later compositing supplied real screenshots. Leave lower 12% uncluttered for deterministic disclosure and subtitles. Do not portray a specific real student or identifiable real person. No conflict, arrests, disaster, urgency or exaggerated capability.",
+            "不能写成商户真实采访、真实好评或已购买"
+          ],
+          "avoid": "generated text, fake app interfaces, branding, fake achievements, police badges, altered real people"
+        }
+      ]
+    }
+  ]
+}

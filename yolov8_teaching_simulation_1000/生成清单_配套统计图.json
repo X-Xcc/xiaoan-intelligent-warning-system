@@ -1,0 +1,27 @@
+{
+  "metadata_tag": "教学模拟数据｜非实测｜公式生成",
+  "seed": 20260929,
+  "scenario_images": 42000,
+  "synthetic_scenes": 4200,
+  "base_scene_counts": [
+    933,
+    2439,
+    51,
+    777
+  ],
+  "class_names": [
+    "fall",
+    "fight",
+    "gather",
+    "suicide"
+  ],
+  "class_counts": [
+    9330,
+    24390,
+    510,
+    7770
+  ],
+  "figure": "figures\\yolo_1000_rounds_companion_stats.png",
+  "sha256": "07aa0dc5fa4d90f288852cf9a639ef82703589f21df16e475e98f925d0be1f90",
+  "disclaimer": "42,000张图像是名义模拟场景；图中统计不可作为真实数据集统计或模型性能结论。"
+}

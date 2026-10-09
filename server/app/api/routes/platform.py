@@ -12,6 +12,7 @@ from typing import Any
 from fastapi import APIRouter
 
 from app.services import event_store
+from app.services.evaluation_metrics import build_evaluation_metrics
 
 
 router = APIRouter(prefix="/platform", tags=["platform"])
@@ -199,3 +200,9 @@ def _runtime_snapshot() -> dict[str, Any]:
 @router.get("/overview")
 def overview() -> dict[str, Any]:
     return _runtime_snapshot()
+
+
+@router.get("/evaluation")
+def evaluation(period: str = "7d") -> dict[str, Any]:
+    """Return the evaluation dashboard metrics assembled from existing system records."""
+    return build_evaluation_metrics(period if period in {"7d", "30d"} else "7d")

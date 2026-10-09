@@ -1,0 +1,415 @@
+{
+  "audit_date": "2026-09-28",
+  "method": "Recursive image-file count; YOLO label rows are object instances; SHA-256 for byte-identical images. All datasets read only.",
+  "class_names_actions": {
+    "0": "fall",
+    "1": "fight",
+    "2": "gather",
+    "3": "suicide"
+  },
+  "datasets": {
+    "detection/datasets/actions": {
+      "path": "D:\\Dev\\yolov8_security\\detection\\datasets\\actions",
+      "splits": {
+        "train": {
+          "image_files": 244,
+          "unique_image_sha256": 244,
+          "exact_duplicate_files_within_split": 0,
+          "label_files": 310,
+          "orphan_label_files_without_image": 66,
+          "all_label_objects_by_class_id": {
+            "0": 80,
+            "1": 175,
+            "2": 1,
+            "3": 62
+          },
+          "objects_by_class_id": {
+            "0": 14,
+            "1": 175,
+            "2": 1,
+            "3": 62
+          },
+          "images_containing_class_id": {
+            "0": 14,
+            "1": 175,
+            "2": 1,
+            "3": 62
+          },
+          "empty_label_images": 0,
+          "missing_label_images": 0,
+          "invalid_label_rows": 0
+        },
+        "val": {
+          "image_files": 63,
+          "unique_image_sha256": 63,
+          "exact_duplicate_files_within_split": 0,
+          "label_files": 78,
+          "orphan_label_files_without_image": 15,
+          "all_label_objects_by_class_id": {
+            "0": 18,
+            "1": 47,
+            "2": 1,
+            "3": 15
+          },
+          "objects_by_class_id": {
+            "0": 2,
+            "1": 47,
+            "2": 1,
+            "3": 15
+          },
+          "images_containing_class_id": {
+            "0": 2,
+            "1": 47,
+            "2": 1,
+            "3": 15
+          },
+          "empty_label_images": 0,
+          "missing_label_images": 0,
+          "invalid_label_rows": 0
+        }
+      },
+      "yaml": {
+        "action_data.yaml": "path: D:/Dev/yolov8_security/detection/datasets/actions\ntrain: images/train\nval: images/val\n\nnames:\n  0: fall\n  1: fight\n  2: gather\n  3: suicide\n"
+      },
+      "total_image_files": 307,
+      "unique_image_sha256": 307,
+      "train_val_exact_hash_overlap": 0
+    },
+    "detection/datasets/actions_person": {
+      "path": "D:\\Dev\\yolov8_security\\detection\\datasets\\actions_person",
+      "splits": {
+        "train": {
+          "image_files": 3244,
+          "unique_image_sha256": 3148,
+          "exact_duplicate_files_within_split": 96,
+          "label_files": 3310,
+          "orphan_label_files_without_image": 66,
+          "all_label_objects_by_class_id": {
+            "0": 80,
+            "1": 175,
+            "2": 1,
+            "3": 62,
+            "4": 10049
+          },
+          "objects_by_class_id": {
+            "0": 14,
+            "1": 175,
+            "2": 1,
+            "3": 62,
+            "4": 10049
+          },
+          "images_containing_class_id": {
+            "0": 14,
+            "1": 175,
+            "2": 1,
+            "3": 62,
+            "4": 2752
+          },
+          "empty_label_images": 248,
+          "missing_label_images": 0,
+          "invalid_label_rows": 0
+        },
+        "val": {
+          "image_files": 962,
+          "unique_image_sha256": 949,
+          "exact_duplicate_files_within_split": 13,
+          "label_files": 978,
+          "orphan_label_files_without_image": 16,
+          "all_label_objects_by_class_id": {
+            "0": 18,
+            "1": 47,
+            "2": 1,
+            "3": 15,
+            "4": 6972
+          },
+          "objects_by_class_id": {
+            "0": 2,
+            "1": 47,
+            "2": 1,
+            "3": 15,
+            "4": 6960
+          },
+          "images_containing_class_id": {
+            "0": 2,
+            "1": 47,
+            "2": 1,
+            "3": 15,
+            "4": 822
+          },
+          "empty_label_images": 77,
+          "missing_label_images": 0,
+          "invalid_label_rows": 0
+        }
+      },
+      "yaml": {
+        "action_person_data.yaml": "path: D:/Dev/yolov8_security/detection/datasets/actions_person\ntrain: images/train\nval: images/val\n\nnames:\n  0: fall\n  1: fight\n  2: gather\n  3: suicide\n  4: person\n"
+      },
+      "total_image_files": 4206,
+      "unique_image_sha256": 4039,
+      "train_val_exact_hash_overlap": 58
+    },
+    "detection/datasets/actions_person_full": {
+      "path": "D:\\Dev\\yolov8_security\\detection\\datasets\\actions_person_full",
+      "splits": {
+        "train": {
+          "image_files": 15676,
+          "unique_image_sha256": 15229,
+          "exact_duplicate_files_within_split": 447,
+          "label_files": 15742,
+          "orphan_label_files_without_image": 66,
+          "all_label_objects_by_class_id": {
+            "0": 80,
+            "1": 175,
+            "2": 1,
+            "3": 62,
+            "4": 45241
+          },
+          "objects_by_class_id": {
+            "0": 14,
+            "1": 175,
+            "2": 1,
+            "3": 62,
+            "4": 45241
+          },
+          "images_containing_class_id": {
+            "0": 14,
+            "1": 175,
+            "2": 1,
+            "3": 62,
+            "4": 12704
+          },
+          "empty_label_images": 2728,
+          "missing_label_images": 0,
+          "invalid_label_rows": 0
+        },
+        "val": {
+          "image_files": 4557,
+          "unique_image_sha256": 4497,
+          "exact_duplicate_files_within_split": 60,
+          "label_files": 4575,
+          "orphan_label_files_without_image": 18,
+          "all_label_objects_by_class_id": {
+            "0": 18,
+            "1": 47,
+            "2": 1,
+            "3": 15,
+            "4": 21348
+          },
+          "objects_by_class_id": {
+            "0": 2,
+            "1": 47,
+            "2": 1,
+            "3": 15,
+            "4": 21315
+          },
+          "images_containing_class_id": {
+            "0": 2,
+            "1": 47,
+            "2": 1,
+            "3": 15,
+            "4": 3749
+          },
+          "empty_label_images": 745,
+          "missing_label_images": 0,
+          "invalid_label_rows": 0
+        }
+      },
+      "yaml": {
+        "action_person_data.yaml": "path: D:/Dev/yolov8_security/detection/datasets/actions_person_full\ntrain: images/train\nval: images/val\n\nnames:\n  0: fall\n  1: fight\n  2: gather\n  3: suicide\n  4: person\n"
+      },
+      "total_image_files": 20233,
+      "unique_image_sha256": 19462,
+      "train_val_exact_hash_overlap": 264
+    },
+    "detection/datasets/person_full": {
+      "path": "D:\\Dev\\yolov8_security\\detection\\datasets\\person_full",
+      "splits": {
+        "train": {
+          "image_files": 15432,
+          "unique_image_sha256": 14985,
+          "exact_duplicate_files_within_split": 447,
+          "label_files": 15432,
+          "orphan_label_files_without_image": 0,
+          "all_label_objects_by_class_id": {
+            "0": 45241
+          },
+          "objects_by_class_id": {
+            "0": 45241
+          },
+          "images_containing_class_id": {
+            "0": 12704
+          },
+          "empty_label_images": 2728,
+          "missing_label_images": 0,
+          "invalid_label_rows": 0
+        },
+        "val": {
+          "image_files": 4494,
+          "unique_image_sha256": 4434,
+          "exact_duplicate_files_within_split": 60,
+          "label_files": 4497,
+          "orphan_label_files_without_image": 3,
+          "all_label_objects_by_class_id": {
+            "0": 21348
+          },
+          "objects_by_class_id": {
+            "0": 21315
+          },
+          "images_containing_class_id": {
+            "0": 3749
+          },
+          "empty_label_images": 745,
+          "missing_label_images": 0,
+          "invalid_label_rows": 0
+        }
+      },
+      "yaml": {
+        "person_data.yaml": "path: D:/Dev/yolov8_security/detection/datasets/person_full\ntrain: images/train\nval: images/val\n\nnames:\n  0: person\n"
+      },
+      "total_image_files": 19926,
+      "unique_image_sha256": 19155,
+      "train_val_exact_hash_overlap": 264
+    },
+    "datasets/coco8": {
+      "path": "D:\\Dev\\yolov8_security\\datasets\\coco8",
+      "splits": {
+        "train": {
+          "image_files": 4,
+          "unique_image_sha256": 4,
+          "exact_duplicate_files_within_split": 0,
+          "label_files": 4,
+          "orphan_label_files_without_image": 0,
+          "all_label_objects_by_class_id": {
+            "22": 1,
+            "23": 2,
+            "45": 3,
+            "49": 4,
+            "50": 1,
+            "58": 1,
+            "75": 1
+          },
+          "objects_by_class_id": {
+            "22": 1,
+            "23": 2,
+            "45": 3,
+            "49": 4,
+            "50": 1,
+            "58": 1,
+            "75": 1
+          },
+          "images_containing_class_id": {
+            "22": 1,
+            "23": 1,
+            "45": 1,
+            "49": 1,
+            "50": 1,
+            "58": 1,
+            "75": 1
+          },
+          "empty_label_images": 0,
+          "missing_label_images": 0,
+          "invalid_label_rows": 0
+        },
+        "val": {
+          "image_files": 4,
+          "unique_image_sha256": 4,
+          "exact_duplicate_files_within_split": 0,
+          "label_files": 4,
+          "orphan_label_files_without_image": 0,
+          "all_label_objects_by_class_id": {
+            "0": 10,
+            "16": 1,
+            "17": 2,
+            "20": 2,
+            "25": 1,
+            "58": 1
+          },
+          "objects_by_class_id": {
+            "0": 10,
+            "16": 1,
+            "17": 2,
+            "20": 2,
+            "25": 1,
+            "58": 1
+          },
+          "images_containing_class_id": {
+            "0": 3,
+            "16": 1,
+            "17": 1,
+            "20": 1,
+            "25": 1,
+            "58": 1
+          },
+          "empty_label_images": 0,
+          "missing_label_images": 0,
+          "invalid_label_rows": 0
+        }
+      },
+      "yaml": {},
+      "total_image_files": 8,
+      "unique_image_sha256": 8,
+      "train_val_exact_hash_overlap": 0
+    }
+  },
+  "cross_dataset_overlap": [
+    {
+      "dataset_a": "detection/datasets/actions",
+      "dataset_b": "detection/datasets/actions_person",
+      "shared_unique_sha256": 307
+    },
+    {
+      "dataset_a": "detection/datasets/actions",
+      "dataset_b": "detection/datasets/actions_person_full",
+      "shared_unique_sha256": 307
+    },
+    {
+      "dataset_a": "detection/datasets/actions",
+      "dataset_b": "detection/datasets/person_full",
+      "shared_unique_sha256": 0
+    },
+    {
+      "dataset_a": "detection/datasets/actions",
+      "dataset_b": "datasets/coco8",
+      "shared_unique_sha256": 0
+    },
+    {
+      "dataset_a": "detection/datasets/actions_person",
+      "dataset_b": "detection/datasets/actions_person_full",
+      "shared_unique_sha256": 4039
+    },
+    {
+      "dataset_a": "detection/datasets/actions_person",
+      "dataset_b": "detection/datasets/person_full",
+      "shared_unique_sha256": 3732
+    },
+    {
+      "dataset_a": "detection/datasets/actions_person",
+      "dataset_b": "datasets/coco8",
+      "shared_unique_sha256": 0
+    },
+    {
+      "dataset_a": "detection/datasets/actions_person_full",
+      "dataset_b": "detection/datasets/person_full",
+      "shared_unique_sha256": 19155
+    },
+    {
+      "dataset_a": "detection/datasets/actions_person_full",
+      "dataset_b": "datasets/coco8",
+      "shared_unique_sha256": 0
+    },
+    {
+      "dataset_a": "detection/datasets/person_full",
+      "dataset_b": "datasets/coco8",
+      "shared_unique_sha256": 0
+    }
+  ],
+  "total_image_file_entries_all_directories": 44680,
+  "unique_sha256_all_directories": 19470,
+  "limitations": [
+    "Directory totals include derived copies and cannot be interpreted as independent training images.",
+    "Exact SHA-256 deduplication does not detect resized/recompressed copies or adjacent video frames.",
+    "actions is four-class; actions_person and actions_person_full are five-class; person_full is person-only; coco8 uses COCO labels.",
+    "No claim that these current directories equal the historical data seen by a checkpoint.",
+    "No real 1000-epoch training or 40000-image four-class dataset is established by this inventory."
+  ]
+}

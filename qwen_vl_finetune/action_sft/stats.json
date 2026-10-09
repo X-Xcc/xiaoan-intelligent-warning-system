@@ -1,0 +1,23 @@
+{
+  "source": "D:\\Dev\\yolov8_security\\detection\\datasets\\actions",
+  "train_examples": 244,
+  "val_examples": 63,
+  "train_objects": {
+    "fall": 14,
+    "fight": 175,
+    "gather": 1,
+    "suicide": 62
+  },
+  "val_objects": {
+    "fall": 2,
+    "fight": 47,
+    "gather": 1,
+    "suicide": 15
+  },
+  "classes": {
+    "0": "fall",
+    "1": "fight",
+    "2": "gather",
+    "3": "suicide"
+  }
+}

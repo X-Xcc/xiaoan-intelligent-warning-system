@@ -1,0 +1,95 @@
+{
+  "note": "Counts visually transcribed from source PNGs; rows=predicted, columns=true. Bottom-right is a structural placeholder, NOT an observed TN.",
+  "matrices": {
+    "action": [
+      [
+        16,
+        0,
+        0,
+        0,
+        8
+      ],
+      [
+        0,
+        47,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        15,
+        0
+      ],
+      [
+        2,
+        0,
+        1,
+        0,
+        0
+      ]
+    ],
+    "action_final_300": [
+      [
+        16,
+        0,
+        0,
+        0,
+        4
+      ],
+      [
+        0,
+        47,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        15,
+        0
+      ],
+      [
+        2,
+        0,
+        1,
+        0,
+        0
+      ]
+    ]
+  },
+  "source_pr_rounded_ap50": {
+    "action": [
+      0.903,
+      0.995,
+      0.0,
+      0.995
+    ],
+    "action_final_300": [
+      0.888,
+      0.995,
+      0.0,
+      0.995
+    ]
+  },
+  "source_operating_threshold": "Unknown; no threshold inferred from image",
+  "final_training_csv": "Missing in inspected run directory"
+}

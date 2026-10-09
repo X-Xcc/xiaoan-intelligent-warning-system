@@ -1,5 +1,6 @@
 import {
   Activity,
+  BarChart3,
   BrainCircuit,
   Building2,
   Cable,
@@ -41,6 +42,7 @@ const DutySituationPage = lazy(() => import('./DutySituationPage').then(module =
 const AICenterPage = lazy(() => import('./PoliceDomainPages').then(module => ({ default: module.AICenterPage })));
 const CommunityPolicingPage = lazy(() => import('./PoliceDomainPages').then(module => ({ default: module.CommunityPolicingPage })));
 const CommandOperationsPage = lazy(() => import('./PoliceDomainPages').then(module => ({ default: module.CommandOperationsPage })));
+const EvaluationDashboardPage = lazy(() => import('./EvaluationDashboardPage').then(module => ({ default: module.EvaluationDashboardPage })));
 
 export type { PlatformView } from '../lib/presentation';
 
@@ -117,6 +119,7 @@ const systemNavItems: Array<{ view: PlatformView; label: string; shortLabel: str
   { view: 'video', label: '视频联动', shortLabel: '视频联动', icon: Video, section: '业务工作台' },
   { view: 'night-market-command', label: '夜市指挥', shortLabel: '夜市指挥', icon: MapPinned, section: '业务工作台', disabled: true },
   { view: 'identity-search', label: '身份检索', shortLabel: '身份检索', icon: Fingerprint, section: '业务工作台', subItem: true },
+  { view: 'evaluation', label: '评估看板', shortLabel: '评估看板', icon: BarChart3, section: '平台能力' },
   { view: 'ai-center', label: 'AI能力中心', shortLabel: 'AI 中心', icon: BrainCircuit, section: '平台能力', disabled: true },
   { view: 'admin', label: '平台治理中心', shortLabel: '平台治理', icon: ShieldCheck, section: '平台能力', disabled: true },
   { view: 'device-bridges', label: '设备桥接管理', shortLabel: '设备桥接', icon: Cable, section: '平台能力', disabled: true },
@@ -366,6 +369,8 @@ export function DashboardApp() {
       ? <CommandWorkbench onBack={() => navigate('command')} />
     : view === 'command'
       ? <CommandOperationsPage overview={overview} apiOnline={apiOnline} navigate={navigate} refresh={loadOverview} />
+    : view === 'evaluation'
+      ? <EvaluationDashboardPage onBack={() => navigate('platform')} />
     : view === 'community'
           ? <CommunityPolicingPage overview={overview} apiOnline={apiOnline} navigate={navigate} />
           : view === 'device-bridges'

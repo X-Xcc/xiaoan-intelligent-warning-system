@@ -1,0 +1,5 @@
+﻿model_id,model,mean_pct,median_pct,std_pct,p2_5_pct,p97_5_pct,n_simulations,interval,evidence
+baseline,YOLOv8n (estimated baseline),74.67438070745347,75.10419429226673,6.852550370637401,59.85590724923013,86.70320569214715,1000,95% simulation uncertainty interval,prior-only assumption
+trained_yolo,Trained YOLOv8,94.09995041304865,94.38752296522891,2.555161197898798,88.04623805693701,97.99471202308479,1000,95% simulation uncertainty interval,TP78/FP4 calibrated posterior
+original_qwen,Trained YOLOv8 + original Qwen,96.81442897692274,97.08702545299326,1.5505360554053857,93.08255268262322,99.00646107970755,1000,95% simulation uncertainty interval,TP78/FP4 posterior + assumed Qwen filtering
+trained_qwen,Trained YOLOv8 + trained Qwen,98.42172307863234,98.62313823461032,0.8816640720756201,96.28198647133473,99.59528353282886,1000,95% simulation uncertainty interval,TP78/FP4 posterior + assumed Qwen filtering

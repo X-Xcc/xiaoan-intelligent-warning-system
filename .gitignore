@@ -129,6 +129,9 @@ integrations/detector/runtime/
 !integrations/detector/server/bin/
 !integrations/detector/server/bin/go2rtc.exe
 !integrations/detector/server/bin/go2rtc.yaml
+
+# Official Qwen base-model shards exceed reliable GitHub LFS limits.
+qwen_models/**/model-*.safetensors
 !docs/
 docs/*
 !docs/deployment-full-replica.md

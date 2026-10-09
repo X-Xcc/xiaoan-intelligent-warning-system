@@ -1,0 +1,12 @@
+﻿key,value
+metadata_tag,教学模拟数据｜非实测｜公式生成
+group_id,G1
+group_name,稳定收敛
+seed,20260929
+rounds,1000
+metric_count,10
+training_log_source,none; no real training log read
+formula_losses,L(e) = L_inf + A*exp(-k*e)
+formula_scores,M(e) = M_inf - B*exp(-k*e)
+correlated_fluctuation,seeded AR(1)-style process with decaying amplitude and nonzero late floor
+disclaimer,公式仅为课堂示意；模拟数据不可作为真实训练记录或模型性能结论。

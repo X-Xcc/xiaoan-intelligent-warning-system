@@ -1,0 +1,7 @@
+{
+  "count": 63,
+  "correct": 55,
+  "risk_accuracy": 0.873016,
+  "source": "qwen_vl_finetune/runs/eval_val_63.log",
+  "generated_at": "2026-09-29"
+}

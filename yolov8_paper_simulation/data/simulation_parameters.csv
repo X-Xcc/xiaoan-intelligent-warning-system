@@ -1,0 +1,7 @@
+parameter,mean,sd,alpha,beta,source
+original_qwen_fp_filter,0.5,0.1,11.999999999999998,11.999999999999998,user assumption; +/- interpreted as SD
+original_qwen_tp_retention,0.95,0.02,111.86250000000008,5.88750000000001,user assumption; +/- interpreted as SD
+trained_qwen_fp_filter,0.75,0.08,21.22265625,7.07421875,user assumption; +/- interpreted as SD
+trained_qwen_tp_retention,0.97,0.015,124.48333333333345,3.850000000000007,user assumption; +/- interpreted as SD
+baseline_precision,0.75,0.06762522260005742,30.0,10.0,assumed baseline; ESS40 is not sample size
+trained_precision,0.9404761904761905,0.02566314033866764,79.0,5.0,"Beta(1,1) + TP78/FP4"

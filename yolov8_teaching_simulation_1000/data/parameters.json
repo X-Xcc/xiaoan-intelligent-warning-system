@@ -1,0 +1,156 @@
+{
+  "metadata_tag": "教学模拟数据｜非实测｜公式生成",
+  "groups": [
+    {
+      "group_id": "G1",
+      "name": "稳定收敛",
+      "seed": 20260929,
+      "params": {
+        "train_loss": {
+          "L_inf": 0.22,
+          "A": 1.55,
+          "k": 0.0105,
+          "noise_start": 0.018,
+          "noise_floor": 0.003,
+          "phi": 0.93
+        },
+        "val_loss": {
+          "L_inf": 0.285,
+          "A": 1.35,
+          "k": 0.0085,
+          "overfit_start": 700,
+          "overfit_amp": 0.055,
+          "overfit_power": 1.35,
+          "noise_start": 0.02,
+          "noise_floor": 0.0035,
+          "phi": 0.92
+        },
+        "precision": {
+          "M_inf": 0.94,
+          "B": 0.76,
+          "k": 0.0095,
+          "noise_start": 0.026,
+          "noise_floor": 0.004,
+          "phi": 0.91
+        },
+        "recall": {
+          "M_inf": 0.905,
+          "B": 0.71,
+          "k": 0.008,
+          "noise_start": 0.029,
+          "noise_floor": 0.0045,
+          "phi": 0.91
+        },
+        "mAP": {
+          "M_inf": 0.885,
+          "B": 0.735,
+          "k": 0.0087,
+          "noise_start": 0.025,
+          "noise_floor": 0.004,
+          "phi": 0.92
+        }
+      }
+    },
+    {
+      "group_id": "G2",
+      "name": "较快提升",
+      "seed": 20261001,
+      "params": {
+        "train_loss": {
+          "L_inf": 0.205,
+          "A": 1.58,
+          "k": 0.012,
+          "noise_start": 0.021,
+          "noise_floor": 0.0035,
+          "phi": 0.92
+        },
+        "val_loss": {
+          "L_inf": 0.27,
+          "A": 1.39,
+          "k": 0.01,
+          "overfit_start": 730,
+          "overfit_amp": 0.06,
+          "overfit_power": 1.3,
+          "noise_start": 0.022,
+          "noise_floor": 0.0035,
+          "phi": 0.91
+        },
+        "precision": {
+          "M_inf": 0.952,
+          "B": 0.78,
+          "k": 0.011,
+          "noise_start": 0.029,
+          "noise_floor": 0.004,
+          "phi": 0.9
+        },
+        "recall": {
+          "M_inf": 0.918,
+          "B": 0.735,
+          "k": 0.0098,
+          "noise_start": 0.031,
+          "noise_floor": 0.0045,
+          "phi": 0.9
+        },
+        "mAP": {
+          "M_inf": 0.9,
+          "B": 0.755,
+          "k": 0.0102,
+          "noise_start": 0.028,
+          "noise_floor": 0.004,
+          "phi": 0.91
+        }
+      }
+    },
+    {
+      "group_id": "G3",
+      "name": "波动稍大",
+      "seed": 20261003,
+      "params": {
+        "train_loss": {
+          "L_inf": 0.235,
+          "A": 1.5,
+          "k": 0.0098,
+          "noise_start": 0.026,
+          "noise_floor": 0.004,
+          "phi": 0.9
+        },
+        "val_loss": {
+          "L_inf": 0.3,
+          "A": 1.32,
+          "k": 0.0078,
+          "overfit_start": 680,
+          "overfit_amp": 0.05,
+          "overfit_power": 1.4,
+          "noise_start": 0.026,
+          "noise_floor": 0.004,
+          "phi": 0.9
+        },
+        "precision": {
+          "M_inf": 0.928,
+          "B": 0.745,
+          "k": 0.0088,
+          "noise_start": 0.034,
+          "noise_floor": 0.005,
+          "phi": 0.89
+        },
+        "recall": {
+          "M_inf": 0.892,
+          "B": 0.7,
+          "k": 0.0074,
+          "noise_start": 0.036,
+          "noise_floor": 0.0055,
+          "phi": 0.89
+        },
+        "mAP": {
+          "M_inf": 0.87,
+          "B": 0.72,
+          "k": 0.0079,
+          "noise_start": 0.033,
+          "noise_floor": 0.005,
+          "phi": 0.9
+        }
+      }
+    }
+  ],
+  "disclaimer": "公式仅为课堂示意；模拟数据不可作为真实训练记录或模型性能结论。"
+}

@@ -1,0 +1,13 @@
+{
+  "paired_mean_delta_original_qwen_pp": 2.7144785638741062,
+  "paired_mean_delta_trained_qwen_pp": 4.321772665583692,
+  "probability_trained_qwen_exceeds_original_under_assumptions": 0.977,
+  "monte_carlo_standard_error_of_mean_pp": {
+    "baseline": 0.216696669522452,
+    "trained_yolo": 0.08080129174244444,
+    "original_qwen": 0.04903225529294053,
+    "trained_qwen": 0.027880665988978173
+  },
+  "source_precision_observed": 0.9512195121951219,
+  "warning": "Simulation probability is conditional on assumed filtering distributions; not an efficacy p-value."
+}

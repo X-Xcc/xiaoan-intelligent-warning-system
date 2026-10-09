@@ -1,0 +1,11 @@
+{
+  "model": "D:\\CICSIC\\qwen_models\\models\\Qwen--Qwen2.5-VL-3B-Instruct\\snapshots\\master",
+  "train": "qwen_vl_finetune\\action_sft\\train.jsonl",
+  "val": "qwen_vl_finetune\\action_sft\\val.jsonl",
+  "output": "qwen_vl_finetune\\smoke_test",
+  "epochs": "1.0",
+  "max_steps": "1",
+  "max_length": "768",
+  "learning_rate": "0.0002",
+  "max_pixels": "401408"
+}

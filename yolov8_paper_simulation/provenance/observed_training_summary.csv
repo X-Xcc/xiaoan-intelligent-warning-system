@@ -1,0 +1,5 @@
+run,metric,recorded_epochs,best_epoch,best_value,last_epoch,last_value
+action,map50,100,16,0.73021,100,0.70816
+action,map50_95,100,54,0.57374,100,0.55437
+action300,map50,71,16,0.73021,71,0.72303
+action300,map50_95,71,54,0.57374,71,0.55942

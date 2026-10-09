@@ -102,6 +102,19 @@ export function XiaoanAssistant({ visible, onVisibilityChange, onNavigate }: Pro
     if (persist) storePosition(clamped);
   }, []);
 
+  useEffect(() => {
+    const dockInPresentation = () => {
+      const slot = document.querySelector('.ppt-assistant-slot');
+      if (!slot || innerWidth < 1000 || panelRef.current) return;
+      const rect = slot.getBoundingClientRect();
+      const size = assistantSize(innerWidth, innerHeight);
+      move({ x: rect.x + (rect.width - size.width) / 2, y: rect.y + (rect.height - size.height) / 2 });
+    };
+    dockInPresentation();
+    window.addEventListener('xiaoan:presentation-layout', dockInPresentation);
+    return () => window.removeEventListener('xiaoan:presentation-layout', dockInPresentation);
+  }, [move]);
+
   const animate = useCallback((next: AssistantPhase, duration = 0) => {
     if (phaseTimer.current !== null) clearTimeout(phaseTimer.current);
     phaseTimer.current = null;
