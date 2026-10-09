@@ -46,6 +46,7 @@ test('shell navigation preserves the original module order', () => {
     'video',
     'night-market-command',
     'identity-search',
+    'evaluation',
     'ai-center',
     'admin',
     'device-bridges',

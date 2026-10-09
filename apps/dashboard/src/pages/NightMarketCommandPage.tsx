@@ -26,6 +26,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { PoliceJurisdictionAmapMap } from '../components/NanchangAmapMap';
 import { appBasePath } from '../lib/presentation';
+import '../styles/nightmarket-ppt.css';
 
 type View = 'entry' | 'command' | 'admin';
 type Tone = 'danger' | 'warn' | 'safe' | 'info' | 'orange' | 'blue' | 'green';
@@ -50,7 +51,7 @@ type SafetyEvent = {
     model: string;
     detection: string;
     confidence: string;
-    review: string;
+    review?: string;
     risk: string;
     dispatch: string;
     closure: string;
@@ -158,7 +159,31 @@ const systemNavItems = [
 
 const defaultPresentation: NonNullable<SafetyEvent['presentation']> = {
   label: 'PPT演示数据 · 夜市B区7号', input: '夜市现场画面 + 商户报警', model: 'YOLOv8n-pose', detection: '24 个行人目标框', confidence: '89.3%',
-  review: '人工复核通过', risk: '高风险 · 78分', dispatch: '135快反组 · 3分钟到入口', closure: '待派单，处置后归档', evidence: ['现场画面', '报警文本', '派单记录'],
+  risk: '高风险 · 78分', dispatch: '135快反组 · 3分钟到入口', closure: '待派单，处置后归档', evidence: ['现场画面', '报警文本', '派单记录'],
+};
+
+// Screenshot examples only; these are not responses from a connected model.
+const qwenDemoReviews: Record<string, { judgment: string; basis: string; suggestion: string }> = {
+  'YS-DEMO-001': {
+    judgment: '疑似滋扰冲突，存在升级风险',
+    basis: '报警涉及摊位前滋扰；初筛发现 24 个行人目标，需关注围观聚集。',
+    suggestion: '建议 135 快反组到场核查，分隔双方、疏散围观。',
+  },
+  'YS-260815-001': {
+    judgment: '疑似纠纷升级，建议优先干预',
+    basis: '预警描述涉及多人推搡与聚集，需核查冲突范围。',
+    suggestion: '建议附近巡防组先期劝阻，并持续关注现场变化。',
+  },
+  'YS-260815-002': {
+    judgment: '疑似滋扰商户，存在围观风险',
+    basis: '商户上报拍打桌椅、言语威胁，并提示围观聚集。',
+    suggestion: '建议到场警力保护商户、疏导人群并固定现场证据。',
+  },
+  'YS-260815-003': {
+    judgment: '存在疑似扒窃线索，建议核验证据',
+    basis: '报警涉及手机遗失，记录包含视频轨迹比对线索。',
+    suggestion: '建议核对视频与物品信息，关联已完成的处置记录。',
+  },
 };
 
 const fallback: Overview = {
@@ -195,6 +220,19 @@ const toneFor = (event: SafetyEvent): Tone => (event.level === '高风险' ? 'da
 const pathView = (): View => (window.location.pathname.startsWith(`${appBasePath}/command`) ? 'command' : window.location.pathname.startsWith(`${appBasePath}/admin`) ? 'admin' : 'entry');
 
 export function NightMarketCommandPage({ onBack }: { onBack?: () => void }) {
+  const screenshotDemo = new URLSearchParams(window.location.search).get('demo') === 'ppt';
+  const [canvasScale, setCanvasScale] = useState(() => Math.min(innerWidth / 1600, innerHeight / 900));
+  useEffect(() => {
+    if (!screenshotDemo) return;
+    const resize = () => setCanvasScale(Math.min(innerWidth / 1600, innerHeight / 900));
+    window.addEventListener('resize', resize);
+    return () => window.removeEventListener('resize', resize);
+  }, [screenshotDemo]);
+  useEffect(() => {
+    if (!screenshotDemo) return;
+    const frame = requestAnimationFrame(() => window.dispatchEvent(new Event('xiaoan:presentation-layout')));
+    return () => cancelAnimationFrame(frame);
+  }, [canvasScale, screenshotDemo]);
   const [view, setView] = useState<View>('command');
   const [overview, setOverview] = useState<Overview>(fallback);
   const [apiOnline, setApiOnline] = useState(false);
@@ -251,7 +289,8 @@ export function NightMarketCommandPage({ onBack }: { onBack?: () => void }) {
   };
 
   return (
-    <main className="nightmarket-page">
+    <div className={screenshotDemo ? 'nightmarket-ppt-frame' : undefined}>
+    <main className={`nightmarket-page ${screenshotDemo ? 'ppt-mode' : ''}`} style={screenshotDemo ? { transform: `translate(-50%, -50%) scale(${canvasScale})` } : undefined}>
       {view !== 'entry' && (
         <>
           <header className="topbar-wrap">
@@ -311,6 +350,7 @@ export function NightMarketCommandPage({ onBack }: { onBack?: () => void }) {
         </div>
       )}
     </main>
+    </div>
   );
 }
 
@@ -453,12 +493,17 @@ function CommandPage({
   const selected = filtered.find((event) => event.id === selectedId) ?? filtered[0];
   const screenshotDemo = new URLSearchParams(window.location.search).get('demo') === 'ppt';
   const presentation = selected?.presentation ?? (screenshotDemo ? defaultPresentation : null);
+  const qwenReview = qwenDemoReviews[selected?.id ?? ''] ?? {
+    judgment: '线索待核验，建议补充现场证据',
+    basis: '当前仅有事件登记信息，需结合现场画面进一步复核。',
+    suggestion: '建议指挥席补充证据后确认处置力量。',
+  };
   const nightMarkets = overview.night_markets?.length ? overview.night_markets : fallbackMarkets;
   const selectedMarket = nightMarkets.find((market) => market.id === selectedMarketId) ?? nightMarkets[0];
   const eventChain = selected ? [
     { label: '发现', detail: selected.source, state: 'done' },
     { label: '初筛', detail: selected.source === 'AI视频预警' ? 'AI视频预警已生成' : '群众 / 商户线索已登记', state: selected.source === 'AI视频预警' ? 'done' : 'manual' },
-    { label: '人工确认', detail: selected.status === '已提交' ? '等待指挥席确认' : '已进入处置流程', state: selected.status === '已提交' ? 'pending' : 'done' },
+    { label: presentation ? '千问复核' : '人工确认', detail: presentation ? '千问大模型复核 · 演示' : selected.status === '已提交' ? '等待指挥席确认' : '已进入处置流程', state: presentation ? 'done' : selected.status === '已提交' ? 'pending' : 'done' },
     { label: '派单', detail: selected.owner === '待指派' || selected.owner === '待派单' ? '等待警力确认' : `已分派给 ${selected.owner}`, state: selected.owner === '待指派' || selected.owner === '待派单' ? 'pending' : 'done' },
     { label: '闭环', detail: selected.status === '已完成' ? '已完成并可复盘' : '处置完成后归档', state: selected.status === '已完成' ? 'done' : 'pending' },
   ] : [];
@@ -572,6 +617,14 @@ function CommandPage({
             ))}
             {!filtered.length && <div className="empty-state">当前筛选下没有事件</div>}
           </div>
+          {screenshotDemo && <section className="event-chain-card" aria-label="事件处理链路">
+                <div className="event-chain-heading"><span>事件处理链</span><small>沿用现有事件状态与来源字段</small></div>
+                <div className="event-chain-steps">
+                  {eventChain.map((step, index) => <div className={`event-chain-step ${step.state}`} key={step.label}>
+                    <span>{String(index + 1).padStart(2, '0')}</span><strong>{step.label}</strong><small>{step.detail}</small>
+                  </div>)}
+                </div>
+              </section>}
         </section>
 
         <section className="glass-panel map-panel">
@@ -582,6 +635,7 @@ function CommandPage({
               incidents={mapIncidents}
               selectedIncidentId={selectedMarket?.id ?? nightMarkets[0]?.id ?? ''}
             />
+            {screenshotDemo && <aside className="ppt-assistant-dock"><div className="ppt-assistant-slot" aria-label="小安助手展示位置" /></aside>}
           </div>
           <div className="map-action-row">
             <button className="quiet-button" onClick={() => openNavigation(selectedMarket)} disabled={!selectedMarket}>
@@ -589,6 +643,7 @@ function CommandPage({
             </button>
             <div className="map-footnote">{selectedMarket?.district} · {selectedMarket?.address}</div>
           </div>
+
         </section>
 
         <section className="glass-panel detail-panel">
@@ -608,24 +663,26 @@ function CommandPage({
               <p className="progress-label">
                 {selected.status} · 负责人 {selected.owner} · {selected.updatedAt}
               </p>
-              <section className="event-chain-card" aria-label="事件处理链路">
+              {!screenshotDemo && <section className="event-chain-card" aria-label="事件处理链路">
                 <div className="event-chain-heading"><span>事件处理链</span><small>沿用现有事件状态与来源字段</small></div>
                 <div className="event-chain-steps">
                   {eventChain.map((step, index) => <div className={`event-chain-step ${step.state}`} key={step.label}>
                     <span>{String(index + 1).padStart(2, '0')}</span><strong>{step.label}</strong><small>{step.detail}</small>
                   </div>)}
                 </div>
-              </section>
+              </section>}
               {presentation && <section className="ppt-presentation-card" aria-label="PPT演示数据">
-                <div className="ppt-presentation-heading"><div><span className="panel-kicker">PPT DEMO / MOCK DATA</span><strong>{presentation.label}</strong></div><span>仅用于截图呈现</span></div>
+                <div className="ppt-presentation-heading"><div><span className="panel-kicker">智能研判 / 演示数据</span><strong>YOLO 初筛 → 千问大模型复核</strong></div><span>模拟结果</span></div>
                 <div className="ppt-presentation-grid">
                   <div><small>输入</small><b>{presentation.input}</b></div>
                   <div><small>AI 初筛</small><b>{presentation.model}</b><span>{presentation.detection} · 置信度 {presentation.confidence}</span></div>
-                  <div><small>人工复核</small><b>{presentation.review}</b></div>
-                  <div><small>风险分级</small><b>{presentation.risk}</b></div>
-                  <div><small>派单建议</small><b>{presentation.dispatch}</b></div>
-                  <div><small>处置归档</small><b>{presentation.closure}</b></div>
                 </div>
+                <section className="qwen-review" aria-label="千问大模型复核判断（演示）">
+                  <div className="qwen-review-heading"><strong><Sparkles size={14} />千问大模型复核</strong><StatusBadge status={selected.level} tone={toneFor(selected)} /></div>
+                  <p className="qwen-judgment">{qwenReview.judgment}</p>
+                  <p><span>判断依据</span>{qwenReview.basis}</p>
+                  <p><span>处置建议</span>{qwenReview.suggestion}</p>
+                </section>
                 <div className="ppt-presentation-evidence"><span>证据链</span>{presentation.evidence.map((item) => <em key={item}>{item}</em>)}</div>
               </section>}
               <div className="property-grid">

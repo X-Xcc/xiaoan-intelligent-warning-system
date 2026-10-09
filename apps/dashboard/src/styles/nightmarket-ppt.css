@@ -1,0 +1,90 @@
+/* One 1600 × 900 composition, scaled proportionally to the available viewport. */
+.ppt-assistant-dock { display: none; }
+.nightmarket-page .qwen-review { margin-top: 8px; padding: 10px; border: 1px solid #d9dcf4; border-radius: 6px; background: #f6f6ff; }
+.nightmarket-page .qwen-review-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.nightmarket-page .qwen-review-heading strong { display: flex; align-items: center; gap: 6px; color: #4b4991; font-size: 13px; }
+.nightmarket-page .qwen-review p { margin: 5px 0 0; color: #536175; font-size: 12px; line-height: 1.5; }
+.nightmarket-page .qwen-review .qwen-judgment { color: #273450; font-size: 13px; font-weight: 600; }
+.nightmarket-page .qwen-review p > span { margin-right: 8px; color: #6a7192; font-size: 11px; font-weight: 500; }
+.nightmarket-page .ppt-presentation-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 1000px) {
+  .nightmarket-ppt-frame { position: fixed; inset: 0; background: #e9edf3; }
+  .nightmarket-page.ppt-mode { position: absolute; left: 50%; top: 50%; width: 1600px; height: 900px; min-height: 0; transform-origin: center; display: flex; flex-direction: column; }
+  .nightmarket-page.ppt-mode .topbar-wrap { flex: 0 0 60px; padding: 0 24px; }
+  .nightmarket-page.ppt-mode .glass-nav { min-height: 60px; }
+  .nightmarket-page.ppt-mode .page-frame { flex: 1; min-height: 0; max-width: none; padding: 18px 24px 24px; }
+  .nightmarket-page.ppt-mode .workspace-page { height: 100%; display: grid; grid-template-rows: 68px 92px minmax(0, 1fr); gap: 16px; }
+  .nightmarket-page.ppt-mode .workspace-heading { margin: 0; flex-direction: row; align-items: center; }
+  .nightmarket-page.ppt-mode .workspace-heading h1 { margin: 3px 0 0; font-size: 24px; }
+  .nightmarket-page.ppt-mode .workspace-heading p { margin: 4px 0 0; font-size: 13px; }
+  .nightmarket-page.ppt-mode .metric-grid { margin: 0; padding: 0; gap: 16px; border: 0; }
+  .nightmarket-page.ppt-mode .metric-card { min-height: 0; padding: 12px 18px; gap: 0 16px; }
+  .nightmarket-page.ppt-mode .metric-icon { display: grid; width: 36px; height: 36px; }
+  .nightmarket-page.ppt-mode .metric-card > strong { font-size: 28px; }
+  .nightmarket-page.ppt-mode .command-grid { min-height: 0; grid-template-columns: 310px minmax(0, 1fr) 508px; align-items: stretch; gap: 16px; }
+  .nightmarket-page.ppt-mode .queue-panel,
+  .nightmarket-page.ppt-mode .map-panel,
+  .nightmarket-page.ppt-mode .detail-panel { grid-column: auto; min-height: 0; height: 100%; margin: 0; padding: 14px; border: 1px solid var(--ui-line); }
+  .nightmarket-page.ppt-mode .queue-panel,
+  .nightmarket-page.ppt-mode .map-panel { display: flex; flex-direction: column; }
+  .nightmarket-page.ppt-mode .panel-heading { flex-shrink: 0; min-height: 42px; }
+  .nightmarket-page.ppt-mode .panel-heading h2 { font-size: 17px; }
+  .nightmarket-page.ppt-mode .queue-filter,
+  .nightmarket-page.ppt-mode .market-select { flex-shrink: 0; margin: 10px 0; min-height: 36px; }
+  .nightmarket-page.ppt-mode .queue-filter select,
+  .nightmarket-page.ppt-mode .market-select select { min-height: 36px; padding: 4px 8px; font-size: 13px; }
+  .nightmarket-page.ppt-mode .event-list { flex: 1; min-height: 0; gap: 8px; grid-auto-rows: minmax(80px, 1fr); overflow: auto; }
+  .nightmarket-page.ppt-mode .event-list-item { min-height: 0; padding: 8px 10px; gap: 4px 10px; align-content: space-between; }
+  .nightmarket-page.ppt-mode .event-list-main strong { font-size: 13px; }
+  .nightmarket-page.ppt-mode .event-list-main small { margin-top: 4px; font-size: 11px; line-height: 1.5; }
+  .nightmarket-page.ppt-mode .event-list-item .status-badge { min-height: 22px; font-size: 11px; }
+  .nightmarket-page.ppt-mode .map-stage { flex: 1; min-height: 0; height: auto; }
+  .nightmarket-page.ppt-mode .map-action-row { flex-shrink: 0; flex-direction: row; align-items: center; margin-top: 10px; gap: 12px; }
+  .nightmarket-page.ppt-mode .map-action-row button { flex-shrink: 0; min-height: 36px; font-size: 12px; }
+  .nightmarket-page.ppt-mode .map-footnote { font-size: 11px; }
+  .nightmarket-page.ppt-mode .ppt-assistant-dock { display: block; position: absolute; right: 8px; bottom: 12px; width: 150px; height: 218px; pointer-events: none; }
+  .nightmarket-page.ppt-mode .amap-selected { right: 170px; }
+  .ppt-assistant-slot { width: 150px; height: 218px; flex-shrink: 0; }
+  .nightmarket-page.ppt-mode .detail-panel { display: flex; flex-direction: column; }
+  .nightmarket-page.ppt-mode .detail-top { min-height: 26px; }
+  .nightmarket-page.ppt-mode .detail-panel h2 { margin: 6px 0 0; font-size: 20px; line-height: 1.3; }
+  .nightmarket-page.ppt-mode .detail-subtitle { margin: 3px 0 0; font-size: 12px; }
+  .nightmarket-page.ppt-mode .detail-progress { flex-shrink: 0; margin-top: 8px; }
+  .nightmarket-page.ppt-mode .progress-label { margin: 4px 0 0; font-size: 11px; }
+  .nightmarket-page.ppt-mode .queue-panel .event-chain-card { flex: 0 0 auto; margin: 12px 0 0; }
+  .nightmarket-page.ppt-mode .queue-panel .event-chain-step small { display: none; }
+  .nightmarket-page.ppt-mode .queue-panel .event-chain-step strong { font-size: 11px; white-space: nowrap; }
+  .nightmarket-page.ppt-mode .queue-panel .event-chain-steps { gap: 3px; }
+  .nightmarket-page.ppt-mode .event-chain-card { margin: 10px 0; padding: 10px; }
+  .nightmarket-page.ppt-mode .event-chain-heading { margin-bottom: 6px; }
+  .nightmarket-page.ppt-mode .event-chain-heading small { display: none; }
+  .nightmarket-page.ppt-mode .event-chain-steps { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+  .nightmarket-page.ppt-mode .event-chain-step { padding: 5px 3px; gap: 3px; }
+  .nightmarket-page.ppt-mode .event-chain-step strong { font-size: 12px; }
+  .nightmarket-page.ppt-mode .event-chain-step small { font-size: 10px; line-height: 1.4; }
+  .nightmarket-page.ppt-mode .ppt-presentation-card { margin: 0 0 10px; padding: 10px; background: #f7faff; }
+  .nightmarket-page.ppt-mode .ppt-presentation-heading { margin-bottom: 8px; }
+  .nightmarket-page.ppt-mode .ppt-presentation-heading strong { font-size: 12px; }
+  .nightmarket-page.ppt-mode .ppt-presentation-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .nightmarket-page.ppt-mode .ppt-presentation-grid > div { padding: 7px; gap: 3px; }
+  .nightmarket-page.ppt-mode .ppt-presentation-grid b { font-size: 12px; line-height: 1.4; }
+  .nightmarket-page.ppt-mode .ppt-presentation-grid small,
+  .nightmarket-page.ppt-mode .ppt-presentation-grid span { font-size: 11px; }
+  .nightmarket-page.ppt-mode .ppt-presentation-evidence { margin-top: 6px; }
+  .nightmarket-page.ppt-mode .detail-panel .dispatch-card { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 3px 12px; margin: auto 0 0; padding: 9px 12px; border: 1px solid #d6e2f5; border-radius: 6px; background: #f3f7ff; }
+  .nightmarket-page.ppt-mode .dispatch-card strong { margin: 0; font-size: 14px; }
+  .nightmarket-page.ppt-mode .dispatch-card p { grid-column: 1 / -1; margin: 0; font-size: 11px; }
+  .nightmarket-page.ppt-mode .field-label { margin: 7px 0 4px; font-size: 11px; }
+  .nightmarket-page.ppt-mode .dispatch-actions { gap: 8px; }
+  .nightmarket-page.ppt-mode .dispatch-actions button { flex: 1; min-height: 32px; padding: 4px 8px; font-size: 12px; }
+  .nightmarket-page.ppt-mode .detail-description + .field-label { display: none; }
+  .nightmarket-page.ppt-mode .status-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+  .nightmarket-page.ppt-mode .status-actions button { min-height: 34px; padding: 5px 8px; font-size: 12px; }
+  .nightmarket-page.ppt-mode .status-actions .primary-small { grid-column: auto; }
+  .nightmarket-page.ppt-mode .property-grid,
+  .nightmarket-page.ppt-mode .detail-description,
+  .nightmarket-page.ppt-mode .detail-panel .nav-to-button { display: none; }
+}
+@media (max-width: 999px) {
+  .nightmarket-page.ppt-mode { transform: none !important; }
+}

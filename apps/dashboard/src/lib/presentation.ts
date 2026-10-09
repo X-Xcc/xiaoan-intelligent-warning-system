@@ -9,6 +9,7 @@ export const routePaths = {
   'ai-center': '/ai-center',
   admin: '/admin',
   'device-bridges': '/admin/bridges',
+  evaluation: '/evaluation',
   video: '/video',
   'night-market-command': '/night-market/command',
   'identity-search': '/identity-search',
