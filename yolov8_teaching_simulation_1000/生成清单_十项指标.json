@@ -1,0 +1,10 @@
+{
+  "metadata_tag": "教学模拟数据｜非实测｜公式生成",
+  "generated_on": "2026-09-29",
+  "rows": 3000,
+  "rounds_per_group": 1000,
+  "metric_count": 10,
+  "figure": "figures\\yolo_1000_rounds_10_metrics_2x5.png",
+  "sha256": "07316f09891fc63ffb2da8098e8c5fd6b56f82f199449caef4d802f536e26aa5",
+  "disclaimer": "公式仅为课堂示意；模拟数据不可作为真实训练记录或模型性能结论。"
+}

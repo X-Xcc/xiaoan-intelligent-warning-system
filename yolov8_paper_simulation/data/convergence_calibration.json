@@ -1,0 +1,42 @@
+[
+  {
+    "run": "action",
+    "metric": "map50",
+    "n_observed": 100,
+    "asymptote": 0.7210352737258094,
+    "amplitude": 0.18664923404423386,
+    "time_constant": 2.3514585005414785,
+    "residual_sd": 0.006535975798844835,
+    "residual_ar1": 0.0
+  },
+  {
+    "run": "action300",
+    "metric": "map50",
+    "n_observed": 71,
+    "asymptote": 0.7235389403127828,
+    "amplitude": 0.18900936540324903,
+    "time_constant": 2.4952828716967543,
+    "residual_sd": 0.004027863967958769,
+    "residual_ar1": 0.0
+  },
+  {
+    "run": "action",
+    "metric": "map50_95",
+    "n_observed": 100,
+    "asymptote": 0.5581414053117024,
+    "amplitude": 0.2194886380148243,
+    "time_constant": 3.606131044447137,
+    "residual_sd": 0.00881689588910302,
+    "residual_ar1": 0.0
+  },
+  {
+    "run": "action300",
+    "metric": "map50_95",
+    "n_observed": 71,
+    "asymptote": 0.5586033088743743,
+    "amplitude": 0.21979122361738873,
+    "time_constant": 3.6641021667884415,
+    "residual_sd": 0.00950635430876391,
+    "residual_ar1": 0.0
+  }
+]

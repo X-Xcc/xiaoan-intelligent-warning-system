@@ -1,0 +1,2323 @@
+
+> @public-security-ai/dashboard@0.1.0 test
+> node --experimental-vm-modules --test src/lib/*.test.mjs
+
+TAP version 13
+# (node:56936) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: admin transport is anonymous and restricted to its configured API
+ok 1 - admin transport is anonymous and restricted to its configured API
+  ---
+  duration_ms: 77.4416
+  type: 'test'
+  ...
+# (node:56712) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:56712) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# Subtest: anonymous identity is read through GET auth/me without credentials
+ok 2 - anonymous identity is read through GET auth/me without credentials
+  ---
+  duration_ms: 88.0145
+  type: 'test'
+  ...
+# Subtest: anonymous identity needs no token and malformed review drafts never issue requests
+ok 3 - anonymous identity needs no token and malformed review drafts never issue requests
+  ---
+  duration_ms: 6.96
+  type: 'test'
+  ...
+# Subtest: invalid identities and permissions cannot become authenticated users
+ok 4 - invalid identities and permissions cannot become authenticated users
+  ---
+  duration_ms: 26.4806
+  type: 'test'
+  ...
+# Subtest: reviews send only server-owned identity contract fields and require matching acknowledgment
+ok 5 - reviews send only server-owned identity contract fields and require matching acknowledgment
+  ---
+  duration_ms: 28.0216
+  type: 'test'
+  ...
+# Subtest: runtime can retry after failure, is uncached and never receives a business token
+ok 6 - runtime can retry after failure, is uncached and never receives a business token
+  ---
+  duration_ms: 27.6616
+  type: 'test'
+  ...
+# Subtest: malformed runtime is an explicit error instead of crashing the render or showing success
+ok 7 - malformed runtime is an explicit error instead of crashing the render or showing success
+  ---
+  duration_ms: 22.6001
+  type: 'test'
+  ...
+# Subtest: cancellation covers pre-abort and responses arriving after abort
+ok 8 - cancellation covers pre-abort and responses arriving after abort
+  ---
+  duration_ms: 6.7038
+  type: 'test'
+  ...
+# Subtest: request timeout covers body reads and always clears its timer
+ok 9 - request timeout covers body reads and always clears its timer
+  ---
+  duration_ms: 19.2985
+  type: 'test'
+  ...
+# Subtest: global dashboard status remains neutral when an overview poll fails
+ok 10 - global dashboard status remains neutral when an overview poll fails
+  ---
+  duration_ms: 2.1163
+  type: 'test'
+  ...
+# Subtest: platform overview keeps a normal global status while data refreshes silently
+ok 11 - platform overview keeps a normal global status while data refreshes silently
+  ---
+  duration_ms: 0.3361
+  type: 'test'
+  ...
+# Subtest: secondary command surface does not expose a global disconnected status
+ok 12 - secondary command surface does not expose a global disconnected status
+  ---
+  duration_ms: 0.4561
+  type: 'test'
+  ...
+# Subtest: successful WebRTC playback cancels startup fallback and retains its subscription
+ok 13 - successful WebRTC playback cancels startup fallback and retains its subscription
+  ---
+  duration_ms: 143.7229
+  type: 'test'
+  ...
+# Subtest: stalled startup still falls back and releases WebRTC
+ok 14 - stalled startup still falls back and releases WebRTC
+  ---
+  duration_ms: 13.9251
+  type: 'test'
+  ...
+# Subtest: unmount clears startup timers and releases the subscription
+ok 15 - unmount clears startup timers and releases the subscription
+  ---
+  duration_ms: 7.3249
+  type: 'test'
+  ...
+# Subtest: a new source epoch gets its own startup deadline
+ok 16 - a new source epoch gets its own startup deadline
+  ---
+  duration_ms: 11.7449
+  type: 'test'
+  ...
+# Subtest: successful playback survives the startup deadline without releasing WebRTC
+ok 17 - successful playback survives the startup deadline without releasing WebRTC
+  ---
+  duration_ms: 137.0983
+  type: 'test'
+  ...
+# Subtest: playing clears the deadline and a later waiting event does not restart it
+ok 18 - playing clears the deadline and a later waiting event does not restart it
+  ---
+  duration_ms: 15.7386
+  type: 'test'
+  ...
+# Subtest: stalled startup falls back at 2500ms (compact=false)
+ok 19 - stalled startup falls back at 2500ms (compact=false)
+  ---
+  duration_ms: 11.711
+  type: 'test'
+  ...
+# Subtest: stalled startup falls back at 2500ms (compact=true)
+ok 20 - stalled startup falls back at 2500ms (compact=true)
+  ---
+  duration_ms: 8.5244
+  type: 'test'
+  ...
+# Subtest: unmount clears the startup deadline, subscription, and attached stream
+ok 21 - unmount clears the startup deadline, subscription, and attached stream
+  ---
+  duration_ms: 19.6418
+  type: 'test'
+  ...
+# Subtest: device change cleans the old deadline and resets a previous fallback
+ok 22 - device change cleans the old deadline and resets a previous fallback
+  ---
+  duration_ms: 8.3375
+  type: 'test'
+  ...
+# Subtest: epoch change cleans the old deadline and resets a previous fallback
+ok 23 - epoch change cleans the old deadline and resets a previous fallback
+  ---
+  duration_ms: 9.502
+  type: 'test'
+  ...
+# Subtest: deactivation cancels the deadline and reactivation gets a new startup window
+ok 24 - deactivation cancels the deadline and reactivation gets a new startup window
+  ---
+  duration_ms: 9.1923
+  type: 'test'
+  ...
+# Subtest: compact previews sustain at least 8 refreshes/sec on a fast local connection
+ok 25 - compact previews sustain at least 8 refreshes/sec on a fast local connection
+  ---
+  duration_ms: 139.9488
+  type: 'test'
+  ...
+# Subtest: slow responses do not add a full idle interval or overlap requests
+ok 26 - slow responses do not add a full idle interval or overlap requests
+  ---
+  duration_ms: 13.7812
+  type: 'test'
+  ...
+# Subtest: failed snapshots back off instead of retrying at video cadence
+ok 27 - failed snapshots back off instead of retrying at video cadence
+  ---
+  duration_ms: 15.6847
+  type: 'test'
+  ...
+# Subtest: wall and focus share one peer and release it only after the last subscriber
+ok 28 - wall and focus share one peer and release it only after the last subscriber
+  ---
+  duration_ms: 154.047
+  type: 'test'
+  ...
+# Subtest: playback fps comes from decoded frame counters, not source metadata
+ok 29 - playback fps comes from decoded frame counters, not source metadata
+  ---
+  duration_ms: 16.2275
+  type: 'test'
+  ...
+# Subtest: unmount during negotiation cannot leak a late server-side peer
+ok 30 - unmount during negotiation cannot leak a late server-side peer
+  ---
+  duration_ms: 10.044
+  type: 'test'
+  ...
+# Subtest: dispatch stage presents only a desensitized map and route
+ok 31 - dispatch stage presents only a desensitized map and route
+  ---
+  duration_ms: 3.1977
+  type: 'test'
+  ...
+# Subtest: only the contents swap while original headings and attention styling stay in place
+ok 32 - only the contents swap while original headings and attention styling stay in place
+  ---
+  duration_ms: 16.5331
+  type: 'test'
+  ...
+# Subtest: both swapped fields remain editable and edits update the summary
+ok 33 - both swapped fields remain editable and edits update the summary
+  ---
+  duration_ms: 25.6886
+  type: 'test'
+  ...
+# Subtest: lost property is a selectable demo with its own narrative and attention
+ok 34 - lost property is a selectable demo with its own narrative and attention
+  ---
+  duration_ms: 11.3158
+  type: 'test'
+  ...
+# Subtest: lost-property sample augments only the existing demo queue and is never duplicated
+ok 35 - lost-property sample augments only the existing demo queue and is never duplicated
+  ---
+  duration_ms: 0.4694
+  type: 'test'
+  ...
+# Subtest: disorder uses the supplied recording while lost property retains its existing recording
+ok 36 - disorder uses the supplied recording while lost property retains its existing recording
+  ---
+  duration_ms: 13.2436
+  type: 'test'
+  ...
+# Subtest: live incidents cannot inherit the lost-property demo recording
+ok 37 - live incidents cannot inherit the lost-property demo recording
+  ---
+  duration_ms: 13.0784
+  type: 'test'
+  ...
+# Subtest: unrelated live incidents do not receive the supplied disorder recording
+ok 38 - unrelated live incidents do not receive the supplied disorder recording
+  ---
+  duration_ms: 15.6767
+  type: 'test'
+  ...
+# Subtest: intake proceeds to police configuration before the scene and supports returning through both steps
+ok 39 - intake proceeds to police configuration before the scene and supports returning through both steps
+  ---
+  duration_ms: 38.2371
+  type: 'test'
+  ...
+# (node:52828) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:52828) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# Subtest: confirmed receipts clear pending requests without replacing a newer snapshot
+ok 40 - confirmed receipts clear pending requests without replacing a newer snapshot
+  ---
+  duration_ms: 160.6091
+  type: 'test'
+  ...
+# Subtest: a missing receipt at the same version retains its original id for a safe retry
+ok 41 - a missing receipt at the same version retains its original id for a safe retry
+  ---
+  duration_ms: 12.7614
+  type: 'test'
+  ...
+# Subtest: a stale missing request can be cleared only once optimistic versioning prevents it from committing
+ok 42 - a stale missing request can be cleared only once optimistic versioning prevents it from committing
+  ---
+  duration_ms: 14.604
+  type: 'test'
+  ...
+# Subtest: authorization and transport failures do not discard uncertain requests
+ok 43 - authorization and transport failures do not discard uncertain requests
+  ---
+  duration_ms: 49.286
+  type: 'test'
+  ...
+# Subtest: the business route and busy controls are integrated without replacing the intake page
+ok 44 - the business route and busy controls are integrated without replacing the intake page
+  ---
+  duration_ms: 4.1589
+  type: 'test'
+  ...
+# Subtest: a delayed create acknowledgment cannot navigate after leaving the workbench
+ok 45 - a delayed create acknowledgment cannot navigate after leaving the workbench
+  ---
+  duration_ms: 17.9497
+  type: 'test'
+  ...
+# Subtest: the scene returns to police configuration as the preceding step
+ok 46 - the scene returns to police configuration as the preceding step
+  ---
+  duration_ms: 162.1881
+  type: 'test'
+  ...
+# Subtest: barbecue demo shows a labeled fictional identity without inventing a record
+ok 47 - barbecue demo shows a labeled fictional identity without inventing a record
+  ---
+  duration_ms: 12.115
+  type: 'test'
+  ...
+# Subtest: live events never receive the barbecue demo identity
+ok 48 - live events never receive the barbecue demo identity
+  ---
+  duration_ms: 14.1427
+  type: 'test'
+  ...
+# Subtest: scene uses one inventory and resolves dog 01 and CCTV 02 by binding, not item order
+ok 49 - scene uses one inventory and resolves dog 01 and CCTV 02 by binding, not item order
+  ---
+  duration_ms: 10.3353
+  type: 'test'
+  ...
+# Subtest: both enlarged previews use the same current slot and close cleanly
+ok 50 - both enlarged previews use the same current slot and close cleanly
+  ---
+  duration_ms: 16.6775
+  type: 'test'
+  ...
+# Subtest: rebinding updates an already enlarged feed; an empty slot never picks another device
+ok 51 - rebinding updates an already enlarged feed; an empty slot never picks another device
+  ---
+  duration_ms: 17.6057
+  type: 'test'
+  ...
+# Subtest: legacy authorization flags do not hide feeds or offer a login
+ok 52 - legacy authorization flags do not hide feeds or offer a login
+  ---
+  duration_ms: 10.217
+  type: 'test'
+  ...
+# Subtest: stale inventory and mutations pause previews; reconnect refreshes bridge inventory
+ok 53 - stale inventory and mutations pause previews; reconnect refreshes bridge inventory
+  ---
+  duration_ms: 49.6315
+  type: 'test'
+  ...
+# Subtest: command configuration evaluates the base callback in development and native modes
+ok 54 - command configuration evaluates the base callback in development and native modes
+  ---
+  duration_ms: 647.6925
+  type: 'test'
+  ...
+# Subtest: CR-020 uses the supplied incident photo without changing other points or records
+ok 55 - CR-020 uses the supplied incident photo without changing other points or records
+  ---
+  duration_ms: 28.0143
+  type: 'test'
+  ...
+# Subtest: separates CR-019 and CR-020 map variants
+ok 56 - separates CR-019 and CR-020 map variants
+  ---
+  duration_ms: 0.7246
+  type: 'test'
+  ...
+# Subtest: CR-019 uses the reviewer-supplied images for points one, two, three and five
+ok 57 - CR-019 uses the reviewer-supplied images for points one, two, three and five
+  ---
+  duration_ms: 38.2151
+  type: 'test'
+  ...
+# Subtest: case-specific photos preserve record associations and other cases
+ok 58 - case-specific photos preserve record associations and other cases
+  ---
+  duration_ms: 32.7329
+  type: 'test'
+  ...
+# Subtest: the map renders the source record page independently of the selected timeline point
+ok 59 - the map renders the source record page independently of the selected timeline point
+  ---
+  duration_ms: 2283.4754
+  type: 'test'
+  ...
+# Subtest: the approved map labels cameras 02, 04 and 08 with the correct case roles
+ok 60 - the approved map labels cameras 02, 04 and 08 with the correct case roles
+  ---
+  duration_ms: 2.3363
+  type: 'test'
+  ...
+# Subtest: the map uses fictional local coordinates and preserves the accepted B positions
+ok 61 - the map uses fictional local coordinates and preserves the accepted B positions
+  ---
+  duration_ms: 1.3415
+  type: 'test'
+  ...
+# Subtest: point association preserves source record identity and handles short/empty lists
+ok 62 - point association preserves source record identity and handles short/empty lists
+  ---
+  duration_ms: 0.4567
+  type: 'test'
+  ...
+# Subtest: the drawn route follows corridor bends and stops at the last available point
+ok 63 - the drawn route follows corridor bends and stops at the last available point
+  ---
+  duration_ms: 0.4238
+  type: 'test'
+  ...
+# Subtest: CR-20 defines the comparison route contract
+ok 64 - CR-20 defines the comparison route contract
+  ---
+  duration_ms: 0.3157
+  type: 'test'
+  ...
+# Subtest: defines outward route branches from points one and three
+ok 65 - defines outward route branches from points one and three
+  ---
+  duration_ms: 0.4436
+  type: 'test'
+  ...
+# Subtest: defines two explicitly colored paths for the map renderer
+ok 66 - defines two explicitly colored paths for the map renderer
+  ---
+  duration_ms: 0.179
+  type: 'test'
+  ...
+# Subtest: the rendered map presents a selected timeline and photo strip with explicit simulation provenance
+ok 67 - the rendered map presents a selected timeline and photo strip with explicit simulation provenance
+  ---
+  duration_ms: 67.8132
+  type: 'test'
+  ...
+# Subtest: the rendered map exposes the route overlap and draws three branch lines in the SVG route layer
+ok 68 - the rendered map exposes the route overlap and draws three branch lines in the SVG route layer
+  ---
+  duration_ms: 12.6493
+  type: 'test'
+  ...
+# Subtest: missing records render an empty state without a misleading route or photo controls
+ok 69 - missing records render an empty state without a misleading route or photo controls
+  ---
+  duration_ms: 1.0648
+  type: 'test'
+  ...
+# Subtest: route overlap badge highlights ninety percent in red
+ok 70 - route overlap badge highlights ninety percent in red
+  ---
+  duration_ms: 0.4939
+  type: 'test'
+  ...
+# Subtest: point photos fill their card frame while previews keep the complete image
+ok 71 - point photos fill their card frame while previews keep the complete image
+  ---
+  duration_ms: 0.3636
+  type: 'test'
+  ...
+# Subtest: shared map markers retain the original red intensities for other records
+ok 72 - shared map markers retain the original red intensities for other records
+  ---
+  duration_ms: 82.0646
+  type: 'test'
+  ...
+# Subtest: only CR-020 overrides points one two four and five to green
+ok 73 - only CR-020 overrides points one two four and five to green
+  ---
+  duration_ms: 40.9527
+  type: 'test'
+  ...
+# Subtest: geometry check finds interior crossings and rejects additional intersections
+ok 74 - geometry check finds interior crossings and rejects additional intersections
+  ---
+  duration_ms: 4.212
+  type: 'test'
+  ...
+# Subtest: geometry check rejects partial, contained, reversed and vertical collinear overlaps
+ok 75 - geometry check rejects partial, contained, reversed and vertical collinear overlaps
+  ---
+  duration_ms: 0.7047
+  type: 'test'
+  ...
+# Subtest: CR-020 primary and comparison polylines intersect only at the incident point
+ok 76 - CR-020 primary and comparison polylines intersect only at the incident point
+  ---
+  duration_ms: 1.1294
+  type: 'test'
+  ...
+# Subtest: CR-019 branches originate at points one, one and four, never the incident point
+ok 77 - CR-019 branches originate at points one, one and four, never the incident point
+  ---
+  duration_ms: 0.6327
+  type: 'test'
+  ...
+# Subtest: CR-019 exposes no geometry for invalid or sub-one point counts
+ok 78 - CR-019 exposes no geometry for invalid or sub-one point counts
+  ---
+  duration_ms: 0.3267
+  type: 'test'
+  ...
+# Subtest: CR-020 exposes no geometry for invalid or sub-one point counts
+ok 79 - CR-020 exposes no geometry for invalid or sub-one point counts
+  ---
+  duration_ms: 0.3548
+  type: 'test'
+  ...
+# Subtest: CR-019 exposes only available branch origins with pointCount=1
+ok 80 - CR-019 exposes only available branch origins with pointCount=1
+  ---
+  duration_ms: 0.3476
+  type: 'test'
+  ...
+# Subtest: CR-019 exposes only available branch origins with pointCount=2
+ok 81 - CR-019 exposes only available branch origins with pointCount=2
+  ---
+  duration_ms: 0.2265
+  type: 'test'
+  ...
+# Subtest: CR-019 exposes only available branch origins with pointCount=3
+ok 82 - CR-019 exposes only available branch origins with pointCount=3
+  ---
+  duration_ms: 0.4556
+  type: 'test'
+  ...
+# Subtest: CR-019 exposes only available branch origins with pointCount=3.9
+ok 83 - CR-019 exposes only available branch origins with pointCount=3.9
+  ---
+  duration_ms: 0.7352
+  type: 'test'
+  ...
+# Subtest: CR-019 exposes only available branch origins with pointCount=4
+ok 84 - CR-019 exposes only available branch origins with pointCount=4
+  ---
+  duration_ms: 2.2528
+  type: 'test'
+  ...
+# Subtest: CR-020 exposes comparison geometry only when the incident point exists, pointCount=1
+ok 85 - CR-020 exposes comparison geometry only when the incident point exists, pointCount=1
+  ---
+  duration_ms: 0.2072
+  type: 'test'
+  ...
+# Subtest: CR-020 exposes comparison geometry only when the incident point exists, pointCount=2
+ok 86 - CR-020 exposes comparison geometry only when the incident point exists, pointCount=2
+  ---
+  duration_ms: 0.0913
+  type: 'test'
+  ...
+# Subtest: CR-020 exposes comparison geometry only when the incident point exists, pointCount=2.9
+ok 87 - CR-020 exposes comparison geometry only when the incident point exists, pointCount=2.9
+  ---
+  duration_ms: 0.0918
+  type: 'test'
+  ...
+# Subtest: CR-020 exposes comparison geometry only when the incident point exists, pointCount=3
+ok 88 - CR-020 exposes comparison geometry only when the incident point exists, pointCount=3
+  ---
+  duration_ms: 0.2716
+  type: 'test'
+  ...
+# Subtest: CR-020 exposes comparison geometry only when the incident point exists, pointCount=4
+ok 89 - CR-020 exposes comparison geometry only when the incident point exists, pointCount=4
+  ---
+  duration_ms: 0.3834
+  type: 'test'
+  ...
+# (node:55580) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:55580) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# Subtest: 虚拟轨迹碰撞数据保持四人四线和关键证据点
+ok 90 - 虚拟轨迹碰撞数据保持四人四线和关键证据点
+  ---
+  duration_ms: 107.658
+  type: 'test'
+  ...
+# Subtest: reviewed demo names belong to the selected record and annotation
+ok 91 - reviewed demo names belong to the selected record and annotation
+  ---
+  duration_ms: 2.5256
+  type: 'test'
+  ...
+# Subtest: suspect identity fields omit the redundant redacted name row
+ok 92 - suspect identity fields omit the redundant redacted name row
+  ---
+  duration_ms: 0.4939
+  type: 'test'
+  ...
+# Subtest: the first scene preserves four head boxes and adds two automatic people
+ok 93 - the first scene preserves four head boxes and adds two automatic people
+  ---
+  duration_ms: 0.6
+  type: 'test'
+  ...
+# Subtest: CR-019 marks the four people from the reviewed scene
+ok 94 - CR-019 marks the four people from the reviewed scene
+  ---
+  duration_ms: 0.2629
+  type: 'test'
+  ...
+# Subtest: every scene gives each annotated person a consistent demo role
+ok 95 - every scene gives each annotated person a consistent demo role
+  ---
+  duration_ms: 0.5286
+  type: 'test'
+  ...
+# Subtest: every annotation frames the head only
+ok 96 - every annotation frames the head only
+  ---
+  duration_ms: 2.8517
+  type: 'test'
+  ...
+# Subtest: head frames cover the reviewed head centers in all twelve source images
+ok 97 - head frames cover the reviewed head centers in all twelve source images
+  ---
+  duration_ms: 1.2343
+  type: 'test'
+  ...
+# Subtest: records sharing an image share the same head positions
+ok 98 - records sharing an image share the same head positions
+  ---
+  duration_ms: 0.6854
+  type: 'test'
+  ...
+# Subtest: annotation labels distinguish assigned roles and keep legacy labels
+ok 99 - annotation labels distinguish assigned roles and keep legacy labels
+  ---
+  duration_ms: 0.6079
+  type: 'test'
+  ...
+# Subtest: effective roles lock the victim and allow restoring automatic status
+ok 100 - effective roles lock the victim and allow restoring automatic status
+  ---
+  duration_ms: 1.5049
+  type: 'test'
+  ...
+# Subtest: comparison candidates keep CAM-11 records in nearest-time order without including the current record
+ok 101 - comparison candidates keep CAM-11 records in nearest-time order without including the current record
+  ---
+  duration_ms: 20.6365
+  type: 'test'
+  ...
+# Subtest: only non-victim head boxes expose an identity menu
+ok 102 - only non-victim head boxes expose an identity menu
+  ---
+  duration_ms: 444.3304
+  type: 'test'
+  ...
+# Subtest: contact review exposes only redacted identity values
+ok 103 - contact review exposes only redacted identity values
+  ---
+  duration_ms: 2.2723
+  type: 'test'
+  ...
+# Subtest: contact review UI does not expose raw identity placeholders
+ok 104 - contact review UI does not expose raw identity placeholders
+  ---
+  duration_ms: 5.634
+  type: 'test'
+  ...
+# Subtest: the first four chronological records use the supplied scenes in order
+ok 105 - the first four chronological records use the supplied scenes in order
+  ---
+  duration_ms: 189.6012
+  type: 'test'
+  ...
+# Subtest: identity gallery contains the synthetic manifest and unique reviewed person assets
+ok 106 - identity gallery contains the synthetic manifest and unique reviewed person assets
+  ---
+  duration_ms: 259.6856
+  type: 'test'
+  ...
+# Subtest: contact review waits for a search before rendering record images
+ok 107 - contact review waits for a search before rendering record images
+  ---
+  duration_ms: 208.4112
+  type: 'test'
+  ...
+# Subtest: marked-record exports follow the same forward time order
+ok 108 - marked-record exports follow the same forward time order
+  ---
+  duration_ms: 35.8232
+  type: 'test'
+  ...
+# Subtest: 快速检索阶段从扫描图片逐步收敛到全部结果
+ok 109 - 快速检索阶段从扫描图片逐步收敛到全部结果
+  ---
+  duration_ms: 157.7009
+  type: 'test'
+  ...
+# Subtest: identity search includes every curated AI person photo instead of one camera
+ok 110 - identity search includes every curated AI person photo instead of one camera
+  ---
+  duration_ms: 34.7378
+  type: 'test'
+  ...
+# Subtest: identity search leads with rich crowd scenes without changing records or video screening order
+ok 111 - identity search leads with rich crowd scenes without changing records or video screening order
+  ---
+  duration_ms: 26.0501
+  type: 'test'
+  ...
+# Subtest: identity scene priority survives date, time, camera and status filtering
+ok 112 - identity scene priority survives date, time, camera and status filtering
+  ---
+  duration_ms: 44.4773
+  type: 'test'
+  ...
+# Subtest: identity photo filters still respect dates, query and status
+ok 113 - identity photo filters still respect dates, query and status
+  ---
+  duration_ms: 15.0248
+  type: 'test'
+  ...
+# Subtest: identity search rejects unrelated assets even when passed alongside approved records
+ok 114 - identity search rejects unrelated assets even when passed alongside approved records
+  ---
+  duration_ms: 34.1642
+  type: 'test'
+  ...
+# Subtest: 茶铺周边选项与全部地点一致，返回全部记录
+ok 115 - 茶铺周边选项与全部地点一致，返回全部记录
+  ---
+  duration_ms: 12.9431
+  type: 'test'
+  ...
+# Subtest: 按时分筛选同一天内的记录
+ok 116 - 按时分筛选同一天内的记录
+  ---
+  duration_ms: 21.8705
+  type: 'test'
+  ...
+# (node:1472) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:1472) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# Subtest: demo metrics are internally consistent and explicitly synthetic
+ok 117 - demo metrics are internally consistent and explicitly synthetic
+  ---
+  duration_ms: 73.5591
+  type: 'test'
+  ...
+# Subtest: timeline clamps invalid values and never mutates previous samples
+ok 118 - timeline clamps invalid values and never mutates previous samples
+  ---
+  duration_ms: 4.1919
+  type: 'test'
+  ...
+# Subtest: scene annotations cover foreground, both sides, middle distance and far crowd
+ok 119 - scene annotations cover foreground, both sides, middle distance and far crowd
+  ---
+  duration_ms: 8.3292
+  type: 'test'
+  ...
+# Subtest: boxes enclose visible bodies and remain inside the source image
+ok 120 - boxes enclose visible bodies and remain inside the source image
+  ---
+  duration_ms: 7.1444
+  type: 'test'
+  ...
+# Subtest: expanded gathering region encloses every person box, including the foreground and sides
+ok 121 - expanded gathering region encloses every person box, including the foreground and sides
+  ---
+  duration_ms: 13.0564
+  type: 'test'
+  ...
+# Subtest: initial overview evaluates no non-overview page modules
+ok 122 - initial overview evaluates no non-overview page modules
+  ---
+  duration_ms: 87.4192
+  type: 'test'
+  ...
+# Subtest: direct entry /command suspends safely and resolves the named page
+ok 123 - direct entry /command suspends safely and resolves the named page
+  ---
+  duration_ms: 45.103
+  type: 'test'
+  ...
+# Subtest: direct entry /command/workbench suspends safely and resolves the named page
+ok 124 - direct entry /command/workbench suspends safely and resolves the named page
+  ---
+  duration_ms: 30.2895
+  type: 'test'
+  ...
+# Subtest: direct entry /command/workbench?surface=display suspends safely and resolves the named page
+ok 125 - direct entry /command/workbench?surface=display suspends safely and resolves the named page
+  ---
+  duration_ms: 18.7698
+  type: 'test'
+  ...
+# Subtest: direct entry /community suspends safely and resolves the named page
+ok 126 - direct entry /community suspends safely and resolves the named page
+  ---
+  duration_ms: 29.1356
+  type: 'test'
+  ...
+# Subtest: direct entry /ai-center suspends safely and resolves the named page
+ok 127 - direct entry /ai-center suspends safely and resolves the named page
+  ---
+  duration_ms: 43.4066
+  type: 'test'
+  ...
+# Subtest: direct entry /admin suspends safely and resolves the named page
+ok 128 - direct entry /admin suspends safely and resolves the named page
+  ---
+  duration_ms: 30.1121
+  type: 'test'
+  ...
+# Subtest: direct entry /admin/bridges suspends safely and resolves the named page
+ok 129 - direct entry /admin/bridges suspends safely and resolves the named page
+  ---
+  duration_ms: 28.7663
+  type: 'test'
+  ...
+# Subtest: direct entry /video suspends safely and resolves the named page
+ok 130 - direct entry /video suspends safely and resolves the named page
+  ---
+  duration_ms: 32.7139
+  type: 'test'
+  ...
+# Subtest: direct entry /night-market/command suspends safely and resolves the named page
+ok 131 - direct entry /night-market/command suspends safely and resolves the named page
+  ---
+  duration_ms: 22.98
+  type: 'test'
+  ...
+# Subtest: direct entry /duty-situation/training suspends safely and resolves the named page
+ok 132 - direct entry /duty-situation/training suspends safely and resolves the named page
+  ---
+  duration_ms: 24.9738
+  type: 'test'
+  ...
+# Subtest: direct entry /duty-situation suspends safely and resolves the named page
+ok 133 - direct entry /duty-situation suspends safely and resolves the named page
+  ---
+  duration_ms: 21.8825
+  type: 'test'
+  ...
+# Subtest: direct entry /contact-review suspends safely and resolves the named page
+ok 134 - direct entry /contact-review suspends safely and resolves the named page
+  ---
+  duration_ms: 33.4053
+  type: 'test'
+  ...
+# Subtest: direct entry /identity-search suspends safely and resolves the named page
+ok 135 - direct entry /identity-search suspends safely and resolves the named page
+  ---
+  duration_ms: 33.7382
+  type: 'test'
+  ...
+# Subtest: production import graph keeps non-overview pages outside the eager entry closure
+ok 136 - production import graph keeps non-overview pages outside the eager entry closure
+  ---
+  duration_ms: 484.3321
+  type: 'test'
+  ...
+# Subtest: clicking dispatch enables and plays the alert without the route change stopping it
+ok 137 - clicking dispatch enables and plays the alert without the route change stopping it
+  ---
+  duration_ms: 295.0051
+  type: 'test'
+  ...
+# Subtest: each dispatch click can replay, while other routes stop the alert without announcing it
+ok 138 - each dispatch click can replay, while other routes stop the alert without announcing it
+  ---
+  duration_ms: 103.0797
+  type: 'test'
+  ...
+# Subtest: loading the dispatch route without clicking does not announce an incident
+ok 139 - loading the dispatch route without clicking does not announce an incident
+  ---
+  duration_ms: 77.9389
+  type: 'test'
+  ...
+# Subtest: the navigation alert has the exact requested caption and a local WAV asset
+ok 140 - the navigation alert has the exact requested caption and a local WAV asset
+  ---
+  duration_ms: 12.594
+  type: 'test'
+  ...
+# Subtest: situation display is the second navigation item after platform overview
+ok 141 - situation display is the second navigation item after platform overview
+  ---
+  duration_ms: 196.9519
+  type: 'test'
+  ...
+# Subtest: shell navigation preserves the original module order
+not ok 142 - shell navigation preserves the original module order
+  ---
+  duration_ms: 48.9416
+  type: 'test'
+  location: 'D:\\CICSIC\\apps\\dashboard\\src\\lib\\dashboard-navigation.test.mjs:37:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    ... Skipped lines
+    
+      [
+        'platform',
+        'duty-situation',
+        'command',
+        'community',
+    ...
+        'identity-search',
+    +   'evaluation',
+        'ai-center',
+        'admin',
+        'device-bridges'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'platform'
+    1: 'duty-situation'
+    2: 'command'
+    3: 'community'
+    4: 'contact-review'
+    5: 'video'
+    6: 'night-market-command'
+    7: 'identity-search'
+    8: 'ai-center'
+    9: 'admin'
+    10: 'device-bridges'
+  actual:
+    0: 'platform'
+    1: 'duty-situation'
+    2: 'command'
+    3: 'community'
+    4: 'contact-review'
+    5: 'video'
+    6: 'night-market-command'
+    7: 'identity-search'
+    8: 'evaluation'
+    9: 'ai-center'
+    10: 'admin'
+    11: 'device-bridges'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///D:/CICSIC/apps/dashboard/src/lib/dashboard-navigation.test.mjs:40:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: retired case system is absent from the shell and platform entry points
+ok 143 - retired case system is absent from the shell and platform entry points
+  ---
+  duration_ms: 1.6591
+  type: 'test'
+  ...
+# Subtest: identity search is placed directly below night market command and remains enabled
+ok 144 - identity search is placed directly below night market command and remains enabled
+  ---
+  duration_ms: 29.8833
+  type: 'test'
+  ...
+# Subtest: retired modules remain visible but are disabled in the shell navigation
+ok 145 - retired modules remain visible but are disabled in the shell navigation
+  ---
+  duration_ms: 23.7492
+  type: 'test'
+  ...
+# Subtest: polling and manual refresh share the pending request and resume after completion
+ok 146 - polling and manual refresh share the pending request and resume after completion
+  ---
+  duration_ms: 208.862
+  type: 'test'
+  ...
+# Subtest: deadline aborts a pending response body, retains data, and permits another refresh
+ok 147 - deadline aborts a pending response body, retains data, and permits another refresh
+  ---
+  duration_ms: 38.5333
+  type: 'test'
+  ...
+# Subtest: unmount aborts fetch, clears timers, and prevents late updates or refreshes
+ok 148 - unmount aborts fetch, clears timers, and prevents late updates or refreshes
+  ---
+  duration_ms: 28.806
+  type: 'test'
+  ...
+# Subtest: StrictMode restart ignores an old response and its finally while the new request is pending
+ok 149 - StrictMode restart ignores an old response and its finally while the new request is pending
+  ---
+  duration_ms: 25.6303
+  type: 'test'
+  ...
+# Subtest: HTTP failure settles refresh and keeps the last successful overview
+ok 150 - HTTP failure settles refresh and keeps the last successful overview
+  ---
+  duration_ms: 18.3615
+  type: 'test'
+  ...
+# (node:35264) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:35264) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# Subtest: A1 recommendations map to distinct matching subjects without mutating tasks
+ok 151 - A1 recommendations map to distinct matching subjects without mutating tasks
+  ---
+  duration_ms: 2207.4096
+  type: 'test'
+  ...
+# Subtest: an explicit synthetic task is not changed by readiness mapping
+ok 152 - an explicit synthetic task is not changed by readiness mapping
+  ---
+  duration_ms: 20.8344
+  type: 'test'
+  ...
+# Subtest: video addresses support relative production APIs and prefixed deployments
+ok 153 - video addresses support relative production APIs and prefixed deployments
+  ---
+  duration_ms: 1.9578
+  type: 'test'
+  ...
+# Subtest: untrusted or malformed video addresses do not crash rendering or leave the configured API
+ok 154 - untrusted or malformed video addresses do not crash rendering or leave the configured API
+  ---
+  duration_ms: 1.52
+  type: 'test'
+  ...
+# Subtest: empty live registries remain empty instead of inheriting demo services
+ok 155 - empty live registries remain empty instead of inheriting demo services
+  ---
+  duration_ms: 2.1247
+  type: 'test'
+  ...
+# Subtest: partial live responses do not invent business metrics or availability
+ok 156 - partial live responses do not invent business metrics or availability
+  ---
+  duration_ms: 1.7108
+  type: 'test'
+  ...
+# Subtest: legacy business identifiers retain their real metrics and statuses
+ok 157 - legacy business identifiers retain their real metrics and statuses
+  ---
+  duration_ms: 1.6122
+  type: 'test'
+  ...
+# Subtest: business workbench has a distinct deep link and preserves the intake route
+ok 158 - business workbench has a distinct deep link and preserves the intake route
+  ---
+  duration_ms: 5.5498
+  type: 'test'
+  ...
+# Subtest: a local datetime input roundtrips without shifting the discovery time
+ok 159 - a local datetime input roundtrips without shifting the discovery time
+  ---
+  duration_ms: 10.4922
+  type: 'test'
+  ...
+# Subtest: uncertain requests are discoverable after reload for receipt reconciliation
+ok 160 - uncertain requests are discoverable after reload for receipt reconciliation
+  ---
+  duration_ms: 5.5333
+  type: 'test'
+  ...
+# Subtest: management refresh preserves dirty settings and does not infer model readiness from API health
+ok 161 - management refresh preserves dirty settings and does not infer model readiness from API health
+  ---
+  duration_ms: 1.2339
+  type: 'test'
+  ...
+# Subtest: overview and training image URLs honor the configured asset prefix
+ok 162 - overview and training image URLs honor the configured asset prefix
+  ---
+  duration_ms: 0.9202
+  type: 'test'
+  ...
+# Subtest: intake recordings stay outside the application JavaScript and avoid full eager preloading
+ok 163 - intake recordings stay outside the application JavaScript and avoid full eager preloading
+  ---
+  duration_ms: 0.4621
+  type: 'test'
+  ...
+# Subtest: demo dispatch data contains only fictional canvas coordinates
+ok 164 - demo dispatch data contains only fictional canvas coordinates
+  ---
+  duration_ms: 1.2058
+  type: 'test'
+  ...
+# Subtest: demo dispatch data exposes only points and one route
+ok 165 - demo dispatch data exposes only points and one route
+  ---
+  duration_ms: 0.3139
+  type: 'test'
+  ...
+# Subtest: demo dispatch data exposes multiple fictional routes and congestion
+ok 166 - demo dispatch data exposes multiple fictional routes and congestion
+  ---
+  duration_ms: 0.3858
+  type: 'test'
+  ...
+# Subtest: demo map renders fictional grid, incident, units and route
+ok 167 - demo map renders fictional grid, incident, units and route
+  ---
+  duration_ms: 1.7258
+  type: 'test'
+  ...
+# (node:27252) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:27252) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# Subtest: all contact record clocks start at the evening baseline and retain dates and sort order
+ok 168 - all contact record clocks start at the evening baseline and retain dates and sort order
+  ---
+  duration_ms: 169.9787
+  type: 'test'
+  ...
+# Subtest: gait map source timestamps preserve their one-minute steps and final three-minute gap
+ok 169 - gait map source timestamps preserve their one-minute steps and final three-minute gap
+  ---
+  duration_ms: 22.9859
+  type: 'test'
+  ...
+# Subtest: intake samples preserve ordered occurrence, receipt, dispatch and departure timestamps
+ok 170 - intake samples preserve ordered occurrence, receipt, dispatch and departure timestamps
+  ---
+  duration_ms: 34.1141
+  type: 'test'
+  ...
+# Subtest: overview and night-market fallback event clocks include seconds and satisfy the baseline
+ok 171 - overview and night-market fallback event clocks include seconds and satisfy the baseline
+  ---
+  duration_ms: 2.1487
+  type: 'test'
+  ...
+# Subtest: intake presentation retains supplied seconds and leaves real values unchanged
+ok 172 - intake presentation retains supplied seconds and leaves real values unchanged
+  ---
+  duration_ms: 8.9449
+  type: 'test'
+  ...
+# Subtest: the known API demo placeholder uses the same occurrence and narrative clock
+ok 173 - the known API demo placeholder uses the same occurrence and narrative clock
+  ---
+  duration_ms: 1.3033
+  type: 'test'
+  ...
+# (node:12616) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:12616) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# Subtest: fetches once, uses API prefix, and stores only the browser allowlist in memory
+ok 174 - fetches once, uses API prefix, and stores only the browser allowlist in memory
+  ---
+  duration_ms: 175.9336
+  type: 'test'
+  ...
+# Subtest: runtime key never inherits a security code from a different development key
+ok 175 - runtime key never inherits a security code from a different development key
+  ---
+  duration_ms: 10.588
+  type: 'test'
+  ...
+# Subtest: absent, malformed, HTTP and network failures retain the development fallback
+ok 176 - absent, malformed, HTTP and network failures retain the development fallback
+  ---
+  duration_ms: 72.3397
+  type: 'test'
+  ...
+# Subtest: production ignores Vite map values when runtime config is unavailable
+ok 177 - production ignores Vite map values when runtime config is unavailable
+  ---
+  duration_ms: 7.2971
+  type: 'test'
+  ...
+# Subtest: development fallback is trimmed and a security code alone does not enable a map
+ok 178 - development fallback is trimmed and a security code alone does not enable a map
+  ---
+  duration_ms: 10.1859
+  type: 'test'
+  ...
+# Subtest: timeout aborts a hung fetch, resolves startup, and ignores late config
+ok 179 - timeout aborts a hung fetch, resolves startup, and ignores late config
+  ---
+  duration_ms: 27.7895
+  type: 'test'
+  ...
+# Subtest: timeout also bounds JSON body reading and keeps the development fallback
+ok 180 - timeout also bounds JSON body reading and keeps the development fallback
+  ---
+  duration_ms: 7.7821
+  type: 'test'
+  ...
+# Subtest: startup waits for config and the map reads it without HTML or persistent storage
+ok 181 - startup waits for config and the map reads it without HTML or persistent storage
+  ---
+  duration_ms: 3.449
+  type: 'test'
+  ...
+# (node:56436) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:56436) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# Subtest: one-action connection starts, decodes, fetches a real snapshot and preserves other slots
+ok 182 - one-action connection starts, decodes, fetches a real snapshot and preserves other slots
+  ---
+  duration_ms: 223.6942
+  type: 'test'
+  ...
+# Subtest: one-action connection rejects invalid slots without network activity
+ok 183 - one-action connection rejects invalid slots without network activity
+  ---
+  duration_ms: 12.5298
+  type: 'test'
+  ...
+# Subtest: occupied slots are rejected before starting a camera
+ok 184 - occupied slots are rejected before starting a camera
+  ---
+  duration_ms: 34.3255
+  type: 'test'
+  ...
+# Subtest: connection failure (noFrame) does not bind and stops only its newly started decoder
+ok 185 - connection failure (noFrame) does not bind and stops only its newly started decoder
+  ---
+  duration_ms: 17.5481
+  type: 'test'
+  ...
+# Subtest: connection failure (snapshotFailure) does not bind and stops only its newly started decoder
+ok 186 - connection failure (snapshotFailure) does not bind and stops only its newly started decoder
+  ---
+  duration_ms: 16.5736
+  type: 'test'
+  ...
+# Subtest: connection failure (conflict) does not bind and stops only its newly started decoder
+ok 187 - connection failure (conflict) does not bind and stops only its newly started decoder
+  ---
+  duration_ms: 15.1173
+  type: 'test'
+  ...
+# Subtest: an already active camera is never stopped when onboarding fails
+ok 188 - an already active camera is never stopped when onboarding fails
+  ---
+  duration_ms: 30.0489
+  type: 'test'
+  ...
+# Subtest: an incorrect binding acknowledgement is not reported as a successful connection
+ok 189 - an incorrect binding acknowledgement is not reported as a successful connection
+  ---
+  duration_ms: 26.0187
+  type: 'test'
+  ...
+# Subtest: bridge route and prefix navigation resolve independently of governance
+ok 190 - bridge route and prefix navigation resolve independently of governance
+  ---
+  duration_ms: 10.6492
+  type: 'test'
+  ...
+# Subtest: video wall never fabricates cameras or AI/evidence findings
+ok 191 - video wall never fabricates cameras or AI/evidence findings
+  ---
+  duration_ms: 1.8836
+  type: 'test'
+  ...
+# Subtest: bridge inventory omits the demo readiness banner but retains actionable errors
+ok 192 - bridge inventory omits the demo readiness banner but retains actionable errors
+  ---
+  duration_ms: 1.8333
+  type: 'test'
+  ...
+# Subtest: video wall limits explicit sample stills to unbound slots, outside real previews
+ok 193 - video wall limits explicit sample stills to unbound slots, outside real previews
+  ---
+  duration_ms: 0.9379
+  type: 'test'
+  ...
+# Subtest: video wall keeps service status and error banner while remaining open access
+ok 194 - video wall keeps service status and error banner while remaining open access
+  ---
+  duration_ms: 0.4539
+  type: 'test'
+  ...
+# Subtest: video wall presents named scenes without inventing live device metrics
+ok 195 - video wall presents named scenes without inventing live device metrics
+  ---
+  duration_ms: 0.4952
+  type: 'test'
+  ...
+# Subtest: brand templates respect channel and stream, while custom paths are preserved
+ok 196 - brand templates respect channel and stream, while custom paths are preserved
+  ---
+  duration_ms: 7.4908
+  type: 'test'
+  ...
+# Subtest: editing an empty brand path selects its template and passes path validation
+ok 197 - editing an empty brand path selects its template and passes path validation
+  ---
+  duration_ms: 10.8002
+  type: 'test'
+  ...
+# Subtest: editor preserves explicit paths and keeps new generic RTSP empty
+ok 198 - editor preserves explicit paths and keeps new generic RTSP empty
+  ---
+  duration_ms: 18.2069
+  type: 'test'
+  ...
+# Subtest: editor retains initial values through StrictMode cleanup and explicitly clears cancelled passwords
+ok 199 - editor retains initial values through StrictMode cleanup and explicitly clears cancelled passwords
+  ---
+  duration_ms: 1.3727
+  type: 'test'
+  ...
+# Subtest: empty edit passwords are omitted; Go2 never submits ignored credentials
+ok 200 - empty edit passwords are omitted; Go2 never submits ignored credentials
+  ---
+  duration_ms: 10.7043
+  type: 'test'
+  ...
+# Subtest: validation rejects illegal targets, ranges, credential paths and incorrect LocalAP hosts
+ok 201 - validation rejects illegal targets, ranges, credential paths and incorrect LocalAP hosts
+  ---
+  duration_ms: 40.9014
+  type: 'test'
+  ...
+# Subtest: freshness requires real online frame metadata with a ten second age limit
+ok 202 - freshness requires real online frame metadata with a ten second age limit
+  ---
+  duration_ms: 11.2017
+  type: 'test'
+  ...
+# Subtest: bindings accept exactly sixteen nullable nonempty IDs
+ok 203 - bindings accept exactly sixteen nullable nonempty IDs
+  ---
+  duration_ms: 25.7905
+  type: 'test'
+  ...
+# Subtest: requests carry cookie credentials and memory token headers, never URL secrets
+ok 204 - requests carry cookie credentials and memory token headers, never URL secrets
+  ---
+  duration_ms: 26.4682
+  type: 'test'
+  ...
+# Subtest: 401 clears the token, and lock deletes the preview session and forgets credentials
+ok 205 - 401 clears the token, and lock deletes the preview session and forgets credentials
+  ---
+  duration_ms: 13.1668
+  type: 'test'
+  ...
+# Subtest: API uses the same-origin default and permits backend diagnostics plus cleanup within twenty seconds
+ok 206 - API uses the same-origin default and permits backend diagnostics plus cleanup within twenty seconds
+  ---
+  duration_ms: 24.3697
+  type: 'test'
+  ...
+# Subtest: cancelled session creation cannot restore an in-memory token
+ok 207 - cancelled session creation cannot restore an in-memory token
+  ---
+  duration_ms: 26.3968
+  type: 'test'
+  ...
+# Subtest: invalid session authorization or lifetime never stores a new token
+ok 208 - invalid session authorization or lifetime never stores a new token
+  ---
+  duration_ms: 51.0407
+  type: 'test'
+  ...
+# Subtest: transient renewal failure keeps the header token for a successful retry
+ok 209 - transient renewal failure keeps the header token for a successful retry
+  ---
+  duration_ms: 34.5583
+  type: 'test'
+  ...
+# Subtest: preview sessions renew halfway through their declared lifetime and reconnect media
+ok 210 - preview sessions renew halfway through their declared lifetime and reconnect media
+  ---
+  duration_ms: 20.3711
+  type: 'test'
+  ...
+# Subtest: changed source identities invalidate preview keys and do not change feed URLs on failure
+ok 211 - changed source identities invalidate preview keys and do not change feed URLs on failure
+  ---
+  duration_ms: 8.1988
+  type: 'test'
+  ...
+# Subtest: polling schedules only after settlement and supports abort cleanup
+ok 212 - polling schedules only after settlement and supports abort cleanup
+  ---
+  duration_ms: 1.7286
+  type: 'test'
+  ...
+# Subtest: sixteen snapshots share at most three requests without queuing inventory behind the wall
+ok 213 - sixteen snapshots share at most three requests without queuing inventory behind the wall
+  ---
+  duration_ms: 84.2238
+  type: 'test'
+  ...
+# Subtest: cancelled queued snapshots never fetch and active aborts release their slots
+ok 214 - cancelled queued snapshots never fetch and active aborts release their slots
+  ---
+  duration_ms: 14.951
+  type: 'test'
+  ...
+# Subtest: snapshot three-second timeout includes the response body and releases the queue
+ok 215 - snapshot three-second timeout includes the response body and releases the queue
+  ---
+  duration_ms: 12.0311
+  type: 'test'
+  ...
+# Subtest: compact previews use cancellable snapshots with object URL cleanup, not MJPEG
+ok 216 - compact previews use cancellable snapshots with object URL cleanup, not MJPEG
+  ---
+  duration_ms: 0.7482
+  type: 'test'
+  ...
+# Subtest: inventory accepts the supported real-camera access methods
+ok 217 - inventory accepts the supported real-camera access methods
+  ---
+  duration_ms: 10.6443
+  type: 'test'
+  ...
+# Subtest: unsupported USB input is rejected and never normalized as a camera
+ok 218 - unsupported USB input is rejected and never normalized as a camera
+  ---
+  duration_ms: 10.3939
+  type: 'test'
+  ...
+# Subtest: HTTP kinds validate separate scheme host port and credential-free paths
+ok 219 - HTTP kinds validate separate scheme host port and credential-free paths
+  ---
+  duration_ms: 14.198
+  type: 'test'
+  ...
+# Subtest: mode transitions reset discarded credentials and choose protocol defaults
+ok 220 - mode transitions reset discarded credentials and choose protocol defaults
+  ---
+  duration_ms: 7.7303
+  type: 'test'
+  ...
+# Subtest: same-kind blank passwords preserve credentials but changing network kind clears old secrets
+ok 221 - same-kind blank passwords preserve credentials but changing network kind clears old secrets
+  ---
+  duration_ms: 10.874
+  type: 'test'
+  ...
+# Subtest: new network source parameters invalidate previews and addresses remain sanitized
+ok 222 - new network source parameters invalidate previews and addresses remain sanitized
+  ---
+  duration_ms: 10.7416
+  type: 'test'
+  ...
+# Subtest: editor shows type-specific HTTP fields without automatic device activation
+ok 223 - editor shows type-specific HTTP fields without automatic device activation
+  ---
+  duration_ms: 1.0445
+  type: 'test'
+  ...
+# Subtest: HTTP diagnostics redact URL credentials just like RTSP diagnostics
+ok 224 - HTTP diagnostics redact URL credentials just like RTSP diagnostics
+  ---
+  duration_ms: 10.1878
+  type: 'test'
+  ...
+# (node:57048) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:57048) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# Subtest: intake keeps its current view and exposes the separate business workbench
+ok 225 - intake keeps its current view and exposes the separate business workbench
+  ---
+  duration_ms: 7.5653
+  type: 'test'
+  ...
+# Subtest: local event-chain decisions never claim persisted audit or real queue operations
+ok 226 - local event-chain decisions never claim persisted audit or real queue operations
+  ---
+  duration_ms: 156.5583
+  type: 'test'
+  ...
+# Subtest: community assistant selection and risk entry keep process and tool aligned
+ok 227 - community assistant selection and risk entry keep process and tool aligned
+  ---
+  duration_ms: 26.1463
+  type: 'test'
+  ...
+# Subtest: community plan and report are local, validated, repeat-safe and editable
+ok 228 - community plan and report are local, validated, repeat-safe and editable
+  ---
+  duration_ms: 6.0597
+  type: 'test'
+  ...
+# Subtest: AI provides anonymous review and its own refresh without parent refresh
+ok 229 - AI provides anonymous review and its own refresh without parent refresh
+  ---
+  duration_ms: 3.4673
+  type: 'test'
+  ...
+# Subtest: AI refresh cancels stale responses, retains the last snapshot and preserves review drafts on error/retry
+ok 230 - AI refresh cancels stale responses, retains the last snapshot and preserves review drafts on error/retry
+  ---
+  duration_ms: 6.9023
+  type: 'test'
+  ...
+# Subtest: AI review is anonymous, repeat-safe and keeps the reason after server acknowledgment
+ok 231 - AI review is anonymous, repeat-safe and keeps the reason after server acknowledgment
+  ---
+  duration_ms: 4.3424
+  type: 'test'
+  ...
+# Subtest: demo process navigation does not mark skipped work as completed
+ok 232 - demo process navigation does not mark skipped work as completed
+  ---
+  duration_ms: 0.6636
+  type: 'test'
+  ...
+# Subtest: a refreshed result cannot silently inherit a review draft for a different audit ID
+ok 233 - a refreshed result cannot silently inherit a review draft for a different audit ID
+  ---
+  duration_ms: 12.0138
+  type: 'test'
+  ...
+# Subtest: failed reviews preserve uncertain-result drafts until refresh
+ok 234 - failed reviews preserve uncertain-result drafts until refresh
+  ---
+  duration_ms: 27.9827
+  type: 'test'
+  ...
+# Subtest: unmount cancels runtime requests and ignores their late responses
+ok 235 - unmount cancels runtime requests and ignores their late responses
+  ---
+  duration_ms: 18.9467
+  type: 'test'
+  ...
+# Subtest: duty sample uses second-precision evening slots and retains the same peak buckets
+ok 236 - duty sample uses second-precision evening slots and retains the same peak buckets
+  ---
+  duration_ms: 407.2864
+  type: 'test'
+  ...
+# Subtest: duty validation accepts new sample slots and preserves legacy and irregular real snapshots
+ok 237 - duty validation accepts new sample slots and preserves legacy and irregular real snapshots
+  ---
+  duration_ms: 248.3109
+  type: 'test'
+  ...
+# Subtest: duty time-series validation rejects empty, malformed, duplicate and invalid-value entries
+ok 238 - duty time-series validation rejects empty, malformed, duplicate and invalid-value entries
+  ---
+  duration_ms: 247.2937
+  type: 'test'
+  ...
+# Subtest: training showcase time labels match the corresponding duty sample slots
+ok 239 - training showcase time labels match the corresponding duty sample slots
+  ---
+  duration_ms: 2.6807
+  type: 'test'
+  ...
+# Subtest: duty page removes recommendations, composition list and both training notes
+ok 240 - duty page removes recommendations, composition list and both training notes
+  ---
+  duration_ms: 14.5998
+  type: 'test'
+  ...
+# Subtest: large filled pie contains every category name and percentage inside the chart
+ok 241 - large filled pie contains every category name and percentage inside the chart
+  ---
+  duration_ms: 16.4365
+  type: 'test'
+  ...
+# Subtest: pie handles a full-circle category and omits zero-area slices
+ok 242 - pie handles a full-circle category and omits zero-area slices
+  ---
+  duration_ms: 5.1691
+  type: 'test'
+  ...
+# Subtest: smallest category stays at the right without changing its percentage
+ok 243 - smallest category stays at the right without changing its percentage
+  ---
+  duration_ms: 5.8117
+  type: 'test'
+  ...
+# Subtest: time range and peak share form one compact metrics row above the hourly plot
+ok 244 - time range and peak share form one compact metrics row above the hourly plot
+  ---
+  duration_ms: 12.8997
+  type: 'test'
+  ...
+# Subtest: composition uses the restrained category palette without changing the data
+ok 245 - composition uses the restrained category palette without changing the data
+  ---
+  duration_ms: 13.528
+  type: 'test'
+  ...
+# (node:42728) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: gait pose keeps the reference body centered and exposes mirrored lower limbs
+ok 246 - gait pose keeps the reference body centered and exposes mirrored lower limbs
+  ---
+  duration_ms: 248.3476
+  type: 'test'
+  ...
+# Subtest: gait phase advances with speed and wraps at one full cycle
+ok 247 - gait phase advances with speed and wraps at one full cycle
+  ---
+  duration_ms: 3.9013
+  type: 'test'
+  ...
+# Subtest: identity search does not render a duplicate gait analysis panel in the workspace
+ok 248 - identity search does not render a duplicate gait analysis panel in the workspace
+  ---
+  duration_ms: 6.9705
+  type: 'test'
+  ...
+# Subtest: shared record details retain analysis and route actions without a recognition summary
+ok 249 - shared record details retain analysis and route actions without a recognition summary
+  ---
+  duration_ms: 1.471
+  type: 'test'
+  ...
+# Subtest: record gait analysis labels navigation as search and closes the modal
+ok 250 - record gait analysis labels navigation as search and closes the modal
+  ---
+  duration_ms: 3.5131
+  type: 'test'
+  ...
+# Subtest: identity search opens its own gallery without inheriting video screening state
+ok 251 - identity search opens its own gallery without inheriting video screening state
+  ---
+  duration_ms: 2.0651
+  type: 'test'
+  ...
+# Subtest: identity search uses the visible gallery total
+ok 252 - identity search uses the visible gallery total
+  ---
+  duration_ms: 10.8292
+  type: 'test'
+  ...
+# Subtest: identity screening completes the existing scan in the current gallery without a popup
+ok 253 - identity screening completes the existing scan in the current gallery without a popup
+  ---
+  duration_ms: 5.5554
+  type: 'test'
+  ...
+# Subtest: completed identity screening shows only the supplied image and counts one result
+ok 254 - completed identity screening shows only the supplied image and counts one result
+  ---
+  duration_ms: 6.1235
+  type: 'test'
+  ...
+# Subtest: reset and unmount invalidate pending screening results
+ok 255 - reset and unmount invalidate pending screening results
+  ---
+  duration_ms: 9.3502
+  type: 'test'
+  ...
+# Subtest: reset restores the identity gallery while leaving video screening idle
+ok 256 - reset restores the identity gallery while leaving video screening idle
+  ---
+  duration_ms: 5.1688
+  type: 'test'
+  ...
+# Subtest: 身份检索使用完整 AI 人物素材集进行扫描和展示
+ok 257 - 身份检索使用完整 AI 人物素材集进行扫描和展示
+  ---
+  duration_ms: 12.8075
+  type: 'test'
+  ...
+# Subtest: 身份检索隐藏视频筛查专用控件
+ok 258 - 身份检索隐藏视频筛查专用控件
+  ---
+  duration_ms: 2.1229
+  type: 'test'
+  ...
+# Subtest: identity search offers three unchecked appearance options and one primary screening action
+ok 259 - identity search offers three unchecked appearance options and one primary screening action
+  ---
+  duration_ms: 103.0328
+  type: 'test'
+  ...
+# Subtest: video screening does not expose identity appearance demo controls
+ok 260 - video screening does not expose identity appearance demo controls
+  ---
+  duration_ms: 13.3411
+  type: 'test'
+  ...
+# Subtest: identity search displays every approved AI person photo on first render
+ok 261 - identity search displays every approved AI person photo on first render
+  ---
+  duration_ms: 46.4439
+  type: 'test'
+  ...
+# Subtest: identity gallery opens with the most visually rich scenes selected first
+ok 262 - identity gallery opens with the most visually rich scenes selected first
+  ---
+  duration_ms: 42.811
+  type: 'test'
+  ...
+# Subtest: video screening still waits for an explicit search
+ok 263 - video screening still waits for an explicit search
+  ---
+  duration_ms: 10.3044
+  type: 'test'
+  ...
+# Subtest: fifteen distinct existing assets map to their burned-in camera numbers, reserving slot one
+ok 264 - fifteen distinct existing assets map to their burned-in camera numbers, reserving slot one
+  ---
+  duration_ms: 31.992
+  type: 'test'
+  ...
+# Subtest: wall and focused samples respect deployment prefixes and explicitly remain non-live
+ok 265 - wall and focused samples respect deployment prefixes and explicitly remain non-live
+  ---
+  duration_ms: 7.5321
+  type: 'test'
+  ...
+# (node:44148) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:44148) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# Subtest: dashboard governance labels describe open access without implying authorization gates
+ok 266 - dashboard governance labels describe open access without implying authorization gates
+  ---
+  duration_ms: 6.3121
+  type: 'test'
+  ...
+# Subtest: dashboard pages have no project login, persona, lock or reenable-auth controls
+ok 267 - dashboard pages have no project login, persona, lock or reenable-auth controls
+  ---
+  duration_ms: 8.9307
+  type: 'test'
+  ...
+# Subtest: admin reads work without supplying a credential
+ok 268 - admin reads work without supplying a credential
+  ---
+  duration_ms: 169.7232
+  type: 'test'
+  ...
+# Subtest: command actions ignore roles but still enforce stage, online and playback constraints
+ok 269 - command actions ignore roles but still enforce stage, online and playback constraints
+  ---
+  duration_ms: 47.8893
+  type: 'test'
+  ...
+# Subtest: bridge hook establishes an anonymous compatible preview session and loads inventory
+ok 270 - bridge hook establishes an anonymous compatible preview session and loads inventory
+  ---
+  duration_ms: 46.097
+  type: 'test'
+  ...
+# Subtest: homepage content carries the project brand and all five existing workbench shortcuts
+ok 271 - homepage content carries the project brand and all five existing workbench shortcuts
+  ---
+  duration_ms: 46.0577
+  type: 'test'
+  ...
+# Subtest: metric values retain real zeroes and never substitute Stitch demonstration numbers
+ok 272 - metric values retain real zeroes and never substitute Stitch demonstration numbers
+  ---
+  duration_ms: 35.5387
+  type: 'test'
+  ...
+# Subtest: unavailable metrics remain unknown and empty work queues offer a real refresh action
+ok 273 - unavailable metrics remain unknown and empty work queues offer a real refresh action
+  ---
+  duration_ms: 8.9662
+  type: 'test'
+  ...
+# Subtest: only pending high-risk events receive the urgent row treatment
+ok 274 - only pending high-risk events receive the urgent row treatment
+  ---
+  duration_ms: 10.1129
+  type: 'test'
+  ...
+# Subtest: platform service counts come from the overview payload, not invented telemetry
+ok 275 - platform service counts come from the overview payload, not invented telemetry
+  ---
+  duration_ms: 9.564
+  type: 'test'
+  ...
+# Subtest: an explicitly empty live registry does not inherit fallback agents
+ok 276 - an explicitly empty live registry does not inherit fallback agents
+  ---
+  duration_ms: 9.4417
+  type: 'test'
+  ...
+# Subtest: missing platform resources remain unknown instead of reporting zero
+ok 277 - missing platform resources remain unknown instead of reporting zero
+  ---
+  duration_ms: 17.5667
+  type: 'test'
+  ...
+# Subtest: normalization preserves an explicitly empty legacy registry as zero
+ok 278 - normalization preserves an explicitly empty legacy registry as zero
+  ---
+  duration_ms: 10.7431
+  type: 'test'
+  ...
+# Subtest: the event toolbar has no placeholder filter or pagination controls
+ok 279 - the event toolbar has no placeholder filter or pagination controls
+  ---
+  duration_ms: 10.5287
+  type: 'test'
+  ...
+# Subtest: homepage uses one local field image as the primary showcase visual
+ok 280 - homepage uses one local field image as the primary showcase visual
+  ---
+  duration_ms: 11.0886
+  type: 'test'
+  ...
+# Subtest: the homepage does not replace or restyle the application navigation
+ok 281 - the homepage does not replace or restyle the application navigation
+  ---
+  duration_ms: 0.7789
+  type: 'test'
+  ...
+# Subtest: a single black pixel maps to blue with baseline metrics and no edges
+ok 282 - a single black pixel maps to blue with baseline metrics and no edges
+  ---
+  duration_ms: 196.7673
+  type: 'test'
+  ...
+# Subtest: the lookup follows blue-cyan-green-yellow-red segments and weighted luminance
+ok 283 - the lookup follows blue-cyan-green-yellow-red segments and weighted luminance
+  ---
+  duration_ms: 12.2065
+  type: 'test'
+  ...
+# Subtest: brightness metrics use unrounded luminance and a strict bright-area threshold
+ok 284 - brightness metrics use unrounded luminance and a strict bright-area threshold
+  ---
+  duration_ms: 8.7052
+  type: 'test'
+  ...
+# Subtest: Sobel metrics use both axes, a strict threshold of 32, and whole-frame edge density
+ok 285 - Sobel metrics use both axes, a strict threshold of 32, and whole-frame edge density
+  ---
+  duration_ms: 12.778
+  type: 'test'
+  ...
+# Subtest: complexity averages only magnitudes above 32 over the detected edge count
+ok 286 - complexity averages only magnitudes above 32 over the detected edge count
+  ---
+  duration_ms: 8.3039
+  type: 'test'
+  ...
+# Subtest: dense high-contrast edges clamp complexity to one
+ok 287 - dense high-contrast edges clamp complexity to one
+  ---
+  duration_ms: 12.7571
+  type: 'test'
+  ...
+# Subtest: the optional overlay uses cyan above 32 and stronger cyan only above 95
+ok 288 - the optional overlay uses cyan above 32 and stronger cyan only above 95
+  ---
+  duration_ms: 9.2927
+  type: 'test'
+  ...
+# Subtest: invalid dimensions throw RangeError before processing or allocating a frame
+ok 289 - invalid dimensions throw RangeError before processing or allocating a frame
+  ---
+  duration_ms: 16.6652
+  type: 'test'
+  ...
+# Subtest: RGBA length must exactly match the dimensions
+ok 290 - RGBA length must exactly match the dimensions
+  ---
+  duration_ms: 10.9385
+  type: 'test'
+  ...
+# Subtest: diagonal edges use Euclidean magnitude without processing incomplete border kernels
+ok 291 - diagonal edges use Euclidean magnitude without processing incomplete border kernels
+  ---
+  duration_ms: 16.7076
+  type: 'test'
+  ...
+# Subtest: frames thinner than a Sobel kernel have finite metrics and no edge overlay
+ok 292 - frames thinner than a Sobel kernel have finite metrics and no edge overlay
+  ---
+  duration_ms: 21.822
+  type: 'test'
+  ...
+# Subtest: processing is deterministic, preserves alpha and source subviews, and owns its output
+ok 293 - processing is deterministic, preserves alpha and source subviews, and owns its output
+  ---
+  duration_ms: 9.0977
+  type: 'test'
+  ...
+# Subtest: thermal reads the bound camera, disposes bitmaps and keeps requests single-flight at <=8fps
+ok 294 - thermal reads the bound camera, disposes bitmaps and keeps requests single-flight at <=8fps
+  ---
+  duration_ms: 160.8008
+  type: 'test'
+  ...
+# Subtest: snapshot errors clear analysis and back off without synthetic frames
+ok 295 - snapshot errors clear analysis and back off without synthetic frames
+  ---
+  duration_ms: 21.9536
+  type: 'test'
+  ...
+# Subtest: cancellation during bitmap decoding never paints or reschedules
+ok 296 - cancellation during bitmap decoding never paints or reschedules
+  ---
+  duration_ms: 10.8277
+  type: 'test'
+  ...
+# Subtest: a camera becoming stale during decoding cannot publish its old frame
+ok 297 - a camera becoming stale during decoding cannot publish its old frame
+  ---
+  duration_ms: 10.3662
+  type: 'test'
+  ...
+# Subtest: a changed source under the same device id cannot publish a pending old frame
+ok 298 - a changed source under the same device id cannot publish a pending old frame
+  ---
+  duration_ms: 18.9297
+  type: 'test'
+  ...
+# Subtest: a hidden tab does not fetch until visible again
+ok 299 - a hidden tab does not fetch until visible again
+  ---
+  duration_ms: 13.1038
+  type: 'test'
+  ...
+# Subtest: original mode preserves the RGB image while calculating the same labeled metrics
+ok 300 - original mode preserves the RGB image while calculating the same labeled metrics
+  ---
+  duration_ms: 12.5412
+  type: 'test'
+  ...
+# (node:52908) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: completed synthetic seeds keep their dates, order and exact duration at 2026-09-13T08:05:07.456+08:00
+ok 301 - completed synthetic seeds keep their dates, order and exact duration at 2026-09-13T08:05:07.456+08:00
+  ---
+  duration_ms: 229.3527
+  type: 'test'
+  ...
+# Subtest: completed synthetic seeds keep their dates, order and exact duration at 2026-01-01T00:00:12.345+08:00
+ok 302 - completed synthetic seeds keep their dates, order and exact duration at 2026-01-01T00:00:12.345+08:00
+  ---
+  duration_ms: 47.539
+  type: 'test'
+  ...
+# Subtest: completed synthetic seeds keep their dates, order and exact duration at 2026-09-13T23:59:59.999+08:00
+ok 303 - completed synthetic seeds keep their dates, order and exact duration at 2026-09-13T23:59:59.999+08:00
+  ---
+  duration_ms: 44.704
+  type: 'test'
+  ...
+# Subtest: synthetic display formatting is second-precision, date-preserving, ordered and idempotent
+ok 304 - synthetic display formatting is second-precision, date-preserving, ordered and idempotent
+  ---
+  duration_ms: 37.521
+  type: 'test'
+  ...
+# Subtest: active seed and new actions retain precise wall-clock timestamps for elapsed timers
+ok 305 - active seed and new actions retain precise wall-clock timestamps for elapsed timers
+  ---
+  duration_ms: 39.292
+  type: 'test'
+  ...
+# Subtest: new synthetic evidence and archives use evening timestamps without changing task measurements
+ok 306 - new synthetic evidence and archives use evening timestamps without changing task measurements
+  ---
+  duration_ms: 66.414
+  type: 'test'
+  ...
+# Subtest: v1 morning action replay updates synthetic presentation without rewriting the session
+ok 307 - v1 morning action replay updates synthetic presentation without rewriting the session
+  ---
+  duration_ms: 58.7795
+  type: 'test'
+  ...
+# Subtest: normal training uses Dahua 02 and Hikvision 03
+ok 308 - normal training uses Dahua 02 and Hikvision 03
+  ---
+  duration_ms: 235.9819
+  type: 'test'
+  ...
+# Subtest: refreshing 03 reconnects the real Hikvision bridge
+ok 309 - refreshing 03 reconnects the real Hikvision bridge
+  ---
+  duration_ms: 46.0564
+  type: 'test'
+  ...
+# Subtest: unbound Hikvision 03 remains unavailable without fabricated pixels
+ok 310 - unbound Hikvision 03 remains unavailable without fabricated pixels
+  ---
+  duration_ms: 41.5093
+  type: 'test'
+  ...
+# Subtest: enlargement follows binding changes without duplicating the active source
+ok 311 - enlargement follows binding changes without duplicating the active source
+  ---
+  duration_ms: 21.0665
+  type: 'test'
+  ...
+# Subtest: subject matrix uses 02/03 normally and 01/02 for bomb disposal
+ok 312 - subject matrix uses 02/03 normally and 01/02 for bomb disposal
+  ---
+  duration_ms: 20.9189
+  type: 'test'
+  ...
+# Subtest: training sources keep the established global binding slots per camera identity
+ok 313 - training sources keep the established global binding slots per camera identity
+  ---
+  duration_ms: 20.8682
+  type: 'test'
+  ...
+# Subtest: an unbound robot remains missing instead of being sourced outside global bindings
+ok 314 - an unbound robot remains missing instead of being sourced outside global bindings
+  ---
+  duration_ms: 16.6819
+  type: 'test'
+  ...
+# Subtest: missing or ambiguous robot sources never silently show Dahua instead
+ok 315 - missing or ambiguous robot sources never silently show Dahua instead
+  ---
+  duration_ms: 45.2133
+  type: 'test'
+  ...
+# Subtest: thermal enlargement owns one feed and keeps mode controls synchronized
+ok 316 - thermal enlargement owns one feed and keeps mode controls synchronized
+  ---
+  duration_ms: 25.0926
+  type: 'test'
+  ...
+# Subtest: training page passes the canonical current subject rather than guessing from task ids
+ok 317 - training page passes the canonical current subject rather than guessing from task ids
+  ---
+  duration_ms: 2.1741
+  type: 'test'
+  ...
+# (node:57108) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: training demo keeps the three requested subjects for all three officers
+ok 318 - training demo keeps the three requested subjects for all three officers
+  ---
+  duration_ms: 17.2132
+  type: 'test'
+  ...
+# Subtest: training demo selection maps readiness links to fixed demo officers
+ok 319 - training demo selection maps readiness links to fixed demo officers
+  ---
+  duration_ms: 0.6206
+  type: 'test'
+  ...
+# Subtest: demo action replay preserves a completed training record
+ok 320 - demo action replay preserves a completed training record
+  ---
+  duration_ms: 37.0489
+  type: 'test'
+  ...
+# Subtest: recommendations keep the requested equipment and legacy subject aliases
+ok 321 - recommendations keep the requested equipment and legacy subject aliases
+  ---
+  duration_ms: 0.8953
+  type: 'test'
+  ...
+# Subtest: group demo exposes the fixed participant and subject order
+ok 322 - group demo exposes the fixed participant and subject order
+  ---
+  duration_ms: 0.4802
+  type: 'test'
+  ...
+# Subtest: group subjects normalize legacy names, preserve order, and tolerate missing tasks
+ok 323 - group subjects normalize legacy names, preserve order, and tolerate missing tasks
+  ---
+  duration_ms: 15.3732
+  type: 'test'
+  ...
+# Subtest: group subjects prefer the newest retry and ignore malformed task records
+ok 324 - group subjects prefer the newest retry and ignore malformed task records
+  ---
+  duration_ms: 0.9713
+  type: 'test'
+  ...
+# Subtest: group summaries generate one total per participant from the three completed subjects
+ok 325 - group summaries generate one total per participant from the three completed subjects
+  ---
+  duration_ms: 15.5969
+  type: 'test'
+  ...
+# Subtest: officer training page no longer contains the removed review and archive workflow
+ok 326 - officer training page no longer contains the removed review and archive workflow
+  ---
+  duration_ms: 1.8601
+  type: 'test'
+  ...
+# Subtest: officer training sync formats only the synthetic display and retains its actual sync timestamp
+ok 327 - officer training sync formats only the synthetic display and retains its actual sync timestamp
+  ---
+  duration_ms: 2.4423
+  type: 'test'
+  ...
+# Subtest: 完成演示只重置训练流程，不提交表单或触发返回导航
+ok 328 - 完成演示只重置训练流程，不提交表单或触发返回导航
+  ---
+  duration_ms: 0.8108
+  type: 'test'
+  ...
+# Subtest: 完成演示隔离默认提交和父级点击导航
+ok 329 - 完成演示隔离默认提交和父级点击导航
+  ---
+  duration_ms: 0.5573
+  type: 'test'
+  ...
+# Subtest: confirmed empty slot stays unavailable without fabricated footage (true)
+ok 330 - confirmed empty slot stays unavailable without fabricated footage (true)
+  ---
+  duration_ms: 176.8026
+  type: 'test'
+  ...
+# Subtest: real offline device never receives a demo image (true, service true)
+ok 331 - real offline device never receives a demo image (true, service true)
+  ---
+  duration_ms: 18.7332
+  type: 'test'
+  ...
+# Subtest: real offline device never receives a demo image (true, service false)
+ok 332 - real offline device never receives a demo image (true, service false)
+  ---
+  duration_ms: 9.1478
+  type: 'test'
+  ...
+# Subtest: unavailable service does not turn unknown slots into demonstrations (true)
+ok 333 - unavailable service does not turn unknown slots into demonstrations (true)
+  ---
+  duration_ms: 8.558
+  type: 'test'
+  ...
+# Subtest: a fresh camera still requires preview authorization (true)
+ok 334 - a fresh camera still requires preview authorization (true)
+  ---
+  duration_ms: 15.8734
+  type: 'test'
+  ...
+# Subtest: confirmed empty slot stays unavailable without fabricated footage (false)
+ok 335 - confirmed empty slot stays unavailable without fabricated footage (false)
+  ---
+  duration_ms: 10.7143
+  type: 'test'
+  ...
+# Subtest: real offline device never receives a demo image (false, service true)
+ok 336 - real offline device never receives a demo image (false, service true)
+  ---
+  duration_ms: 11.8341
+  type: 'test'
+  ...
+# Subtest: real offline device never receives a demo image (false, service false)
+ok 337 - real offline device never receives a demo image (false, service false)
+  ---
+  duration_ms: 12.6293
+  type: 'test'
+  ...
+# Subtest: unavailable service does not turn unknown slots into demonstrations (false)
+ok 338 - unavailable service does not turn unknown slots into demonstrations (false)
+  ---
+  duration_ms: 10.8972
+  type: 'test'
+  ...
+# Subtest: a fresh camera still requires preview authorization (false)
+ok 339 - a fresh camera still requires preview authorization (false)
+  ---
+  duration_ms: 10.1945
+  type: 'test'
+  ...
+# Subtest: offline WebRTC cameras preserve their actual unavailable state
+ok 340 - offline WebRTC cameras preserve their actual unavailable state
+  ---
+  duration_ms: 8.2923
+  type: 'test'
+  ...
+# Subtest: telemetry polling does not make the preview playback key depend on updatedAt
+ok 341 - telemetry polling does not make the preview playback key depend on updatedAt
+  ---
+  duration_ms: 0.9586
+  type: 'test'
+  ...
+# Subtest: WebRTC preview has a bounded JPEG fallback when browser negotiation stalls
+ok 342 - WebRTC preview has a bounded JPEG fallback when browser negotiation stalls
+  ---
+  duration_ms: 0.4932
+  type: 'test'
+  ...
+# Subtest: retired placeholder props and image state cannot make an unbound slot live
+ok 343 - retired placeholder props and image state cannot make an unbound slot live
+  ---
+  duration_ms: 13.6913
+  type: 'test'
+  ...
+# Subtest: wall keeps real previews separate from sample stills and preserves open access and errors
+ok 344 - wall keeps real previews separate from sample stills and preserves open access and errors
+  ---
+  duration_ms: 1.2219
+  type: 'test'
+  ...
+# Subtest: video wall does not turn one stale camera into a global disconnected banner
+ok 345 - video wall does not turn one stale camera into a global disconnected banner
+  ---
+  duration_ms: 1.4118
+  type: 'test'
+  ...
+# Subtest: command config loads in development and preserves base config with command overrides
+ok 346 - command config loads in development and preserves base config with command overrides
+  ---
+  duration_ms: 335.5104
+  type: 'test'
+  ...
+# Subtest: command config loads in native and preserves base config with command overrides
+ok 347 - command config loads in native and preserves base config with command overrides
+  ---
+  duration_ms: 40.5014
+  type: 'test'
+  ...
+# (node:7176) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:7176) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# Subtest: positions are clamped to the visible viewport
+ok 348 - positions are clamped to the visible viewport
+  ---
+  duration_ms: 3.1603
+  type: 'test'
+  ...
+# Subtest: free placement uses the entire viewport without reserved header or footer bands
+ok 349 - free placement uses the entire viewport without reserved header or footer bands
+  ---
+  duration_ms: 0.6811
+  type: 'test'
+  ...
+# Subtest: tiny viewports still return finite nonnegative positions
+ok 350 - tiny viewports still return finite nonnegative positions
+  ---
+  duration_ms: 0.3918
+  type: 'test'
+  ...
+# Subtest: stored state is validated and clamped instead of hiding the pet
+ok 351 - stored state is validated and clamped instead of hiding the pet
+  ---
+  duration_ms: 0.3163
+  type: 'test'
+  ...
+# Subtest: interior placement remains exactly where released
+ok 352 - interior placement remains exactly where released
+  ---
+  duration_ms: 0.3882
+  type: 'test'
+  ...
+# Subtest: open panel and avatar fit without overlap at every viewport corner
+ok 353 - open panel and avatar fit without overlap at every viewport corner
+  ---
+  duration_ms: 7.6594
+  type: 'test'
+  ...
+# Subtest: short compact viewports scale the avatar to keep composer controls usable
+ok 354 - short compact viewports scale the avatar to keep composer controls usable
+  ---
+  duration_ms: 0.5586
+  type: 'test'
+  ...
+# Subtest: whole-group dragging preserves the panel offset, including across the screen midpoint
+ok 355 - whole-group dragging preserves the panel offset, including across the screen midpoint
+  ---
+  duration_ms: 1.3866
+  type: 'test'
+  ...
+# Subtest: resize recomputes a layout that keeps both elements visible
+ok 356 - resize recomputes a layout that keeps both elements visible
+  ---
+  duration_ms: 0.7967
+  type: 'test'
+  ...
+# Subtest: all preset replies are explicitly synthetic and cannot execute actions
+ok 357 - all preset replies are explicitly synthetic and cannot execute actions
+  ---
+  duration_ms: 1.5885
+  type: 'test'
+  ...
+# Subtest: keyword classification is bounded and does not echo unsafe input
+ok 358 - keyword classification is bounded and does not echo unsafe input
+  ---
+  duration_ms: 0.4622
+  type: 'test'
+  ...
+# Subtest: training reply provides one paragraph and the three requested course links
+ok 359 - training reply provides one paragraph and the three requested course links
+  ---
+  duration_ms: 0.2294
+  type: 'test'
+  ...
+# Subtest: training follow-ups retain course links without leaking them to other topics
+ok 360 - training follow-ups retain course links without leaking them to other topics
+  ---
+  duration_ms: 0.4358
+  type: 'test'
+  ...
+# Subtest: follow-up replies preserve the conversation topic without claiming business access
+ok 361 - follow-up replies preserve the conversation topic without claiming business access
+  ---
+  duration_ms: 0.2727
+  type: 'test'
+  ...
+# (node:21532) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:21532) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+# Subtest: gaze is bounded and follows pointer direction
+ok 362 - gaze is bounded and follows pointer direction
+  ---
+  duration_ms: 1.8027
+  type: 'test'
+  ...
+# Subtest: eyes blink without collapsing the head or body
+ok 363 - eyes blink without collapsing the head or body
+  ---
+  duration_ms: 1.9542
+  type: 'test'
+  ...
+# Subtest: gestures animate separate joints and talking animates the mouth
+ok 364 - gestures animate separate joints and talking animates the mouth
+  ---
+  duration_ms: 2.0073
+  type: 'test'
+  ...
+# Subtest: smoothing is frame-rate independent and cannot overshoot
+ok 365 - smoothing is frame-rate independent and cannot overshoot
+  ---
+  duration_ms: 0.4504
+  type: 'test'
+  ...
+# Subtest: reduced motion produces a fully static neutral pose
+ok 366 - reduced motion produces a fully static neutral pose
+  ---
+  duration_ms: 0.413
+  type: 'test'
+  ...
+# Subtest: stream progress is monotonic, bounded, and ends exactly
+ok 367 - stream progress is monotonic, bounded, and ends exactly
+  ---
+  duration_ms: 0.5227
+  type: 'test'
+  ...
+1..367
+# tests 367
+# suites 0
+# pass 366
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5549.6183
+npm error Lifecycle script `test` failed with error:
+npm error code 1
+npm error path D:\CICSIC\apps\dashboard
+npm error workspace @public-security-ai/dashboard@0.1.0
+npm error location D:\CICSIC\apps\dashboard
+npm error command failed
+npm error command C:\Windows\system32\cmd.exe /d /s /c node --experimental-vm-modules --test src/lib/*.test.mjs

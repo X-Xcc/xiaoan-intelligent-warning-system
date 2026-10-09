@@ -1,0 +1,3 @@
+stage,class_name,target_source_ap50,synthetic_ap50,fp_logit_shift
+initial,fall,0.903,0.9029832769782594,-3.14
+final,fall,0.888,0.8879103288466544,-1.5199999999999996

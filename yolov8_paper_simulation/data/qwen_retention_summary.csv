@@ -1,0 +1,5 @@
+model,metric,mean,median,std,p2_5,p97_5,note
+original_qwen,true_target_retention,94.95431336547931,95.18920763632077,1.9681358636555308,90.8288139785324,98.08347212070059,Recall conditional on fixed source 78/81; no recall posterior propagated
+original_qwen,conditional_recall,91.43748694453564,91.66368142756815,1.8952419427794,87.46478383117935,94.45075093104501,Recall conditional on fixed source 78/81; no recall posterior propagated
+trained_qwen,true_target_retention,97.04693747644603,97.2580237634796,1.4808881981643771,93.50795897290301,99.30567448584331,Recall conditional on fixed source 78/81; no recall posterior propagated
+trained_qwen,conditional_recall,93.45260645879988,93.65587473520257,1.4260404871212515,90.04470123316587,95.6276865419232,Recall conditional on fixed source 78/81; no recall posterior propagated
