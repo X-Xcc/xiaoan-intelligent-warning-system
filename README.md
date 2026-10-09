@@ -2,6 +2,41 @@
 
 这是小安智能预警系统的完整 Windows 原生部署仓库。它不需要 Docker Desktop。系统会在目标 Windows 电脑上分别启动 PostgreSQL、后端 API、管理网页和视频检测服务。
 
+## 最终归档与复现
+
+本仓库已于 **2026-10-09** 完成项目封版。应用源码、评估看板、公开演示与研究材料、LoRA 适配器、训练检查点、YOLO 模型和项目演示文档均已提交；大文件通过 Git LFS 保存。归档审计报告与原始资料全量 SHA-256 清单见 [`archive/`](archive/README.md)。
+
+### 1. 拉取完整公开归档
+
+```powershell
+git clone https://github.com/X-Xcc/xiaoan-intelligent-warning-system.git
+cd xiaoan-intelligent-warning-system
+git lfs install
+git lfs pull
+```
+
+仅下载 GitHub 的 Source code ZIP 不会得到 Git LFS 大文件，复现时应使用 Git 克隆并执行 `git lfs pull`。
+
+### 2. 恢复 Qwen 基座模型
+
+仓库保留了 Qwen 配置、Tokenizer、索引、LoRA 适配器及训练状态，但两个官方基础权重分片未直接上传。按 [`qwen_models/README.md`](qwen_models/README.md) 下载指定的 `Qwen/Qwen2.5-VL-3B-Instruct` 权重，并使用其中记录的文件大小和 SHA-256 校验后放回对应目录。
+
+### 3. 复现运行
+
+```powershell
+./install-prerequisites.cmd
+./一键启动稳定版.cmd
+```
+
+空白部署不需要私有迁移包。若要恢复原电脑的数据库、设备配置和业务证据，则必须另行取得配套的 `.xiaoan` 加密迁移包与 `.transfer-key`，再执行 `restore.cmd`；这些私有文件不在 GitHub 中。
+
+代码验证入口：
+
+```powershell
+npm run test:dashboard
+npm run dashboard:build
+```
+
 ## 项目地图
 
 先按下面的入口找文件，不需要在整个仓库里搜索：
@@ -32,7 +67,7 @@
 
 当前电脑应用已构建的免登录更新：右键 `apply-open-access.cmd`，选择“以管理员身份运行”。脚本会校验待更新文件和进程，替换检测服务并重启，不删除业务数据。Windows 管理员权限用于读取原有加密设备目录，与项目登录无关；更新前已停止的摄像头需在设备页面重新连接。此脚本需要本机已准备好的暂存构建，不适用于刚下载的源码目录。
 
-> 代码仓库只保存可公开部署的程序与脚本。真实业务数据、设备账号、图片视频、模型训练材料和登录密钥都在单独的加密迁移包中，绝不能上传到 GitHub。
+> 代码仓库保存可公开部署的程序、脱敏演示与研究材料及可公开的模型训练产物。真实业务数据、设备账号、业务图片视频、登录密钥和迁移密钥仍只存在于单独的加密迁移包中，绝不能上传到 GitHub。
 
 ## 这套部署会带来什么
 
